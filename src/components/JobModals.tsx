@@ -7,7 +7,17 @@ import { Badge } from './Badge';
 import { SiteMapBox, buildPinnedGoogleMapsUrl } from './SiteMapBox';
 import { HoklasReportPreview } from './HoklasReportPreview';
 import { TestRecordDetailModal } from './TestRecordDetailModal';
-import { X, Copy, ExternalLink, Edit3, Wrench, Calculator, Trash2, Printer, FolderOpen, Hash } from 'lucide-react';
+import { X, Copy, ExternalLink, Edit3, Wrench, Calculator, Trash2, Printer, FolderOpen, Hash, Search, Filter } from 'lucide-react';
+
+const REPORT_TYPE_LABELS: Record<string, { zh: string; en: string }> = {
+  BL: { zh: 'BL 水泥漿泌水及膨脹', en: 'BL Bleeding & Expansion' },
+  FC: { zh: 'FC 流錐測試', en: 'FC Flow Cone' },
+  KD: { zh: 'KD Koden 超聲波', en: 'KD Koden Ultrasonic' },
+  SO: { zh: 'SO 跨孔超聲波', en: 'SO Sonic Logging' },
+  PLT: { zh: 'PLT 平板載荷', en: 'PLT Plate Load' },
+  PO: { zh: 'PO 岩石點荷載', en: 'PO Point Load' },
+  VC: { zh: 'VC 雙軸測斜儀', en: 'VC Inclinometer' },
+};
 
 export const JobDetailDrawer: React.FC<{
   job: JobItem | null;
@@ -19,10 +29,50 @@ export const JobDetailDrawer: React.FC<{
   const { tx } = usePrefs();
   const [worksheetRec, setWorksheetRec] = useState<FieldCalcRecord | null>(null);
   const [detailRec, setDetailRec] = useState<FieldCalcRecord | null>(null);
+  const [recSearch, setRecSearch] = useState('');
+  const [recStpFilter, setRecStpFilter] = useState<string>('ALL');
+  const [recStatusFilter, setRecStatusFilter] = useState<'ALL' | 'PASS' | 'REVIEW'>('ALL');
   if (!job) return null;
 
   const siteEq = equipment.filter((e) => e.currentLoan?.jobNo === job.no);
   const siteCalcs = calcRecords.filter((c) => c.jobNo === job.no);
+
+  const stpCounts: Record<string, number> = {};
+  siteCalcs.forEach((c) => {
+    stpCounts[c.stpCode] = (stpCounts[c.stpCode] || 0) + 1;
+  });
+  const availableStpCodes = ['BL', 'FC', 'KD', 'SO', 'PLT', 'PO', 'VC'].filter(
+    (code) => (stpCounts[code] || 0) > 0 || recStpFilter === code
+  );
+
+  const filteredSiteCalcs = siteCalcs.filter((c) => {
+    if (recStpFilter !== 'ALL' && c.stpCode !== recStpFilter) return false;
+    if (recStatusFilter === 'PASS' && !c.pass) return false;
+    if (recStatusFilter === 'REVIEW' && c.pass) return false;
+    const q = recSearch.trim().toLowerCase();
+    if (!q) return true;
+    const typeInfo = REPORT_TYPE_LABELS[c.stpCode];
+    const hay = [
+      c.jobRefNo,
+      c.id,
+      c.stpCode,
+      typeInfo?.zh,
+      typeInfo?.en,
+      c.title,
+      c.summary,
+      c.worksOrderNo,
+      c.batchNo,
+      c.sampleId,
+      c.locationNote,
+      c.clientName,
+      c.operatorName,
+      c.testedAt,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(q);
+  });
 
   const copySiteInfo = () => {
     const text = `${job.no} | ${job.companyProjNo} | ${job.shortName}\nLocation: ${job.mapAddress || job.site}\nGoogle Maps: ${buildPinnedGoogleMapsUrl(job)}`;
@@ -129,19 +179,132 @@ export const JobDetailDrawer: React.FC<{
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 font-extrabold text-slate-900">
                 <Calculator className="h-4 w-4 text-brand" />
-                {tx(`本工程 Job Ref. No. 及現場測試計算紀錄 (${siteCalcs.length})`, `Site Job Ref. No. & Field Test Records (${siteCalcs.length})`)}
+                {tx(
+                  `本工程 Job Ref. No. 及現場測試計算紀錄 (${filteredSiteCalcs.length} / ${siteCalcs.length})`,
+                  `Site Job Ref. No. & Field Test Records (${filteredSiteCalcs.length} / ${siteCalcs.length})`
+                )}
               </span>
               <span className="text-[11px] font-semibold text-brand-deep">
                 {tx('點擊任何紀錄列即可彈出完整結果及夾附文件視窗', 'Click any record row to open full result & bundled files')}
               </span>
             </div>
+
+            {siteCalcs.length > 0 && (
+              <div className="space-y-2 rounded-xl border border-slate-200/80 bg-white/90 p-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={recSearch}
+                      onChange={(e) => setRecSearch(e.target.value)}
+                      placeholder={tx(
+                        '搜尋 Job Ref. No. (如 LT0002-BL-009) / 委託單 WO / 批次樣本 / 樁號位置 / 技術員...',
+                        'Search Job Ref. No. / Works Order / Sample ID / Location / Operator...'
+                      )}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-800 outline-none focus:border-brand focus:bg-white"
+                    />
+                    {recSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setRecSearch('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+                      <Filter className="h-3.5 w-3.5 text-slate-400" />
+                      <select
+                        value={recStpFilter}
+                        onChange={(e) => setRecStpFilter(e.target.value)}
+                        className="bg-transparent text-xs font-extrabold text-slate-700 outline-none cursor-pointer"
+                      >
+                        <option value="ALL">{tx(`全部報告類型 (${siteCalcs.length})`, `All Report Types (${siteCalcs.length})`)}</option>
+                        {(['BL', 'FC', 'KD', 'SO', 'PLT', 'PO', 'VC'] as const).map((code) => (
+                          <option key={code} value={code}>
+                            {tx(REPORT_TYPE_LABELS[code].zh, REPORT_TYPE_LABELS[code].en)} ({stpCounts[code] || 0})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <select
+                      value={recStatusFilter}
+                      onChange={(e) => setRecStatusFilter(e.target.value as 'ALL' | 'PASS' | 'REVIEW')}
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-extrabold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">{tx('全部狀態', 'All Status')}</option>
+                      <option value="PASS">{tx('PASS 合規', 'PASS Only')}</option>
+                      <option value="REVIEW">{tx('REVIEW 待覆核', 'REVIEW Only')}</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Quick Report Type Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setRecStpFilter('ALL')}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold transition cursor-pointer ${
+                      recStpFilter === 'ALL'
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {tx(`全部 (${siteCalcs.length})`, `All (${siteCalcs.length})`)}
+                  </button>
+                  {availableStpCodes.map((code) => {
+                    const active = recStpFilter === code;
+                    const count = stpCounts[code] || 0;
+                    const label = REPORT_TYPE_LABELS[code];
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => setRecStpFilter(active ? 'ALL' : code)}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-extrabold transition cursor-pointer ${
+                          active
+                            ? 'bg-brand text-white shadow-2xs'
+                            : 'bg-brand-wash/70 text-brand-deep hover:bg-brand-wash border border-brand/20'
+                        }`}
+                      >
+                        <span className="font-mono">{code}</span>
+                        <span>· {tx(label?.zh.replace(`${code} `, '') || code, label?.en.replace(`${code} `, '') || code)}</span>
+                        <span className={`rounded px-1 text-[10px] font-mono ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-700'}`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {siteCalcs.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 bg-white/80 py-5 text-center text-slate-400">
                 {tx('暫無已儲存之現場測試計算紀錄（於「現場計算與工作紙」完成計算並派發 Job Ref. No. 後將自動歸檔至此地盤）', 'No field test records yet. Records saved with this site Job No. will appear here.')}
               </div>
+            ) : filteredSiteCalcs.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white/80 py-5 text-center space-y-2">
+                <div className="text-slate-400 font-semibold">
+                  {tx('找不到符合搜尋或報告類型篩選條件之 Job Ref. No. 紀錄', 'No Job Ref. No. records match your search or report type filter')}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecSearch('');
+                    setRecStpFilter('ALL');
+                    setRecStatusFilter('ALL');
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1 text-[11px] font-bold text-white cursor-pointer"
+                >
+                  {tx('清除篩選條件', 'Reset Filters')}
+                </button>
+              </div>
             ) : (
               <div className="space-y-2.5">
-                {siteCalcs.map((rec) => {
+                {filteredSiteCalcs.map((rec) => {
                   const refNo = rec.jobRefNo || rec.id;
                   return (
                     <div
