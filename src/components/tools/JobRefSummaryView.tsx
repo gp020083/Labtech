@@ -10,6 +10,7 @@ import {
   collectPreviousClientOptions,
 } from '../../utils/completedWorksheetGenerator';
 import { HoklasReportPreview } from '../HoklasReportPreview';
+import { TestRecordDetailModal } from '../TestRecordDetailModal';
 import {
   Hash,
   Plus,
@@ -20,6 +21,7 @@ import {
   Award,
   FolderKanban,
   Filter,
+  FolderOpen,
 } from 'lucide-react';
 
 export const JobRefSummaryView: React.FC<{
@@ -53,6 +55,7 @@ export const JobRefSummaryView: React.FC<{
     record: FieldCalcRecord;
     mode: 'worksheet' | 'formal_report';
   } | null>(null);
+  const [detailRecord, setDetailRecord] = useState<FieldCalcRecord | null>(null);
   const previousClients = useMemo(
     () => collectPreviousClientOptions(jobs, calcRecords),
     [jobs, calcRecords]
@@ -269,7 +272,7 @@ export const JobRefSummaryView: React.FC<{
                 value={newClient}
                 onChange={(e) => setNewClient(e.target.value)}
                 placeholder="Type Client Name..."
-                className="min-w-0 flex-1 rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-2 font-bold text-slate-900"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-bold text-slate-900 focus:border-brand outline-none"
               />
               <datalist id="summary-prev-clients">
                 {previousClients.map((c) => (
@@ -298,7 +301,7 @@ export const JobRefSummaryView: React.FC<{
               value={newWorksOrderNo}
               onChange={(e) => setNewWorksOrderNo(e.target.value)}
               placeholder="e.g. WO/2026/018"
-              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-2 font-mono font-bold text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
@@ -307,7 +310,7 @@ export const JobRefSummaryView: React.FC<{
               value={newLocationNote}
               onChange={(e) => setNewLocationNote(e.target.value)}
               placeholder="e.g. Pile P12 / Bay B"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-mono text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-mono text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
@@ -316,7 +319,7 @@ export const JobRefSummaryView: React.FC<{
               value={newBatchNo}
               onChange={(e) => setNewBatchNo(e.target.value)}
               placeholder="e.g. B-01"
-              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-2 font-mono font-bold text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
@@ -325,7 +328,7 @@ export const JobRefSummaryView: React.FC<{
               value={newSampleId}
               onChange={(e) => setNewSampleId(e.target.value)}
               placeholder="e.g. GS-01"
-              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-2 font-mono font-bold text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
         </div>
@@ -407,43 +410,69 @@ export const JobRefSummaryView: React.FC<{
                   const matchedJob = jobs.find((j) => j.no === r.jobNo);
                   const refDisplay = r.jobRefNo || `HKL-${r.jobNo}-${r.id}`;
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50/80">
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <span className="inline-block rounded-lg bg-indigo-100 px-2 py-0.5 font-mono text-xs font-extrabold text-indigo-950">
-                          {refDisplay}
-                        </span>
-                        <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-700">
-                          {r.stpCode}
-                        </span>
+                    <tr
+                      key={r.id}
+                      onClick={() => setDetailRecord(r)}
+                      className="hover:bg-brand-wash/35 transition cursor-pointer"
+                    >
+                      <td className="px-3.5 py-3 whitespace-nowrap">
+                        <div>
+                          <span className="inline-block rounded-lg bg-indigo-100 px-2 py-0.5 font-mono text-xs font-extrabold text-indigo-950">
+                            {refDisplay}
+                          </span>
+                          <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-700">
+                            {r.stpCode}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                          <span className="text-emerald-700">📋 Worksheet</span>
+                          <span>·</span>
+                          <span className="text-indigo-700">
+                            {r.worksOrderAttachment ? '📄 已附 WO' : '📄 FQS08'}
+                          </span>
+                          {r.sitePhotos && r.sitePhotos.length > 0 && (
+                            <>
+                              <span>·</span>
+                              <span className="text-amber-700">📷 {r.sitePhotos.length}</span>
+                            </>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-3 py-3">
                         <div className="font-mono font-extrabold text-slate-900">{r.jobNo}</div>
                         <div className="text-[11px] text-slate-500 truncate max-w-[200px]">
                           {r.projectTitle || matchedJob?.project || matchedJob?.shortName || r.jobNo}
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-3 py-3">
                         <div className="font-bold text-slate-800">
                           {r.clientName || matchedJob?.client || '—'}
                         </div>
-                        <div className="font-mono text-[11px] text-amber-800">
+                        <div className="font-mono text-[11px] text-brand-deep">
                           WO: {r.worksOrderNo || '—'}
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 font-mono text-[11px] text-slate-700">
+                      <td className="px-3 py-3 font-mono text-[11px] text-slate-700">
                         <div>Batch: {r.batchNo || '—'} · Sample: {r.sampleId || '—'}</div>
                         <div className="text-slate-500">Loc: {r.locationNote || '—'}</div>
                       </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <div className="font-bold text-slate-800">{r.operatorName}</div>
                         <div className="font-mono text-[10px] text-slate-500">{r.testedAt}</div>
                       </td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <td className="px-3.5 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
+                            onClick={() => setDetailRecord(r)}
+                            className="inline-flex items-center gap-1 rounded-xl bg-brand px-2.5 py-1.5 text-[11px] font-extrabold text-white hover:bg-brand-deep cursor-pointer"
+                          >
+                            <FolderOpen className="h-3.5 w-3.5" /> {tx('結果及附件', 'Dossier')}
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleDownloadExcelForRecord(r)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-extrabold text-white hover:bg-emerald-700 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-2.5 py-1.5 text-[11px] font-extrabold text-white hover:bg-emerald-700 cursor-pointer"
                             title="Download Completed Official Excel (.xlsx)"
                           >
                             <FileSpreadsheet className="h-3.5 w-3.5" /> .xlsx
@@ -451,21 +480,21 @@ export const JobRefSummaryView: React.FC<{
                           <button
                             type="button"
                             onClick={() => setPreviewState({ record: r, mode: 'worksheet' })}
-                            className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-extrabold text-white hover:bg-slate-800 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-2.5 py-1.5 text-[11px] font-extrabold text-white hover:bg-slate-800 cursor-pointer"
                           >
                             <Printer className="h-3.5 w-3.5" /> Worksheet
                           </button>
                           <button
                             type="button"
                             onClick={() => setPreviewState({ record: r, mode: 'formal_report' })}
-                            className="inline-flex items-center gap-1 rounded-lg border border-amber-400 bg-amber-50 px-2.5 py-1.5 text-[11px] font-extrabold text-amber-950 hover:bg-amber-100 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-xl border border-amber-400 bg-amber-50 px-2.5 py-1.5 text-[11px] font-extrabold text-amber-950 hover:bg-amber-100 cursor-pointer"
                           >
                             <Award className="h-3.5 w-3.5 text-amber-700" /> Report
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteRecord(r)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-extrabold text-rose-700 hover:bg-rose-100 cursor-pointer"
+                            className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-extrabold text-rose-700 hover:bg-rose-100 cursor-pointer"
                             title="Delete Job Ref. No. Record"
                           >
                             <Trash2 className="h-3.5 w-3.5" /> {tx('刪除', 'Del')}
@@ -489,6 +518,10 @@ export const JobRefSummaryView: React.FC<{
           onClose={() => setPreviewState(null)}
         />
       )}
+      <TestRecordDetailModal
+        record={detailRecord}
+        onClose={() => setDetailRecord(null)}
+      />
     </div>
   );
 };

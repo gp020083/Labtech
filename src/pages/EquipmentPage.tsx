@@ -321,13 +321,17 @@ export const EquipmentPage: React.FC<{
                         ? (eq.currentLoan.borrowerName.split(',')[1]?.trim() || eq.currentLoan.borrowerName)
                         : '';
                       return (
-                        <tr key={eq.code} className="hover:bg-slate-50/80 transition">
+                        <tr
+                          key={eq.code}
+                          onClick={() => setDetailCode(eq.code)}
+                          className="hover:bg-brand-wash/35 transition cursor-pointer"
+                        >
                           <td className="px-4 py-3 font-mono font-extrabold text-slate-900 whitespace-nowrap">
                             <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-extrabold text-white">
                               {eq.code}
                             </span>
                           </td>
-                          <td className="px-3 py-3 min-w-[220px] cursor-pointer" onClick={() => setDetailCode(eq.code)}>
+                          <td className="px-3 py-3 min-w-[220px]">
                             <div className="font-extrabold text-slate-900 hover:text-brand">{eq.name}</div>
                             <div className="font-mono text-[11px] text-slate-500">{eq.maker} · {eq.model} ｜ S/N {eq.serial}</div>
                           </td>
@@ -359,7 +363,7 @@ export const EquipmentPage: React.FC<{
                               <span className="text-[11px] text-slate-400">{tx('可隨時借出 (Available)', 'Available for Checkout')}</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <div className="inline-flex items-center gap-1.5">
                               {eq.currentLoan ? (
                                 <button type="button" onClick={() => setReturnItem(eq)} className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 font-extrabold text-white hover:bg-emerald-700 cursor-pointer">{tx('交還登記', 'Return')}</button>
@@ -381,9 +385,6 @@ export const EquipmentPage: React.FC<{
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand cursor-pointer"
                               >
                                 <QrCode className="h-3.5 w-3.5" />
-                              </button>
-                              <button type="button" onClick={() => setDetailCode(eq.code)} className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">
-                                <FileCheck2 className="h-3.5 w-3.5 text-brand shrink-0" /> {tx('詳情', 'Details')}
                               </button>
                             </div>
                           </td>
@@ -535,8 +536,12 @@ export const EquipmentPage: React.FC<{
                       const cal = getEquipmentCalStatus(eq, undefined, lang);
                       const tags = eq.testTags || eq.tests.split('+').map((s) => s.trim()).filter(Boolean);
                       return (
-                        <tr key={eq.code} className="hover:bg-slate-50/80 transition">
-                          <td className="px-4 py-3 font-mono font-extrabold text-slate-900 whitespace-nowrap">
+                        <tr
+                          key={eq.code}
+                          onClick={() => setDetailCode(eq.code)}
+                          className="hover:bg-brand-wash/35 transition cursor-pointer"
+                        >
+                          <td className="px-4 py-3 font-mono font-extrabold text-slate-900 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
                               onClick={() => navigateToEquipmentCertPage(eq.code)}
@@ -546,7 +551,7 @@ export const EquipmentPage: React.FC<{
                               {eq.code}
                             </button>
                           </td>
-                          <td className="px-3 py-3 min-w-[220px] cursor-pointer" onClick={() => setDetailCode(eq.code)}>
+                          <td className="px-3 py-3 min-w-[220px]">
                             <div className="font-extrabold text-slate-900 hover:text-brand">{eq.name}</div>
                             <div className="font-mono text-[11px] text-slate-500">{eq.maker} · {eq.model} ｜ S/N {eq.serial}</div>
                           </td>
@@ -569,7 +574,7 @@ export const EquipmentPage: React.FC<{
                           <td className="px-3 py-3 font-mono text-[11px] text-slate-600 truncate max-w-[200px]">
                             {eq.certFile || (eq.certUrl ? 'Calibration_Cert.pdf' : tx('尚未上傳證書', 'No Cert Uploaded'))}
                           </td>
-                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <div className="inline-flex items-center gap-1.5">
                               {eq.certUrl ? (
                                 <button
@@ -599,9 +604,6 @@ export const EquipmentPage: React.FC<{
                                 className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
                               >
                                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" /> {tx('認證頁', 'Cert Page')}
-                              </button>
-                              <button type="button" onClick={() => setDetailCode(eq.code)} className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">
-                                <FileCheck2 className="h-3.5 w-3.5 text-brand shrink-0" /> {tx('詳情', 'Details')}
                               </button>
                             </div>
                           </td>

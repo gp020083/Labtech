@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '../../store';
 import { usePrefs } from '../../prefs';
-import { FieldCalcPhoto, FieldCalcRecord } from '../../types';
+import { FieldCalcPhoto, FieldCalcRecord, SharedDocAttachment } from '../../types';
 import { HK_GOV_SPECS, GOV_DEPTS } from '../../data/hkGovSpecs';
 import { detectCalcPassStatus } from '../../utils/limsRules';
 import { buildHoklasFieldWorksheetData } from '../../utils/limsProcessTools';
@@ -13,10 +13,11 @@ import {
   toEnglishWorksheetText,
   collectPreviousClientOptions,
 } from '../../utils/completedWorksheetGenerator';
-import { downloadCalcRecordCsv, nowTimestamp } from '../../utils';
+import { downloadCalcRecordCsv, formatFileSize, nowTimestamp, readFileAsDataUrl } from '../../utils';
 import { FieldSignOffBox } from '../FieldSignOffBox';
 import { SitePhotoAttachmentControl } from '../SitePhotoAttachmentControl';
 import { HoklasReportPreview } from '../HoklasReportPreview';
+import { TestRecordDetailModal } from '../TestRecordDetailModal';
 import {
   BookOpen,
   Lightbulb,
@@ -34,6 +35,8 @@ import {
   Hash,
   Trash2,
   ChevronDown,
+  Upload,
+  FolderOpen,
 } from 'lucide-react';
 
 export interface GuideStep {
@@ -71,10 +74,29 @@ export const ToolGuideCard: React.FC<{
   const [signedRole, setSignedRole] = useState<string>('');
   const [signatureDataUrl, setSignatureDataUrl] = useState<string>('');
   const [sitePhotos, setSitePhotos] = useState<FieldCalcPhoto[]>([]);
+  const [worksOrderAttachment, setWorksOrderAttachment] = useState<SharedDocAttachment | undefined>(undefined);
+  const [detailModalRecord, setDetailModalRecord] = useState<FieldCalcRecord | null>(null);
+  const woFileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewState, setPreviewState] = useState<{
     record: FieldCalcRecord;
     mode: 'worksheet' | 'formal_report';
   } | null>(null);
+
+  const handleAttachWorksOrder = async (file: File) => {
+    const dataUrl = await readFileAsDataUrl(file);
+    const doc: SharedDocAttachment = {
+      id: `wo-${Date.now()}`,
+      fileName: file.name,
+      fileSize: formatFileSize(file.size),
+      docType: 'order_form',
+      uploadedBy: user?.name || 'Operator',
+      uploadedAt: nowTimestamp(),
+      serverPath: `Jobs/${selectedJobNo}/${file.name}`,
+      dataUrl,
+    };
+    setWorksOrderAttachment(doc);
+    pushToast(tx('已夾附 Works Order 委託單檔案', 'Works Order Form attached'), file.name);
+  };
 
   const passStatus = detectCalcPassStatus(copyText);
   const recentForStp = calcRecords.filter((r) => r.stpCode === stpCode).slice(0, 5);
@@ -122,6 +144,7 @@ export const ToolGuideCard: React.FC<{
       signedRole: signedRole.trim() || undefined,
       signedAt: signatureDataUrl ? nowTimestamp() : undefined,
       sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      worksOrderAttachment,
       structuredData,
     });
     setJustSavedId(rec.id);
@@ -168,6 +191,7 @@ export const ToolGuideCard: React.FC<{
       signedRole: signedRole.trim() || undefined,
       signedAt: signatureDataUrl ? nowTimestamp() : undefined,
       sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      worksOrderAttachment,
       structuredData,
     };
   };
@@ -195,10 +219,12 @@ export const ToolGuideCard: React.FC<{
       signedRole: signedRole.trim() || undefined,
       signedAt: signatureDataUrl ? nowTimestamp() : undefined,
       sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      worksOrderAttachment,
       structuredData,
     });
     setJustSavedId(rec.id);
     setTimeout(() => setJustSavedId(null), 3500);
+    return rec;
   };
 
   const handleExportCsv = () => {
@@ -211,31 +237,10 @@ export const ToolGuideCard: React.FC<{
   };
 
   const handleDirectGenExcel = () => {
-    const draft = buildCurrentDraftRecord();
+    const savedRec = handleSaveToJob();
     const job = jobs.find((j) => j.no === selectedJobNo) || null;
-    // Automatically register this test's Job Reference No. under the selected Project
-    saveCalcRecord({
-      jobNo: selectedJobNo,
-      jobRefNo: draft.jobRefNo,
-      worksOrderNo: draft.worksOrderNo,
-      clientName: draft.clientName,
-      batchNo: draft.batchNo,
-      sampleId: draft.sampleId,
-      projectTitle: draft.projectTitle,
-      stpCode,
-      title: draft.title,
-      locationNote: draft.locationNote,
-      summary: copyText,
-      pass: passStatus,
-      signatureDataUrl: draft.signatureDataUrl,
-      signedBy: draft.signedBy,
-      signedRole: draft.signedRole,
-      signedAt: draft.signedAt,
-      sitePhotos: draft.sitePhotos,
-      structuredData,
-    });
     const ws = buildHoklasFieldWorksheetData({
-      record: draft,
+      record: savedRec,
       job,
       equipment,
       tests,
@@ -265,7 +270,7 @@ export const ToolGuideCard: React.FC<{
       tests,
       equipmentRegistry: equipment,
       job,
-      record: draft,
+      record: savedRec,
     });
     pushToast(
       tx('已按官方 Excel 底板產生 Completed Worksheet (.xlsx)', 'Generated Official Completed Excel Worksheet (.xlsx)'),
@@ -274,7 +279,8 @@ export const ToolGuideCard: React.FC<{
   };
 
   const handleOpenPreview = (mode: 'worksheet' | 'formal_report') => {
-    setPreviewState({ record: buildCurrentDraftRecord(), mode });
+    const savedRec = handleSaveToJob();
+    setPreviewState({ record: savedRec, mode });
   };
 
   return (
@@ -385,7 +391,7 @@ export const ToolGuideCard: React.FC<{
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="Type Client Name manually (e.g. CEDD / Gammon Construction Ltd.)"
-                className="sm:col-span-7 rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-bold text-slate-900"
+                className="sm:col-span-7 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-900 focus:border-brand outline-none"
               />
               <datalist id={`prev-clients-${stpCode}`}>
                 {previousClients.map((c) => (
@@ -398,7 +404,7 @@ export const ToolGuideCard: React.FC<{
                 onChange={(e) => {
                   if (e.target.value) setClientName(e.target.value);
                 }}
-                className="sm:col-span-5 rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 font-bold text-slate-800 cursor-pointer"
+                className="sm:col-span-5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 font-bold text-slate-800 cursor-pointer"
               >
                 <option value="">{tx('📂 選擇歷史客戶 (Previous Clients)...', '📂 Select Previous Client...')}</option>
                 {previousClients.map((c) => (
@@ -410,12 +416,35 @@ export const ToolGuideCard: React.FC<{
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('4. Works Order No. (手動輸入)', '4. Works Order No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+              <span>{tx('4. Works Order No. (手動輸入)', '4. Works Order No. (Manual Input)')}</span>
+              <input
+                ref={woFileInputRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleAttachWorksOrder(f);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => woFileInputRef.current?.click()}
+                className="inline-flex items-center gap-1 rounded-lg border border-brand/30 bg-brand-wash/60 px-2 py-0.5 text-[10px] font-extrabold text-brand-deep hover:bg-brand-wash cursor-pointer"
+              >
+                <Upload className="h-2.5 w-2.5" />
+                {worksOrderAttachment
+                  ? tx(`✓ 已夾附 (${worksOrderAttachment.fileName.slice(0, 12)}...)`, '✓ Attached')
+                  : tx('📎 夾附委託單檔案', '📎 Attach Order Form')}
+              </button>
+            </label>
             <input
               value={worksOrderNo}
               onChange={(e) => setWorksOrderNo(e.target.value)}
               placeholder="e.g. WO/2026/11/018 (Manual Input)"
-              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-mono font-bold text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
@@ -424,7 +453,7 @@ export const ToolGuideCard: React.FC<{
               value={locationNote}
               onChange={(e) => setLocationNote(e.target.value)}
               placeholder="e.g. Pile P12 / Batch #4 / BH08"
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
@@ -433,7 +462,7 @@ export const ToolGuideCard: React.FC<{
               value={batchNo}
               onChange={(e) => setBatchNo(e.target.value)}
               placeholder="Manual Batch No. (e.g. B-01)"
-              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-mono font-bold text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
@@ -442,7 +471,7 @@ export const ToolGuideCard: React.FC<{
               value={sampleId}
               onChange={(e) => setSampleId(e.target.value)}
               placeholder="Manual Sample ID (e.g. GS-01)"
-              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-mono font-bold text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
         </div>
@@ -527,17 +556,26 @@ export const ToolGuideCard: React.FC<{
         </div>
 
         {recentForStp.length > 0 && (
-          <div className="border-t border-slate-100 pt-2 space-y-1">
-            <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-              {tx(
-                `📋 已派發 Job Ref. No. 及測試工程紀錄表 (${recentForStp.length})`,
-                `📋 Dispatched Job Ref. No. & Project Registry (${recentForStp.length})`
-              )}
+          <div className="border-t border-slate-100 pt-2.5 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              <span>
+                {tx(
+                  `📋 已派發 Job Ref. No. 及測試工程紀錄表 (${recentForStp.length})`,
+                  `📋 Dispatched Job Ref. No. & Project Registry (${recentForStp.length})`
+                )}
+              </span>
+              <span className="text-brand-deep normal-case">
+                {tx('點擊任何紀錄列彈出完整結果及夾附文件視窗', 'Click any row to open full result & bundled files')}
+              </span>
             </div>
             {recentForStp.map((r) => {
               const matchedJob = jobs.find((j) => j.no === r.jobNo);
               return (
-                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200/70 px-2.5 py-1.5 text-[11px]">
+                <div
+                  key={r.id}
+                  onClick={() => setDetailModalRecord(r)}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2 text-[11px] hover:border-brand/50 hover:bg-brand-wash/25 transition cursor-pointer"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-slate-800">
                       <span className="rounded bg-indigo-100 px-1.5 py-0.5 font-mono font-extrabold text-indigo-950 mr-1.5">
@@ -554,11 +592,18 @@ export const ToolGuideCard: React.FC<{
                       Op: {r.operatorName} ({r.testedAt.slice(5)})
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setDetailModalRecord(r)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-brand/10 px-2 py-0.5 font-extrabold text-brand-deep hover:bg-brand hover:text-white cursor-pointer"
+                    >
+                      <FolderOpen className="h-3 w-3" /> {tx('檢視結果及附件', 'Dossier')}
+                    </button>
                     <button
                       type="button"
                       onClick={() => setPreviewState({ record: r, mode: 'worksheet' })}
-                      className="font-extrabold text-brand-deep hover:underline cursor-pointer"
+                      className="font-extrabold text-slate-700 hover:underline cursor-pointer"
                     >
                       Worksheet
                     </button>
@@ -590,6 +635,7 @@ export const ToolGuideCard: React.FC<{
           </div>
         )}
       </div>
+      <TestRecordDetailModal record={detailModalRecord} onClose={() => setDetailModalRecord(null)} />
       {previewState && (
         <HoklasReportPreview
           record={previewState.record}

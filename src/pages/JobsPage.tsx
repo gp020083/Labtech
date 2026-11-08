@@ -105,7 +105,11 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
               const eqCount = eqCountByJob[j.no] || 0;
               const calcCount = calcCountByJob[j.no] || 0;
               return (
-                <div key={j.no} className="p-3.5 space-y-2">
+                <div
+                  key={j.no}
+                  onClick={() => setSelectedJob(j)}
+                  className="p-4 space-y-2.5 cursor-pointer hover:bg-brand-wash/30 transition"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-extrabold text-white whitespace-nowrap">{j.no}</span>
@@ -117,12 +121,11 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
                       {calcCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-brand-wash border border-brand/25 px-2 py-0.5 font-bold text-brand-deep"><Calculator className="h-3 w-3" /> {calcCount}</span>}
                     </div>
                   </div>
-                  <div onClick={() => setSelectedJob(j)} className="cursor-pointer">
+                  <div>
                     <div className="text-sm font-extrabold text-slate-900">{j.shortName}</div>
                     <div className="text-[11px] text-slate-500">{j.mapAddress || j.site}</div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    <button type="button" onClick={() => setSelectedJob(j)} className="rounded-xl border border-slate-200 px-3 py-1.5 font-bold text-slate-700 cursor-pointer">{tx('詳情 / 地圖', 'Map / Info')}</button>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
                     <a href={buildPinnedGoogleMapsUrl(j)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl bg-brand/10 px-3 py-1.5 font-bold text-brand-deep">Google Maps <ExternalLink className="h-3 w-3" /></a>
                     <button type="button" onClick={() => handleCopy(j)} className="ml-auto rounded-xl border border-slate-200 p-1.5 text-slate-500 cursor-pointer" title="Copy"><Copy className="h-3.5 w-3.5" /></button>
                     <button type="button" onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
@@ -132,55 +135,58 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
             })}
           </div>
 
-          <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200/85 bg-white shadow-xs">
-          <table className="w-full min-w-[860px] text-left text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
-              <tr className="whitespace-nowrap">
-                <th className="px-4 py-3">Site ID</th>
-                <th className="px-3 py-3">Project No.</th>
-                <th className="px-3 py-3">{tx('地盤簡稱及地址', 'Site Name & Location')}</th>
-                <th className="px-3 py-3">Scope</th>
-                <th className="px-3 py-3">{tx('在場器材 / 計算紀錄', 'Gear / Calc Logs')}</th>
-                <th className="px-4 py-3 text-right">{tx('快速操作', 'Actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((j) => {
-                const eqCount = eqCountByJob[j.no] || 0;
-                const calcCount = calcCountByJob[j.no] || 0;
-                return (
-                  <tr key={j.no} className="hover:bg-slate-50/80 transition">
-                    <td className="px-4 py-3 font-mono font-extrabold text-slate-900 whitespace-nowrap">{j.no}</td>
-                    <td className="px-3 py-3 font-mono font-bold text-brand-deep whitespace-nowrap">{j.companyProjNo}</td>
-                    <td className="px-3 py-3 max-w-md cursor-pointer" onClick={() => setSelectedJob(j)}>
-                      <div className="font-extrabold text-slate-900 hover:text-brand">{j.shortName}</div>
-                      <div className="text-[11px] text-slate-500 truncate">{j.mapAddress || j.site}</div>
-                    </td>
-                    <td className="px-3 py-3 font-semibold text-slate-700 whitespace-nowrap">{j.scope || '—'}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        {eqCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2 py-0.5 font-bold text-amber-800 whitespace-nowrap"><Wrench className="h-3 w-3" /> {eqCount}</span>}
-                        {calcCount > 0 && (
-                          <button type="button" onClick={() => setSelectedJob(j)} className="inline-flex items-center gap-1 rounded-lg bg-brand-wash border border-brand/25 px-2 py-0.5 font-bold text-brand-deep hover:bg-brand hover:text-white transition whitespace-nowrap cursor-pointer">
-                            <Calculator className="h-3 w-3" /> {tx(`${calcCount} 紀錄`, `${calcCount} Logs`)}
-                          </button>
-                        )}
-                        {eqCount === 0 && calcCount === 0 && <span className="text-slate-400">—</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5 flex-nowrap whitespace-nowrap">
-                        <button type="button" onClick={() => setSelectedJob(j)} className="rounded-xl border border-slate-200 px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer">{tx('詳情／地圖', 'Map / Info')}</button>
-                        <a href={buildPinnedGoogleMapsUrl(j)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl bg-brand/10 px-2.5 py-1.5 font-bold text-brand-deep hover:bg-brand hover:text-white whitespace-nowrap shrink-0">Google Maps <ExternalLink className="h-3 w-3 shrink-0" /></a>
-                        <button type="button" onClick={() => handleCopy(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-brand shrink-0 cursor-pointer" title="Copy"><Copy className="h-3.5 w-3.5" /></button>
-                        <button type="button" onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+            <table className="w-full min-w-[860px] text-left text-xs">
+              <thead className="border-b border-slate-200/80 bg-slate-50/70 font-extrabold text-slate-500 uppercase tracking-wider text-[11px]">
+                <tr className="whitespace-nowrap">
+                  <th className="px-5 py-3.5">Site ID</th>
+                  <th className="px-4 py-3.5">Project No.</th>
+                  <th className="px-4 py-3.5">{tx('地盤簡稱及地址', 'Site Name & Location')}</th>
+                  <th className="px-4 py-3.5">Scope</th>
+                  <th className="px-4 py-3.5">{tx('在場儀器 / Job Ref. 測試紀錄', 'Gear / Job Ref. Records')}</th>
+                  <th className="px-5 py-3.5 text-right">{tx('操作', 'Actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((j) => {
+                  const eqCount = eqCountByJob[j.no] || 0;
+                  const calcCount = calcCountByJob[j.no] || 0;
+                  return (
+                    <tr
+                      key={j.no}
+                      onClick={() => setSelectedJob(j)}
+                      className="group hover:bg-brand-wash/35 transition cursor-pointer"
+                    >
+                      <td className="px-5 py-4 font-mono font-extrabold text-slate-900 whitespace-nowrap">{j.no}</td>
+                      <td className="px-4 py-4 font-mono font-bold text-brand-deep whitespace-nowrap">{j.companyProjNo}</td>
+                      <td className="px-4 py-4 max-w-md">
+                        <div className="font-extrabold text-slate-900 group-hover:text-brand text-[13px]">{j.shortName}</div>
+                        <div className="mt-0.5 text-[11px] text-slate-500 truncate">{j.mapAddress || j.site}</div>
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-700 whitespace-nowrap">{j.scope || '—'}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          {eqCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1 font-bold text-amber-800 whitespace-nowrap"><Wrench className="h-3 w-3" /> {eqCount}</span>}
+                          {calcCount > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-brand-wash border border-brand/25 px-2.5 py-1 font-bold text-brand-deep whitespace-nowrap">
+                              <Calculator className="h-3 w-3" /> {tx(`${calcCount} 份測試紀錄`, `${calcCount} Records`)}
+                            </span>
+                          )}
+                          {eqCount === 0 && calcCount === 0 && <span className="text-slate-300">—</span>}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5 flex-nowrap whitespace-nowrap">
+                          <a href={buildPinnedGoogleMapsUrl(j)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl bg-brand/10 px-3 py-1.5 font-bold text-brand-deep hover:bg-brand hover:text-white whitespace-nowrap shrink-0">Google Maps <ExternalLink className="h-3 w-3 shrink-0" /></a>
+                          <button type="button" onClick={() => handleCopy(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-brand shrink-0 cursor-pointer" title="Copy"><Copy className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </>
       ) : (
