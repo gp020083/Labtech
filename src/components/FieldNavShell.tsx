@@ -3,16 +3,19 @@ import { useApp } from '../store';
 import { usePrefs, FontScale } from '../prefs';
 import { REF_TODAY, getEquipmentCalStatus } from '../utils';
 import { PWAInstallButton } from './PwaStatusWidgets';
-import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone, ArrowLeftRight, ShieldCheck } from 'lucide-react';
+import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award } from 'lucide-react';
 
 export type FieldTabId = 'jobs' | 'equipment' | 'stp' | 'tools' | 'calendar';
 export type EquipmentSubSectionId = 'loans' | 'calibration';
+export type DocVaultSubSectionId = 'stp' | 'worksheets' | 'orders' | 'reports';
 
 export const FieldNavShell: React.FC<{
   activeTab: FieldTabId;
   onSelect: (id: FieldTabId) => void;
   equipmentSubTab?: EquipmentSubSectionId;
   onSelectEquipmentSubTab?: (sub: EquipmentSubSectionId) => void;
+  docVaultSubTab?: DocVaultSubSectionId;
+  onSelectDocVaultSubTab?: (sub: DocVaultSubSectionId) => void;
   onOpenSearch: () => void;
   onOpenGovSpecs: () => void;
   onOpenDriveSync: () => void;
@@ -21,6 +24,8 @@ export const FieldNavShell: React.FC<{
   onSelect,
   equipmentSubTab = 'loans',
   onSelectEquipmentSubTab,
+  docVaultSubTab = 'stp',
+  onSelectDocVaultSubTab,
   onOpenSearch,
   onOpenGovSpecs,
   onOpenDriveSync,
@@ -32,7 +37,7 @@ export const FieldNavShell: React.FC<{
   const tabs: { id: FieldTabId; label: string; mobileLabel: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'jobs', label: tx('工程項目管理 (Projects)', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
     { id: 'equipment', label: tx('儀器管理 (Equipment)', 'Equipment'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
-    { id: 'stp', label: tx('STP 標準測試程序 (STP Vault)', 'STP Vault'), mobileLabel: 'STP', icon: FileText },
+    { id: 'stp', label: tx('受控工作文件庫 (Controlled Docs)', 'Controlled Docs'), mobileLabel: tx('工作文件', 'Docs'), icon: FileText },
     { id: 'tools', label: tx('測試計算及報告 (Test & Report)', 'Test & Worksheet'), mobileLabel: tx('測試報告', 'Test/Report'), icon: Calculator },
     { id: 'calendar', label: tx('測試排程日曆 (Schedule)', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
   ];
@@ -132,6 +137,35 @@ export const FieldNavShell: React.FC<{
                           </span>
                         )}
                       </button>
+                    </div>
+                  )}
+                  {tab.id === 'stp' && (
+                    <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
+                      {([
+                        ['stp', tx('1. STP 標準測試程序', '1. STP Procedures'), FileText, 'text-slate-700'],
+                        ['worksheets', tx('2. 測試工作紙範本', '2. Worksheet Templates'), FileSpreadsheet, 'text-brand'],
+                        ['orders', tx('3. 委託單及體系表格', '3. Order & Quality Forms'), FolderOpen, 'text-emerald-600'],
+                        ['reports', tx('4. 正式報告範本', '4. Formal Report Templates'), Award, 'text-amber-600'],
+                      ] as const).map(([subId, subLabel, SubIcon, iconCls]) => (
+                        <button
+                          key={subId}
+                          type="button"
+                          onClick={() => {
+                            onSelect('stp');
+                            onSelectDocVaultSubTab?.(subId);
+                          }}
+                          className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold transition cursor-pointer ${
+                            activeTab === 'stp' && docVaultSubTab === subId
+                              ? 'bg-brand-wash text-brand-deep ring-1 ring-brand/30'
+                              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 truncate">
+                            <SubIcon className={`h-3.5 w-3.5 shrink-0 ${iconCls}`} />
+                            <span className="truncate">{subLabel}</span>
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   )}
                   {tab.id === 'tools' && (

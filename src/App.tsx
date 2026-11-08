@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './store';
 import { PrefsProvider, usePrefs } from './prefs';
-import { FieldNavShell, FieldTabId, EquipmentSubSectionId } from './components/FieldNavShell';
+import { FieldNavShell, FieldTabId, EquipmentSubSectionId, DocVaultSubSectionId } from './components/FieldNavShell';
 import { MobileAppShell } from './mobile/MobileAppShell';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { LoginScreen } from './components/LoginModal';
@@ -42,6 +42,7 @@ const FieldShellContent: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [driveModalOpen, setDriveModalOpen] = useState(false);
   const [equipmentSubTab, setEquipmentSubTab] = useState<EquipmentSubSectionId>('loans');
+  const [docVaultSubTab, setDocVaultSubTab] = useState<DocVaultSubSectionId>('stp');
   const [toolJump, setToolJump] = useState<{ mode?: 'calc' | 'specs'; tool?: CalcToolId } | null>(null);
 
   useEffect(() => {
@@ -99,6 +100,8 @@ const FieldShellContent: React.FC = () => {
             onSelect={setActiveTab}
             equipmentSubTab={equipmentSubTab}
             onSelectEquipmentSubTab={setEquipmentSubTab}
+            docVaultSubTab={docVaultSubTab}
+            onSelectDocVaultSubTab={setDocVaultSubTab}
             onOpenSearch={() => setSearchOpen(true)}
             onOpenGovSpecs={() => { setToolJump({ mode: 'specs' }); setActiveTab('tools'); }}
             onOpenDriveSync={() => setDriveModalOpen(true)}
@@ -113,7 +116,13 @@ const FieldShellContent: React.FC = () => {
                   onOpenDriveBatch={() => setDriveModalOpen(true)}
                 />
               )}
-              {activeTab === 'stp' && <StpPage onOpenDriveBatch={() => setDriveModalOpen(true)} />}
+              {activeTab === 'stp' && (
+                <StpPage
+                  subSection={docVaultSubTab}
+                  onChangeSubSection={setDocVaultSubTab}
+                  onOpenDriveBatch={() => setDriveModalOpen(true)}
+                />
+              )}
               {activeTab === 'tools' && (
                 <ToolsPage
                   forcedMode={toolJump?.mode || null}
