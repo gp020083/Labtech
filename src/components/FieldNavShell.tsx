@@ -3,24 +3,35 @@ import { useApp } from '../store';
 import { usePrefs, FontScale } from '../prefs';
 import { REF_TODAY, getEquipmentCalStatus } from '../utils';
 import { PWAInstallButton } from './PwaStatusWidgets';
-import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone } from 'lucide-react';
+import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone, ArrowLeftRight, ShieldCheck } from 'lucide-react';
 
 export type FieldTabId = 'jobs' | 'equipment' | 'stp' | 'tools' | 'calendar';
+export type EquipmentSubSectionId = 'loans' | 'calibration';
 
 export const FieldNavShell: React.FC<{
   activeTab: FieldTabId;
   onSelect: (id: FieldTabId) => void;
+  equipmentSubTab?: EquipmentSubSectionId;
+  onSelectEquipmentSubTab?: (sub: EquipmentSubSectionId) => void;
   onOpenSearch: () => void;
   onOpenGovSpecs: () => void;
   onOpenDriveSync: () => void;
-}> = ({ activeTab, onSelect, onOpenSearch, onOpenGovSpecs, onOpenDriveSync }) => {
+}> = ({
+  activeTab,
+  onSelect,
+  equipmentSubTab = 'loans',
+  onSelectEquipmentSubTab,
+  onOpenSearch,
+  onOpenGovSpecs,
+  onOpenDriveSync,
+}) => {
   const { user, accounts, switchAccount, logout, resetAllDemoData, jobs, equipment, tests, events, driveSyncStatus } = useApp();
   const { lang, toggleLang, fontScale, setFontScale, setViewMode, tx } = usePrefs();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const tabs: { id: FieldTabId; label: string; mobileLabel: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'jobs', label: tx('工程項目管理 (Projects)', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
-    { id: 'equipment', label: tx('儀器及校準管理 (Equipment)', 'Equipment & Cal'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
+    { id: 'equipment', label: tx('儀器管理 (Equipment)', 'Equipment'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
     { id: 'stp', label: tx('STP 標準測試程序 (STP Vault)', 'STP Vault'), mobileLabel: 'STP', icon: FileText },
     { id: 'tools', label: tx('測試計算及報告 (Test & Report)', 'Test & Worksheet'), mobileLabel: tx('測試報告', 'Test/Report'), icon: Calculator },
     { id: 'calendar', label: tx('測試排程日曆 (Schedule)', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
@@ -77,6 +88,52 @@ export const FieldNavShell: React.FC<{
                       </span>
                     )}
                   </button>
+                  {tab.id === 'equipment' && (
+                    <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelect('equipment');
+                          onSelectEquipmentSubTab?.('loans');
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[11px] font-extrabold transition cursor-pointer ${
+                          activeTab === 'equipment' && equipmentSubTab === 'loans'
+                            ? 'bg-brand-wash text-brand-deep ring-1 ring-brand/30'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <ArrowLeftRight className="h-3.5 w-3.5 text-brand shrink-0" />
+                          <span className="truncate">{tx('1. 儀器借還管理', '1. Loan & Checkout')}</span>
+                        </span>
+                        <span className="rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep border border-slate-200">
+                          {loanedCount}/{inUseEq.length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelect('equipment');
+                          onSelectEquipmentSubTab?.('calibration');
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[11px] font-extrabold transition cursor-pointer ${
+                          activeTab === 'equipment' && equipmentSubTab === 'calibration'
+                            ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <span className="truncate">{tx('2. 校準及證書管理', '2. Calibration & Certs')}</span>
+                        </span>
+                        {calAlertCount > 0 && (
+                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-amber-800">
+                            {calAlertCount}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  )}
                   {tab.id === 'tools' && (
                     <button
                       type="button"
@@ -94,12 +151,12 @@ export const FieldNavShell: React.FC<{
 
           <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 space-y-2 text-[11px]">
             <div className="font-extrabold text-slate-700">{tx('⚡ 即時狀態 Live Status', '⚡ Live Status')}</div>
-            <button type="button" onClick={() => onSelect('equipment')} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-brand cursor-pointer">
-              <span>{tx('📍 借出中器材', '📍 On-Site Gear')}</span>
+            <button type="button" onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); }} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-brand cursor-pointer">
+              <span>{tx('📍 借出中儀器', '📍 On-Site Gear')}</span>
               <span className="font-mono font-extrabold text-brand-deep">{loanedCount}</span>
             </button>
             {calAlertCount > 0 && (
-              <button type="button" onClick={() => onSelect('equipment')} className="flex w-full items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer">
+              <button type="button" onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); }} className="flex w-full items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer">
                 <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-600" /> {tx('校準到期提示', 'Cal Due Alert')}</span>
                 <span className="font-mono font-extrabold">{calAlertCount}</span>
               </button>
@@ -222,17 +279,46 @@ export const FieldNavShell: React.FC<{
               const active = activeTab === tab.id;
               const badge = getBadge(tab.id);
               return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => { onSelect(tab.id); setMobileMenuOpen(false); }}
-                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-extrabold cursor-pointer ${
-                    active ? 'bg-brand text-white' : 'bg-slate-50 text-slate-800 hover:bg-slate-100'
-                  }`}
-                >
-                  <span className="flex items-center gap-2.5"><Icon className="h-4 w-4" />{tab.label}</span>
-                  {badge && <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{badge}</span>}
-                </button>
+                <React.Fragment key={tab.id}>
+                  <button
+                    type="button"
+                    onClick={() => { onSelect(tab.id); setMobileMenuOpen(false); }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-extrabold cursor-pointer ${
+                      active ? 'bg-brand text-white' : 'bg-slate-50 text-slate-800 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5"><Icon className="h-4 w-4" />{tab.label}</span>
+                    {badge && <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{badge}</span>}
+                  </button>
+                  {tab.id === 'equipment' && (
+                    <div className="ml-4 grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); setMobileMenuOpen(false); }}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-extrabold cursor-pointer ${
+                          activeTab === 'equipment' && equipmentSubTab === 'loans'
+                            ? 'border-brand bg-brand-wash text-brand-deep'
+                            : 'border-slate-200 bg-white text-slate-700'
+                        }`}
+                      >
+                        <ArrowLeftRight className="h-3.5 w-3.5 text-brand" />
+                        <span>{tx('1. 儀器借還管理', '1. Loan & Checkout')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); setMobileMenuOpen(false); }}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-extrabold cursor-pointer ${
+                          activeTab === 'equipment' && equipmentSubTab === 'calibration'
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                            : 'border-slate-200 bg-white text-slate-700'
+                        }`}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>{tx('2. 校準及證書管理', '2. Calibration & Certs')}</span>
+                      </button>
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
             <button
