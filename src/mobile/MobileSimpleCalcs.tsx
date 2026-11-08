@@ -261,6 +261,46 @@ export const MobileCalcFooter: React.FC<{
             className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            list={`mob-prev-clients-${stpCode}`}
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            placeholder={tx('Client 名稱 (手打)', 'Client Name (Manual)')}
+            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-[11px] font-bold text-slate-900"
+          />
+          <datalist id={`mob-prev-clients-${stpCode}`}>
+            {previousClients.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) setClientName(e.target.value);
+            }}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-800"
+          >
+            <option value="">{tx('📂 揀選以前 Client...', '📂 Previous Clients...')}</option>
+            {previousClients.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            value={batchNo}
+            onChange={(e) => setBatchNo(e.target.value)}
+            placeholder={tx('Batch No. (手打)', 'Batch No. (Manual)')}
+            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
+          />
+          <input
+            value={sampleId}
+            onChange={(e) => setSampleId(e.target.value)}
+            placeholder={tx('Sample ID No. (手打)', 'Sample ID No. (Manual)')}
+            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
+          />
+        </div>
 
         {/* 1-2 Site Photos Attachment */}
         <SitePhotoAttachmentControl
@@ -389,8 +429,8 @@ export const MobileBleedingCalc: React.FC = () => {
   const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
   const [waterTempText, setWaterTempText] = useState('25.3 °C');
   const [testDateIso, setTestDateIso] = useState(() => new Date().toISOString().slice(0, 10));
-  const [batchNo, setBatchNo] = useState('GR-B01');
-  const [sampleId, setSampleId] = useState('GS-01');
+  const [batchNo, setBatchNo] = useState('');
+  const [sampleId, setSampleId] = useState('');
 
   const isMl = unit === 'mL';
   const s1 = isMl ? 'V1' : 'H1';
@@ -582,8 +622,8 @@ export const MobileFlowConeCalc: React.FC = () => {
   const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
   const [waterTempText, setWaterTempText] = useState('25.3 °C');
   const [testDateIso, setTestDateIso] = useState(() => new Date().toISOString().slice(0, 10));
-  const [batchNo, setBatchNo] = useState('GR-B01');
-  const [sampleId, setSampleId] = useState('GS-01');
+  const [batchNo, setBatchNo] = useState('');
+  const [sampleId, setSampleId] = useState('');
   const [timeWaterAdded, setTimeWaterAdded] = useState('09:15');
   const [timeDrawingGrout, setTimeDrawingGrout] = useState('09:20');
   const wNum = parseFloat(waterSec) || 0;

@@ -54,6 +54,7 @@ import {
   buildCompletedExcelWorkbookXml,
   toEnglishWorksheetText,
   generateSequentialJobRefNo,
+  collectPreviousClientOptions,
 } from './completedWorksheetGenerator';
 import {
   buildOfficialTemplateSheetCellMaps,
@@ -898,11 +899,32 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   });
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AF4, 'LT0001-FC-261108-002');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AG11, 'WO/CEDD/2026/088');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I11, '');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I13, '');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I18, 'Green Island OPC (52.5N)');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AG18, '100 kg (2 Bags)');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I20, 'WSD Mains Water');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I21, 0.42);
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I22, '27.1 °C');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I23, '24.8 °C');
+
+  const clientOpts = collectPreviousClientOptions(
+    [],
+    [
+      {
+        id: '1',
+        jobNo: 'LT0001',
+        clientName: 'Dragages Hong Kong Limited',
+        stpCode: 'FC',
+        title: 'FC',
+        summary: '',
+        pass: true,
+        testedAt: '2026-11-08',
+        operatorName: 'Ben',
+      },
+    ]
+  );
+  assert.equal(clientOpts[0], 'Dragages Hong Kong Limited');
+  assert.ok(clientOpts.includes('CEDD'));
 });
 
