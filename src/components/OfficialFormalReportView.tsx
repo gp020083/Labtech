@@ -8,37 +8,14 @@ import {
   OfficialTemplateMeta,
   StructuredCalcPayload,
 } from '../utils/completedWorksheetGenerator';
+import { OfficialFormSiteState } from './OfficialWorksheetView';
 
 export interface OfficialFormalReportViewProps {
   stpCode: string;
   baseWorksheet: HoklasWorksheetPayload;
   templateMeta: OfficialTemplateMeta;
-  siteForm: {
-    jobNo: string;
-    jobRefNo?: string;
-    worksOrderNo?: string;
-    companyProjNo: string;
-    projectTitle: string;
-    clientName: string;
-    siteLocation: string;
-    locationNote: string;
-    ambientTemp: string;
-    weatherNote: string;
-  };
-  setSiteForm: React.Dispatch<
-    React.SetStateAction<{
-      jobNo: string;
-      jobRefNo?: string;
-      worksOrderNo?: string;
-      companyProjNo: string;
-      projectTitle: string;
-      clientName: string;
-      siteLocation: string;
-      locationNote: string;
-      ambientTemp: string;
-      weatherNote: string;
-    }>
-  >;
+  siteForm: OfficialFormSiteState;
+  setSiteForm: React.Dispatch<React.SetStateAction<OfficialFormSiteState>>;
   eqRows: HoklasWorksheetEquipmentRow[];
   measurementRows: HoklasWorksheetRow[];
   activeStructured?: StructuredCalcPayload;

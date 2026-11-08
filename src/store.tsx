@@ -123,6 +123,9 @@ export interface AppContextType {
     jobNo: string;
     jobRefNo?: string;
     worksOrderNo?: string;
+    clientName?: string;
+    batchNo?: string;
+    sampleId?: string;
     projectTitle?: string;
     stpCode: string;
     title: string;
