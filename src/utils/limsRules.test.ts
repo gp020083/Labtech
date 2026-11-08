@@ -833,7 +833,7 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
     measurementRows: [],
   });
   assert.equal(kdMaps['xl/worksheets/sheet1.xml']?.H9, 'HKL-LT0001-KD-0001');
-  assert.equal(kdMaps['xl/worksheets/sheet1.xml']?.H10, 'LT0001 (PRJ-01)');
+  assert.equal(kdMaps['xl/worksheets/sheet1.xml']?.H10, '2026-11-08');
   assert.equal(kdMaps['xl/worksheets/sheet4.xml']?.W27, 0);
 
   const sampleXml = '<sheetData><row r="7"><c r="H7" s="12"><f>Sheet1!H9</f><v>0</v></c></row></sheetData>';
