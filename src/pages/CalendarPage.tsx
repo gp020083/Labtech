@@ -97,7 +97,7 @@ export const CalendarPage: React.FC = () => {
             className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-3.5 py-3 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100 cursor-pointer whitespace-nowrap"
           >
             <MessageSquareShare className="h-4 w-4 text-emerald-700" />
-            {tx('📋 複製今日／明日 WhatsApp 派工通告', '📋 WhatsApp Daily Dispatch')}
+            {tx('複製今日／明日 WhatsApp 派工通告', 'WhatsApp Daily Dispatch')}
           </button>
           <button type="button" onClick={() => setModalState({ date: selectedDate })} className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-4 py-3 text-xs font-extrabold text-white shadow-sm hover:bg-brand-deep cursor-pointer whitespace-nowrap">
             <Plus className="h-4 w-4" /> {tx('新增排程項目', 'Add Schedule Event')}
@@ -134,7 +134,7 @@ export const CalendarPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-sm font-extrabold text-slate-900">{tr.title || tr.site}</div>
-                  <div className="text-[11px] text-slate-500 truncate">📍 {tr.site} ｜ 👤 {tr.operators.map((o) => o.split(',')[1]?.trim() || o).join(', ')}</div>
+                  <div className="text-[11px] text-slate-500 truncate">{tr.site} ｜ {tr.operators.map((o) => o.split(',')[1]?.trim() || o).join(', ')}</div>
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[11px]">
                   <button type="button" onClick={(e) => { e.stopPropagation(); setStpPreviewCode(stpCode); }} className="inline-flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2.5 py-1 font-extrabold text-brand-deep hover:bg-brand-wash cursor-pointer">
@@ -152,16 +152,16 @@ export const CalendarPage: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           {([
             ['all', tx('全部排程 All', 'All Events')],
-            ['site_test', '📍 Site Test'],
-            ['training', '🎓 Training'],
-            ['hoklas', '🏅 HOKLAS'],
+            ['site_test', 'Site Test'],
+            ['training', 'Training'],
+            ['hoklas', 'HOKLAS'],
           ] as const).map(([k, lbl]) => (
             <button key={k} type="button" onClick={() => setTypeFilter(k)} className={`rounded-xl px-3 py-2 text-xs font-extrabold whitespace-nowrap cursor-pointer ${typeFilter === k ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
               {lbl}
             </button>
           ))}
           <button type="button" onClick={() => setMyOnly(!myOnly)} className={`rounded-xl px-3 py-2 text-xs font-extrabold whitespace-nowrap cursor-pointer ${myOnly ? 'bg-brand text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
-            {tx('👤 我的排程', '👤 My Schedule')}
+            {tx('我的排程', 'My Schedule')}
           </button>
         </div>
         <div className="flex items-center gap-1.5">

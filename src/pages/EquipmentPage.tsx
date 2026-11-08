@@ -195,9 +195,9 @@ export const EquipmentPage: React.FC<{
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {([
               ['all', tx('全部在用儀器 (All Active)', 'All In-Use'), counts.total, 'text-slate-900'],
-              ['available', tx('🏠 在庫可借用 (Available)', '🏠 Available in Lab'), counts.available, 'text-emerald-700'],
-              ['loaned', tx('📍 借出中儀器 (On Loan)', '📍 On Site (Loaned)'), counts.loaned, 'text-brand-deep'],
-              ['overdue', tx('🚨 逾期未還儀器 (Overdue)', '🚨 Overdue Loans'), counts.overdue, 'text-rose-600'],
+              ['available', tx('在庫可借用 (Available)', 'Available in Lab'), counts.available, 'text-emerald-700'],
+              ['loaned', tx('借出中儀器 (On Loan)', 'On Site (Loaned)'), counts.loaned, 'text-brand-deep'],
+              ['overdue', tx('逾期未還儀器 (Overdue)', 'Overdue Loans'), counts.overdue, 'text-rose-600'],
             ] as const).map(([k, label, num, color]) => (
               <button
                 key={k}
@@ -248,7 +248,7 @@ export const EquipmentPage: React.FC<{
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 font-extrabold text-white hover:bg-slate-800 cursor-pointer"
               >
                 <QrCode className="h-3.5 w-3.5" />
-                {tx('📷 QR 掃描借還／列印標籤', '📷 QR Scan & Labels')}
+                {tx('QR 掃描借還／列印標籤', 'QR Scan & Labels')}
               </button>
               <button
                 type="button"
@@ -343,15 +343,15 @@ export const EquipmentPage: React.FC<{
                           <td className="px-3 py-3 whitespace-nowrap">
                             {eq.currentLoan ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-brand-deep">📍 {eq.currentLoan.siteLocation}</span>
+                                <span className="font-bold text-brand-deep">{eq.currentLoan.siteLocation}</span>
                                 {ov.isOverdue && (
                                   <span className="rounded-md bg-rose-100 border border-rose-300 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-rose-700">
-                                    🚨 {ov.label}
+                                    {ov.label}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span className="font-semibold text-emerald-700 whitespace-nowrap">🏠 {tx('在庫：', 'In Lab: ')}{eq.loc || eq.store || 'Lab'}</span>
+                              <span className="font-semibold text-emerald-700 whitespace-nowrap">{tx('在庫：', 'In Lab: ')}{eq.loc || eq.store || 'Lab'}</span>
                             )}
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap">
@@ -402,9 +402,9 @@ export const EquipmentPage: React.FC<{
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {([
               ['all', tx('全部受控儀器 (Total Controlled)', 'Total Controlled'), counts.total, 'text-slate-900'],
-              ['valid', tx('✅ 校準有效 (Calibrated Valid)', '✅ Calibrated / Valid'), counts.validCal, 'text-emerald-700'],
-              ['alert', tx('⚠️ 校準到期／異常預警 (Cal Alert)', '⚠️ Cal Due / Alert'), counts.alert, 'text-amber-700'],
-              ['monthly', tx('📋 FCC01 每月內檢儀器', '📋 FCC01 Monthly Check'), counts.monthly, 'text-indigo-700'],
+              ['valid', tx('校準有效 (Calibrated Valid)', 'Calibrated / Valid'), counts.validCal, 'text-emerald-700'],
+              ['alert', tx('校準到期／異常預警 (Cal Alert)', 'Cal Due / Alert'), counts.alert, 'text-amber-700'],
+              ['monthly', tx('FCC01 每月內檢儀器', 'FCC01 Monthly Check'), counts.monthly, 'text-indigo-700'],
             ] as const).map(([k, label, num, color]) => (
               <button
                 key={k}

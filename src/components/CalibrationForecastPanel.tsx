@@ -27,10 +27,11 @@ export const CalibrationForecastPanel: React.FC<{
 }> = ({ compact = false, onExpandFullPlanner, onOpenDetail, onPreviewCert }) => {
   const { equipment, events, pushToast } = useApp();
   const { lang, tx } = usePrefs();
-  const [bucketFilter, setBucketFilter] = useState<'all_90' | 'overdue' | 'due_30' | 'due_60' | 'due_90' | 'conflicts'>('all_90');
+  const [bucketFilter, setBucketFilter] = useState<'all_90' | 'overdue' | 'due_30' | 'due_60' | 'due_90' | 'ok' | 'conflicts'>('all_90');
+  const [selectedBarBucket, setSelectedBarBucket] = useState<'overdue' | 'due_30' | 'due_60' | 'due_90' | 'ok' | null>(null);
   const [onlyExternalCal, setOnlyExternalCal] = useState<boolean>(true);
   const [selectedClusterDate, setSelectedClusterDate] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<boolean>(compact);
+  const [collapsed, setCollapsed] = useState<boolean>(false);
   const [listCollapsed, setListCollapsed] = useState<boolean>(false);
 
   const forecast = useMemo(() => buildCalibrationForecast(equipment, events), [equipment, events]);
@@ -50,10 +51,30 @@ export const CalibrationForecastPanel: React.FC<{
     return { overdue, due30, due60, due90, validBeyond90, totalWithin90, withConflicts };
   }, [scopedItems]);
 
+  const handleSelectBarSegment = (bucket: 'overdue' | 'due_30' | 'due_60' | 'due_90' | 'ok') => {
+    setSelectedClusterDate(null);
+    if (selectedBarBucket === bucket) {
+      setSelectedBarBucket(null);
+      setBucketFilter('all_90');
+    } else {
+      setSelectedBarBucket(bucket);
+      setBucketFilter(bucket);
+      setListCollapsed(false);
+    }
+  };
+
+  const barSegmentItems = useMemo(() => {
+    if (!selectedBarBucket) return [];
+    return scopedItems.filter((it) =>
+      selectedBarBucket === 'ok' ? it.bucket === 'ok' && it.daysLeft < 900 : it.bucket === selectedBarBucket
+    );
+  }, [scopedItems, selectedBarBucket]);
+
   const filteredItems = useMemo(() => {
     return scopedItems.filter((it) => {
       if (selectedClusterDate && it.dueDate !== selectedClusterDate) return false;
       if (bucketFilter === 'all_90') return it.bucket !== 'ok';
+      if (bucketFilter === 'ok') return it.bucket === 'ok' && it.daysLeft < 900;
       if (bucketFilter === 'conflicts') return it.bucket !== 'ok' && it.conflicts.length > 0;
       return it.bucket === bucketFilter;
     });
@@ -83,7 +104,7 @@ export const CalibrationForecastPanel: React.FC<{
     scopedCounts.totalWithin90 + scopedCounts.validBeyond90
   );
 
-  const displayList = compact ? filteredItems.slice(0, 6) : filteredItems;
+  const displayList = compact && bucketFilter === 'all_90' && !selectedClusterDate ? filteredItems.slice(0, 6) : filteredItems;
 
   return (
     <section
@@ -103,8 +124,8 @@ export const CalibrationForecastPanel: React.FC<{
             </span>
             <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
               {tx(
-                '📊 校準到期時間軸與 30 / 60 / 90 日外校預警中心',
-                '📊 Calibration Forecast & 30 / 60 / 90-Day Renewal Planner'
+                '校準到期時間軸與 30 / 60 / 90 日外校預警中心',
+                'Calibration Forecast & 30 / 60 / 90-Day Renewal Planner'
               )}
             </h2>
             {collapsed && (
@@ -202,70 +223,105 @@ export const CalibrationForecastPanel: React.FC<{
       {/* Visual 30 / 60 / 90-Day Timeline & Milestone Map */}
       <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 sm:p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="font-extrabold text-slate-800 flex items-center gap-1.5">
-            <span>{tx('🗓️ 90 日外校到期視覺化時間軸 (Visual 30 / 60 / 90-Day Calibration Timeline)', '🗓️ Visual 30 / 60 / 90-Day External Calibration Timeline')}</span>
+          <div className="font-extrabold text-slate-800 flex flex-wrap items-center gap-2">
+            <span>{tx('90 日外校到期視覺化時間軸 (Visual 30 / 60 / 90-Day Calibration Timeline)', 'Visual 30 / 60 / 90-Day External Calibration Timeline')}</span>
+            <span className="rounded-md bg-brand-wash px-2 py-0.5 text-[10px] font-bold text-brand-deep">
+              {tx('點擊色帶區段或圖例可即時檢視對應儀器', 'Click any bar segment or legend to view instruments')}
+            </span>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold">
-            <span className="inline-flex items-center gap-1 text-rose-700">
-              <span className="h-2.5 w-2.5 rounded-full bg-rose-600" />
-              {tx(`已過期 (${scopedCounts.overdue})`, `Overdue (${scopedCounts.overdue})`)}
-            </span>
-            <span className="inline-flex items-center gap-1 text-orange-700">
-              <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-              {tx(`0–30日 (${scopedCounts.due30})`, `0–30d (${scopedCounts.due30})`)}
-            </span>
-            <span className="inline-flex items-center gap-1 text-amber-700">
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-              {tx(`31–60日 (${scopedCounts.due60})`, `31–60d (${scopedCounts.due60})`)}
-            </span>
-            <span className="inline-flex items-center gap-1 text-sky-700">
-              <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-              {tx(`61–90日 (${scopedCounts.due90})`, `61–90d (${scopedCounts.due90})`)}
-            </span>
-            <span className="inline-flex items-center gap-1 text-emerald-700">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              {tx(`>90日有效 (${scopedCounts.validBeyond90})`, `>90d Valid (${scopedCounts.validBeyond90})`)}
-            </span>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+            {([
+              ['overdue', tx(`已過期 (${scopedCounts.overdue})`, `Overdue (${scopedCounts.overdue})`), 'bg-rose-600', 'text-rose-700 border-rose-200 bg-rose-50'],
+              ['due_30', tx(`0–30日 (${scopedCounts.due30})`, `0–30d (${scopedCounts.due30})`), 'bg-orange-500', 'text-orange-700 border-orange-200 bg-orange-50'],
+              ['due_60', tx(`31–60日 (${scopedCounts.due60})`, `31–60d (${scopedCounts.due60})`), 'bg-amber-500', 'text-amber-800 border-amber-200 bg-amber-50'],
+              ['due_90', tx(`61–90日 (${scopedCounts.due90})`, `61–90d (${scopedCounts.due90})`), 'bg-sky-500', 'text-sky-800 border-sky-200 bg-sky-50'],
+              ['ok', tx(`>90日有效 (${scopedCounts.validBeyond90})`, `>90d Valid (${scopedCounts.validBeyond90})`), 'bg-emerald-500', 'text-emerald-800 border-emerald-200 bg-emerald-50'],
+            ] as const).map(([bKey, bLabel, dotCls, pillCls]) => {
+              const isAct = selectedBarBucket === bKey;
+              return (
+                <button
+                  key={bKey}
+                  type="button"
+                  onClick={() => handleSelectBarSegment(bKey)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 transition cursor-pointer ${
+                    isAct ? 'ring-2 ring-slate-900 font-extrabold shadow-2xs ' + pillCls : 'border-transparent hover:border-slate-200 hover:bg-white ' + pillCls.split(' ')[0]
+                  }`}
+                >
+                  <span className={`h-2.5 w-2.5 rounded-full ${dotCls}`} />
+                  {bLabel}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Segmented Proportional Timeline Bar */}
+        {/* Interactive Clickable Segmented Proportional Timeline Bar */}
         <div className="space-y-1.5">
-          <div className="flex h-3.5 w-full overflow-hidden rounded-full bg-slate-200 p-0.5 gap-0.5">
+          <div className="flex h-6 w-full overflow-hidden rounded-full bg-slate-200 p-0.5 gap-1">
             {scopedCounts.overdue > 0 && (
-              <div
-                style={{ width: `${Math.max(5, (scopedCounts.overdue / totalBarDenominator) * 100)}%` }}
-                className="h-full rounded-l-full bg-rose-600 transition-all"
-                title={`Overdue: ${scopedCounts.overdue}`}
-              />
+              <button
+                type="button"
+                onClick={() => handleSelectBarSegment('overdue')}
+                style={{ width: `${Math.max(6, (scopedCounts.overdue / totalBarDenominator) * 100)}%` }}
+                className={`h-full rounded-l-full bg-rose-600 hover:bg-rose-500 text-[10px] font-mono font-extrabold text-white flex items-center justify-center transition-all cursor-pointer ${
+                  selectedBarBucket === 'overdue' ? 'ring-2 ring-slate-900 z-10' : selectedBarBucket ? 'opacity-55 hover:opacity-90' : ''
+                }`}
+                title={tx(`點擊檢視已過期儀器 (${scopedCounts.overdue} 件)`, `Click to view Overdue instruments (${scopedCounts.overdue})`)}
+              >
+                {scopedCounts.overdue}
+              </button>
             )}
             {scopedCounts.due30 > 0 && (
-              <div
-                style={{ width: `${Math.max(5, (scopedCounts.due30 / totalBarDenominator) * 100)}%` }}
-                className="h-full bg-orange-500 transition-all"
-                title={`0-30 Days: ${scopedCounts.due30}`}
-              />
+              <button
+                type="button"
+                onClick={() => handleSelectBarSegment('due_30')}
+                style={{ width: `${Math.max(6, (scopedCounts.due30 / totalBarDenominator) * 100)}%` }}
+                className={`h-full bg-orange-500 hover:bg-orange-400 text-[10px] font-mono font-extrabold text-white flex items-center justify-center transition-all cursor-pointer ${
+                  selectedBarBucket === 'due_30' ? 'ring-2 ring-slate-900 z-10' : selectedBarBucket ? 'opacity-55 hover:opacity-90' : ''
+                }`}
+                title={tx(`點擊檢視 0–30 日內到期儀器 (${scopedCounts.due30} 件)`, `Click to view 0-30 Days instruments (${scopedCounts.due30})`)}
+              >
+                {scopedCounts.due30}
+              </button>
             )}
             {scopedCounts.due60 > 0 && (
-              <div
-                style={{ width: `${Math.max(5, (scopedCounts.due60 / totalBarDenominator) * 100)}%` }}
-                className="h-full bg-amber-500 transition-all"
-                title={`31-60 Days: ${scopedCounts.due60}`}
-              />
+              <button
+                type="button"
+                onClick={() => handleSelectBarSegment('due_60')}
+                style={{ width: `${Math.max(6, (scopedCounts.due60 / totalBarDenominator) * 100)}%` }}
+                className={`h-full bg-amber-500 hover:bg-amber-400 text-[10px] font-mono font-extrabold text-white flex items-center justify-center transition-all cursor-pointer ${
+                  selectedBarBucket === 'due_60' ? 'ring-2 ring-slate-900 z-10' : selectedBarBucket ? 'opacity-55 hover:opacity-90' : ''
+                }`}
+                title={tx(`點擊檢視 31–60 日內到期儀器 (${scopedCounts.due60} 件)`, `Click to view 31-60 Days instruments (${scopedCounts.due60})`)}
+              >
+                {scopedCounts.due60}
+              </button>
             )}
             {scopedCounts.due90 > 0 && (
-              <div
-                style={{ width: `${Math.max(5, (scopedCounts.due90 / totalBarDenominator) * 100)}%` }}
-                className="h-full bg-sky-500 transition-all"
-                title={`61-90 Days: ${scopedCounts.due90}`}
-              />
+              <button
+                type="button"
+                onClick={() => handleSelectBarSegment('due_90')}
+                style={{ width: `${Math.max(6, (scopedCounts.due90 / totalBarDenominator) * 100)}%` }}
+                className={`h-full bg-sky-500 hover:bg-sky-400 text-[10px] font-mono font-extrabold text-white flex items-center justify-center transition-all cursor-pointer ${
+                  selectedBarBucket === 'due_90' ? 'ring-2 ring-slate-900 z-10' : selectedBarBucket ? 'opacity-55 hover:opacity-90' : ''
+                }`}
+                title={tx(`點擊檢視 61–90 日內到期儀器 (${scopedCounts.due90} 件)`, `Click to view 61-90 Days instruments (${scopedCounts.due90})`)}
+              >
+                {scopedCounts.due90}
+              </button>
             )}
             {scopedCounts.validBeyond90 > 0 && (
-              <div
-                style={{ width: `${Math.max(8, (scopedCounts.validBeyond90 / totalBarDenominator) * 100)}%` }}
-                className="h-full rounded-r-full bg-emerald-500 transition-all"
-                title={`>90 Days Valid: ${scopedCounts.validBeyond90}`}
-              />
+              <button
+                type="button"
+                onClick={() => handleSelectBarSegment('ok')}
+                style={{ width: `${Math.max(10, (scopedCounts.validBeyond90 / totalBarDenominator) * 100)}%` }}
+                className={`h-full rounded-r-full bg-emerald-500 hover:bg-emerald-400 text-[10px] font-mono font-extrabold text-white flex items-center justify-center transition-all cursor-pointer ${
+                  selectedBarBucket === 'ok' ? 'ring-2 ring-slate-900 z-10' : selectedBarBucket ? 'opacity-55 hover:opacity-90' : ''
+                }`}
+                title={tx(`點擊檢視 >90 日有效儀器 (${scopedCounts.validBeyond90} 件)`, `Click to view >90 Days Valid instruments (${scopedCounts.validBeyond90})`)}
+              >
+                {scopedCounts.validBeyond90}
+              </button>
             )}
           </div>
 
@@ -275,6 +331,63 @@ export const CalibrationForecastPanel: React.FC<{
             <span className="text-center">+60d ({forecast.horizon60Date})</span>
             <span className="text-right">+90d ({forecast.horizon90Date})</span>
           </div>
+
+          {selectedBarBucket && (
+            <div className="mt-2 rounded-2xl border border-slate-300 bg-white p-3 shadow-xs space-y-2">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <div className="font-extrabold text-slate-900">
+                  {selectedBarBucket === 'overdue' && tx(`已選取色帶：已過期儀器 (${barSegmentItems.length} 件)`, `Selected Segment: Overdue Instruments (${barSegmentItems.length})`)}
+                  {selectedBarBucket === 'due_30' && tx(`已選取色帶：0–30 日內到期儀器 (${barSegmentItems.length} 件)`, `Selected Segment: Due in 0–30 Days (${barSegmentItems.length})`)}
+                  {selectedBarBucket === 'due_60' && tx(`已選取色帶：31–60 日內到期儀器 (${barSegmentItems.length} 件)`, `Selected Segment: Due in 31–60 Days (${barSegmentItems.length})`)}
+                  {selectedBarBucket === 'due_90' && tx(`已選取色帶：61–90 日內到期儀器 (${barSegmentItems.length} 件)`, `Selected Segment: Due in 61–90 Days (${barSegmentItems.length})`)}
+                  {selectedBarBucket === 'ok' && tx(`已選取色帶：>90 日有效儀器 (${barSegmentItems.length} 件)`, `Selected Segment: >90 Days Valid (${barSegmentItems.length})`)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBarBucket(null);
+                    setBucketFilter('all_90');
+                  }}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  {tx('收起區間清單', 'Close Segment List')}
+                </button>
+              </div>
+              {barSegmentItems.length === 0 ? (
+                <div className="py-3 text-center text-[11px] text-slate-500">
+                  {tx('此色帶區間暫無對應儀器', 'No instruments in this segment')}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
+                  {barSegmentItems.map((it) => (
+                    <div
+                      key={it.equipment.code}
+                      onClick={() => onOpenDetail(it.equipment.code)}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/90 bg-slate-50/70 px-3 py-2 hover:border-brand hover:bg-brand-wash/40 transition cursor-pointer"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] font-extrabold text-white">
+                            {it.equipment.code}
+                          </span>
+                          <span className="font-mono text-[10px] font-bold text-brand-deep">
+                            {it.tags.join('/')}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 truncate text-xs font-extrabold text-slate-900">
+                          {it.equipment.name}
+                        </div>
+                        <div className="font-mono text-[10px] text-slate-500">
+                          Due: {it.dueDate} ({it.daysLeft < 0 ? tx(`逾期 ${Math.abs(it.daysLeft)}日`, `Overdue ${Math.abs(it.daysLeft)}d`) : tx(`剩餘 ${it.daysLeft}日`, `${it.daysLeft}d left`)})
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Clickable Due-Date Milestone Clusters along the 90-Day Horizon */}
@@ -282,7 +395,7 @@ export const CalibrationForecastPanel: React.FC<{
           <div className="pt-1 space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
               <span className="font-bold text-slate-600">
-                {tx('📌 按到期批次檢視（點擊日期節點篩選該批送檢儀器）：', '📌 Calibration Due-Date Batches (Click milestone to filter):')}
+                {tx('按到期批次檢視（點擊日期節點篩選該批送檢儀器）：', 'Calibration Due-Date Batches (Click milestone to filter):')}
               </span>
               {selectedClusterDate && (
                 <button
@@ -337,15 +450,16 @@ export const CalibrationForecastPanel: React.FC<{
       </div>
 
       {/* Bucket Filter Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
         {([
-          ['all_90', tx('≤ 90日需跟進總數', 'Total ≤ 90 Days'), scopedCounts.totalWithin90, 'text-slate-900'],
-          ['overdue', tx('🚨 已過期 Overdue', '🚨 Expired (<0d)'), scopedCounts.overdue, 'text-rose-600'],
-          ['due_30', tx('🔴 0–30 日內到期', '🔴 Due in 0–30d'), scopedCounts.due30, 'text-orange-600'],
-          ['due_60', tx('🟠 31–60 日內到期', '🟠 Due in 31–60d'), scopedCounts.due60, 'text-amber-700'],
-          ['due_90', tx('🟡 61–90 日內到期', '🟡 Due in 61–90d'), scopedCounts.due90, 'text-sky-700'],
-          ['conflicts', tx('⚠️ 排程撞期預警', '⚠️ Schedule Conflicts'), scopedCounts.withConflicts, 'text-violet-700'],
-        ] as const).map(([key, label, count, numColor]) => {
+          ['all_90', tx('≤ 90日需跟進總數', 'Total ≤ 90 Days'), scopedCounts.totalWithin90, 'text-slate-900', 'bg-slate-400'],
+          ['overdue', tx('已過期 Overdue', 'Expired (<0d)'), scopedCounts.overdue, 'text-rose-600', 'bg-rose-600'],
+          ['due_30', tx('0–30 日內到期', 'Due in 0–30d'), scopedCounts.due30, 'text-orange-600', 'bg-orange-500'],
+          ['due_60', tx('31–60 日內到期', 'Due in 31–60d'), scopedCounts.due60, 'text-amber-700', 'bg-amber-500'],
+          ['due_90', tx('61–90 日內到期', 'Due in 61–90d'), scopedCounts.due90, 'text-sky-700', 'bg-sky-500'],
+          ['ok', tx('>90 日有效儀器', '>90d Valid'), scopedCounts.validBeyond90, 'text-emerald-700', 'bg-emerald-500'],
+          ['conflicts', tx('排程撞期預警', 'Schedule Conflicts'), scopedCounts.withConflicts, 'text-violet-700', 'bg-violet-600'],
+        ] as const).map(([key, label, count, numColor, dotColor]) => {
           const active = bucketFilter === key && !selectedClusterDate;
           return (
             <button
@@ -354,6 +468,12 @@ export const CalibrationForecastPanel: React.FC<{
               onClick={() => {
                 setSelectedClusterDate(null);
                 setBucketFilter(key);
+                if (key === 'overdue' || key === 'due_30' || key === 'due_60' || key === 'due_90' || key === 'ok') {
+                  setSelectedBarBucket(key);
+                } else {
+                  setSelectedBarBucket(null);
+                }
+                setListCollapsed(false);
               }}
               className={`rounded-2xl border p-3 text-left transition cursor-pointer ${
                 active
@@ -361,7 +481,10 @@ export const CalibrationForecastPanel: React.FC<{
                   : 'border-slate-200/85 bg-white hover:bg-slate-50'
               }`}
             >
-              <div className="text-[11px] font-bold text-slate-500 truncate whitespace-nowrap">{label}</div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 truncate whitespace-nowrap">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
+                <span className="truncate">{label}</span>
+              </div>
               <div className={`mt-1 font-mono text-2xl font-extrabold tabular-nums ${numColor}`}>{count}</div>
             </button>
           );
@@ -377,8 +500,8 @@ export const CalibrationForecastPanel: React.FC<{
         >
           <span>
             {tx(
-              `📋 待送外校及排程撞期儀器明細 (${filteredItems.length} 件)`,
-              `📋 Instruments Due for Calibration & Conflict Details (${filteredItems.length})`
+              `待送外校及排程撞期儀器明細 (${filteredItems.length} 件)`,
+              `Instruments Due for Calibration & Conflict Details (${filteredItems.length})`
             )}
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-deep">
@@ -410,7 +533,9 @@ export const CalibrationForecastPanel: React.FC<{
                 ? 'bg-orange-500'
                 : it.bucket === 'due_60'
                 ? 'bg-amber-500'
-                : 'bg-sky-600';
+                : it.bucket === 'due_90'
+                ? 'bg-sky-600'
+                : 'bg-emerald-500';
 
             const badgeCls =
               it.bucket === 'overdue'
@@ -419,7 +544,9 @@ export const CalibrationForecastPanel: React.FC<{
                 ? 'bg-orange-50 text-orange-800 border-orange-200'
                 : it.bucket === 'due_60'
                 ? 'bg-amber-50 text-amber-800 border-amber-200'
-                : 'bg-sky-50 text-sky-800 border-sky-200';
+                : it.bucket === 'due_90'
+                ? 'bg-sky-50 text-sky-800 border-sky-200'
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200';
 
             const dayLabel =
               it.daysLeft < 0
@@ -427,7 +554,11 @@ export const CalibrationForecastPanel: React.FC<{
                 : tx(`剩餘 ${it.daysLeft} 日`, `${it.daysLeft}d left`);
 
             return (
-              <div key={eq.code} className="p-3.5 sm:p-4 hover:bg-slate-50/70 transition space-y-2.5">
+              <div
+                key={eq.code}
+                onClick={() => onOpenDetail(eq.code)}
+                className="p-3.5 sm:p-4 hover:bg-brand-wash/30 transition space-y-2.5 cursor-pointer"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="space-y-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -469,14 +600,14 @@ export const CalibrationForecastPanel: React.FC<{
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                  <div className="flex flex-wrap items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                     {eq.currentLoan ? (
                       <span className="rounded-xl bg-brand-wash px-2.5 py-1 text-[11px] font-bold text-brand-deep">
-                        📍 {eq.currentLoan.siteLocation} ({eq.currentLoan.borrowerName})
+                        {eq.currentLoan.siteLocation} ({eq.currentLoan.borrowerName})
                       </span>
                     ) : (
                       <span className="rounded-xl bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
-                        🏠 {eq.loc || eq.store || 'Lab'}
+                        {eq.loc || eq.store || 'Lab'}
                       </span>
                     )}
                     <button
@@ -522,10 +653,10 @@ export const CalibrationForecastPanel: React.FC<{
                     {it.conflicts.map((c) => (
                       <div key={c.eventId} className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                         <span className="font-extrabold text-violet-950">
-                          ⚠️ {lang === 'en' ? c.reasonEn : c.reasonZh}
+                          {lang === 'en' ? c.reasonEn : c.reasonZh}
                         </span>
                         <span className="font-mono font-bold text-violet-800">
-                          📅 {c.eventDate} · {c.eventTitle} ({c.stpCodes.join('+')})
+                          {c.eventDate} · {c.eventTitle} ({c.stpCodes.join('+')})
                         </span>
                       </div>
                     ))}

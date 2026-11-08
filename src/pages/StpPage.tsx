@@ -219,7 +219,7 @@ export const StpPage: React.FC<{
             <div className="flex flex-wrap items-center gap-1.5">
               {([
                 ['all', tx(`全部 STP (${tests.length})`, `All STPs (${tests.length})`)],
-                ['pinned', tx(`⭐ 常用 (${pinnedStps.length})`, `⭐ Pinned (${pinnedStps.length})`)],
+                ['pinned', tx(`常用 (${pinnedStps.length})`, `Pinned (${pinnedStps.length})`)],
                 ['acc', tx(`HOKLAS (${tests.filter((t) => t.acc).length})`, `HOKLAS (${tests.filter((t) => t.acc).length})`)],
                 ['prep', tx(`Draft (${tests.filter((t) => !t.acc).length})`, `In Prep (${tests.filter((t) => !t.acc).length})`)],
               ] as const).map(([k, label]) => (
@@ -280,7 +280,7 @@ export const StpPage: React.FC<{
             <table className="w-full min-w-[920px] text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
                 <tr className="whitespace-nowrap">
-                  <th className="w-10 px-3 py-3 text-center">⭐</th>
+                  <th className="w-10 px-3 py-3 text-center"><Star className="mx-auto h-3.5 w-3.5 text-slate-400" /></th>
                   <th className="w-20 px-3 py-3">Code</th>
                   <th className="w-48 px-3 py-3">{tx('STP 編號及版本', 'STP No. & Rev')}</th>
                   <th className="px-3 py-3">{tx('測試項目及參考標準', 'Test Method & Standard')}</th>

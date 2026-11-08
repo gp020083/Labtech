@@ -7,7 +7,7 @@ import { KodenVerticalityTool, FlowConeCalcTool, PointLoadCalcTool } from '../co
 import { InclinometerCalcTool } from '../components/tools/InclinometerCalcTool';
 import { GovSpecMatrixView } from '../components/tools/GovSpecMatrixView';
 import { JobRefSummaryView } from '../components/tools/JobRefSummaryView';
-import { Calculator, Landmark, FolderKanban } from 'lucide-react';
+import { Calculator, Landmark, FolderKanban, Droplets, Timer, Radio, Layers, Hammer, Compass } from 'lucide-react';
 
 export type CalcToolId = 'bleeding' | 'plt' | 'koden' | 'flowcone' | 'pointload' | 'inclinometer';
 
@@ -27,13 +27,13 @@ export const ToolsPage: React.FC<{
     if (forcedMode || forcedTool) onConsumeJump?.();
   }, [forcedMode, forcedTool, onConsumeJump]);
 
-  const calcTools: { id: CalcToolId; emoji: string; title: string; sub: string; code: string }[] = [
-    { id: 'bleeding', emoji: '💧', title: 'Grout Bleeding', sub: 'ASTM C940 · FST04', code: 'BL' },
-    { id: 'flowcone', emoji: '⏱️', title: 'Flow Cone', sub: 'ASTM C939 · FST05', code: 'FC' },
-    { id: 'koden', emoji: '📡', title: 'Koden Test', sub: 'HKCI TM3 · FST02', code: 'KD' },
-    { id: 'plt', emoji: '🏗️', title: 'Plate Load Test', sub: 'STP07-PLT · App. B/C', code: 'PLT' },
-    { id: 'pointload', emoji: '🪨', title: 'Point Load', sub: 'ASTM D5731 · FST06', code: 'PO' },
-    { id: 'inclinometer', emoji: '📐', title: 'Inclinometer', sub: 'A0/A180 Drift · 1:N', code: 'VC' },
+  const calcTools: { id: CalcToolId; Icon: React.ElementType; title: string; sub: string; code: string }[] = [
+    { id: 'bleeding', Icon: Droplets, title: 'Grout Bleeding', sub: 'ASTM C940 · FST04', code: 'BL' },
+    { id: 'flowcone', Icon: Timer, title: 'Flow Cone', sub: 'ASTM C939 · FST05', code: 'FC' },
+    { id: 'koden', Icon: Radio, title: 'Koden Test', sub: 'HKCI TM3 · FST02', code: 'KD' },
+    { id: 'plt', Icon: Layers, title: 'Plate Load Test', sub: 'STP07-PLT · App. B/C', code: 'PLT' },
+    { id: 'pointload', Icon: Hammer, title: 'Point Load', sub: 'ASTM D5731 · FST06', code: 'PO' },
+    { id: 'inclinometer', Icon: Compass, title: 'Inclinometer', sub: 'A0/A180 Drift · 1:N', code: 'VC' },
   ];
 
   return (
@@ -91,6 +91,7 @@ export const ToolsPage: React.FC<{
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
             {calcTools.map((t) => {
               const active = activeTool === t.id;
+              const ToolIcon = t.Icon;
               return (
                 <button
                   key={t.id}
@@ -101,7 +102,9 @@ export const ToolsPage: React.FC<{
                   }`}
                 >
                   <div className="flex w-full items-center justify-between">
-                    <span className="text-lg">{t.emoji}</span>
+                    <span className={`rounded-lg p-1.5 ${active ? 'bg-brand/15 text-brand-deep' : 'bg-slate-100 text-slate-600'}`}>
+                      <ToolIcon className="h-4 w-4" />
+                    </span>
                     <span className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-extrabold ${active ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}>{t.code}</span>
                   </div>
                   <div className="mt-2 text-xs font-extrabold text-slate-900">{t.title}</div>

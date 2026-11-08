@@ -84,7 +84,7 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
         <div className="flex flex-wrap items-center gap-1.5">
           {([
             ['active', tx(`進行中 (${activeCount})`, `Active (${activeCount})`)],
-            ['with_eq', tx(`📦 有器材 (${withEqCount})`, `📦 Gear (${withEqCount})`)],
+            ['with_eq', tx(`在場有儀器 (${withEqCount})`, `With Gear (${withEqCount})`)],
             ['all', tx(`全部 (${jobs.length})`, `All (${jobs.length})`)],
           ] as const).map(([k, label]) => (
             <button key={k} type="button" onClick={() => setFilter(k)} className={`rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap transition cursor-pointer ${filter === k ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
@@ -222,7 +222,7 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
                     </button>
                   )}
                 </div>
-                {j.remark && <div className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600 line-clamp-1">💡 {j.remark}</div>}
+                {j.remark && <div className="rounded-xl bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600 line-clamp-1">{j.remark}</div>}
               </div>
 
               <div className="flex items-center gap-2 border-t border-slate-100 pt-2.5 text-xs">
