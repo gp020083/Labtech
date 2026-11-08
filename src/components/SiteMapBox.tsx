@@ -76,9 +76,9 @@ export function resolveJobCoords(job: JobItem): { lat: number; lng: number; matc
 }
 
 /**
- * 產生必定會喺 Google Maps 插紅針 (Pin) 嘅連結：
- * - 若有精準／地區座標，使用 `https://www.google.com/maps?q=lat,lng` 直接插紅針 Pin 喺該座標
- * - 若係自訂新地址而未有座標，清除括號地段編號後以 `https://www.google.com/maps?q=地址, 香港` 插針
+ * 產生 Google Maps 座標定位標記 (Pin) 連結：
+ * - 若有精準／地區座標，使用 `https://www.google.com/maps?q=lat,lng` 直接標記該座標
+ * - 若為自訂新地址而未有座標，清除括號地段編號後以 `https://www.google.com/maps?q=地址, 香港` 標記
  */
 export function buildPinnedGoogleMapsUrl(job: JobItem): string {
   if (

@@ -44,11 +44,11 @@ export const ToolsPage: React.FC<{
             <Calculator className="h-3.5 w-3.5" /> HOKLAS FIELD TEST · WORKSHEET &amp; REPORT GENERATOR
           </div>
           <h1 className="mt-2 text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-            {tx('現場測試計算、派號及生成 Worksheet / Report', 'Field Test Calculators, Job Ref. Registry & Report Generator')}
+            {tx('現場測試計算、編號管理及報告生成系統', 'Field Test Calculators, Job Ref. Registry & Report Generator')}
           </h1>
           <p className="mt-0.5 text-xs text-slate-500">
             {tx(
-              '左方輸入測試讀數及 Sample Information，右方即時派發 Job Reference No. 並一鍵生成全英文官方 Excel (.xlsx)、Worksheet 及 Formal Report。',
+              '左欄輸入測試讀數及樣本資料 (Sample Information)，右欄即時編配 Job Reference No. 並生成全英文官方 Excel (.xlsx)、工作紙 (Worksheet) 及正式報告 (Formal Report)。',
               'Enter test readings and Sample Information on the left; assign Job Reference No. and generate 100% English Official Excel (.xlsx), Worksheet & Formal Report on the right.'
             )}
           </p>
@@ -61,7 +61,7 @@ export const ToolsPage: React.FC<{
             className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${mode === 'calc' ? 'bg-white text-brand-deep shadow-xs ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900'}`}
           >
             <Calculator className="h-4 w-4" />
-            <span>{tx('1. 測試計算及出表 (Test & Worksheet)', '1. Test & Worksheet (6)')}</span>
+            <span>{tx('1. 測試計算及工作紙 (Test & Worksheet)', '1. Test & Worksheet (6)')}</span>
           </button>
           <button
             type="button"
@@ -69,7 +69,7 @@ export const ToolsPage: React.FC<{
             className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${mode === 'registry' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
           >
             <FolderKanban className="h-4 w-4" />
-            <span>{tx(`2. Job Ref. 派號總表 (${calcRecords.length})`, `2. Job Ref. Summary (${calcRecords.length})`)}</span>
+            <span>{tx(`2. Job Ref. 編號總表 (${calcRecords.length})`, `2. Job Ref. Summary (${calcRecords.length})`)}</span>
           </button>
           <button
             type="button"
@@ -77,7 +77,7 @@ export const ToolsPage: React.FC<{
             className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${mode === 'specs' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
           >
             <Landmark className="h-4 w-4" />
-            <span>{tx('3. 部門驗收標準 (Gov Specs)', '3. HK Gov Specs (8)')}</span>
+            <span>{tx('3. 政府部門驗收標準 (Gov Specs)', '3. HK Gov Specs (8)')}</span>
           </button>
         </div>
       </div>

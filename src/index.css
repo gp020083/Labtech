@@ -100,3 +100,54 @@ html, body {
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
+
+/* Universal Draggable Popup Windows */
+[data-draggable-dialog="true"] {
+  position: relative;
+  will-change: transform;
+}
+
+[data-draggable-dialog="true"]::before {
+  content: "⠿ 按住此處或標題列可自由拖曳視窗 · 雙擊還原置中 (Drag Window · Double-click to Reset)";
+  display: block;
+  width: 100%;
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: #475569;
+  background: linear-gradient(90deg, #f8fafc 0%, #eff6ff 50%, #f8fafc 100%);
+  border-bottom: 1px solid #e2e8f0;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+[data-draggable-dialog="true"]:hover::before {
+  color: #1d4ed8;
+  background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 50%, #eff6ff 100%);
+}
+
+[data-draggable-dialog="true"] > :first-child {
+  cursor: move;
+}
+
+[data-draggable-dialog="true"][data-dragging="true"],
+[data-draggable-dialog="true"][data-dragging="true"]::before,
+[data-draggable-dialog="true"][data-dragging="true"] > :first-child {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+@media print {
+  [data-draggable-dialog="true"] {
+    transform: none !important;
+  }
+  [data-draggable-dialog="true"]::before {
+    display: none !important;
+  }
+}

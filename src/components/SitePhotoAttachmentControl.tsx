@@ -619,7 +619,7 @@ export const SitePhotoAttachmentControl: React.FC<{
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-slate-50 py-2.5 px-3 font-extrabold text-slate-800 hover:bg-slate-100 cursor-pointer"
               >
                 <FolderOpen className="h-4 w-4 text-brand" />
-                {tx('開啟手機原生相機／揀圖', 'Open System Camera / Picker')}
+                {tx('開啟系統相機／選擇圖片', 'Open System Camera / Picker')}
               </button>
             </div>
           </div>

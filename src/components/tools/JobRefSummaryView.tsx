@@ -212,11 +212,11 @@ export const JobRefSummaryView: React.FC<{
             </span>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">
-                {tx('🎯 快速派發新 Job Reference No. (Assign New Job Ref. No.)', '🎯 Quick Dispatch New Job Reference No.')}
+                {tx('🎯 快速編配新 Job Reference No. (Assign New Job Ref. No.)', '🎯 Quick Dispatch New Job Reference No.')}
               </h3>
               <p className="text-[11px] text-slate-500">
                 {tx(
-                  '選擇 Project 及 Test Method 即可為 Operator 派發獨立 Job Ref. No. 並登記入工程總表',
+                  '選擇工程項目 (Project) 及測試方法 (Test Method)，即可為技術員編配獨立 Job Ref. No. 並登記至工程總表',
                   'Select Project and Test Method to assign a sequential Job Reference No. and log it to the registry.'
                 )}
               </p>
@@ -228,7 +228,7 @@ export const JobRefSummaryView: React.FC<{
             className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-indigo-700 cursor-pointer shadow-xs"
           >
             <Plus className="h-4 w-4" />
-            {tx(`派發並新增 ${nextPreviewRefNo}`, `Assign & Add ${nextPreviewRefNo}`)}
+            {tx(`編配並新增 ${nextPreviewRefNo}`, `Assign & Add ${nextPreviewRefNo}`)}
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
@@ -262,7 +262,7 @@ export const JobRefSummaryView: React.FC<{
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="font-bold text-slate-600">Client (手打或下拉揀選以前 Client)</label>
+            <label className="font-bold text-slate-600">Client 客戶名稱 (手動輸入或下拉選擇歷史客戶)</label>
             <div className="mt-1 flex gap-1.5">
               <input
                 list="summary-prev-clients"
@@ -283,7 +283,7 @@ export const JobRefSummaryView: React.FC<{
                 }}
                 className="w-36 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 font-bold text-slate-700"
               >
-                <option value="">📂 過往 Client...</option>
+                <option value="">📂 歷史客戶...</option>
                 {previousClients.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -293,7 +293,7 @@ export const JobRefSummaryView: React.FC<{
             </div>
           </div>
           <div>
-            <label className="font-bold text-slate-600">Works Order No. (手打)</label>
+            <label className="font-bold text-slate-600">Works Order No. (手動輸入)</label>
             <input
               value={newWorksOrderNo}
               onChange={(e) => setNewWorksOrderNo(e.target.value)}
@@ -311,7 +311,7 @@ export const JobRefSummaryView: React.FC<{
             />
           </div>
           <div>
-            <label className="font-bold text-slate-600">Batch No. (手打)</label>
+            <label className="font-bold text-slate-600">Batch No. (手動輸入)</label>
             <input
               value={newBatchNo}
               onChange={(e) => setNewBatchNo(e.target.value)}
@@ -320,7 +320,7 @@ export const JobRefSummaryView: React.FC<{
             />
           </div>
           <div>
-            <label className="font-bold text-slate-600">Sample Identification No. (手打)</label>
+            <label className="font-bold text-slate-600">Sample Identification No. (手動輸入)</label>
             <input
               value={newSampleId}
               onChange={(e) => setNewSampleId(e.target.value)}

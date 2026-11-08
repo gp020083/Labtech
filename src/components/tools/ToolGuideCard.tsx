@@ -284,7 +284,7 @@ export const ToolGuideCard: React.FC<{
           <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand text-white"><FileSpreadsheet className="h-4 w-4" /></span>
           <div>
             <h3 className="text-sm font-extrabold text-slate-900">
-              {tx('📋 Step 2 · 派號及出表 (Job Ref. & Worksheet / Report)', '📋 Step 2 · Job Ref. & Worksheet / Report Generator')}
+              {tx('📋 Step 2 · 編號編配及報告生成 (Job Ref. & Worksheet / Report)', '📋 Step 2 · Job Ref. & Worksheet / Report Generator')}
             </h3>
             <p className="text-[11px] text-slate-500">{tx(`測試標準：${standardRef}`, `Standard: ${standardRef}`)}</p>
           </div>
@@ -358,14 +358,14 @@ export const ToolGuideCard: React.FC<{
           </div>
           <div>
             <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-              <span>{tx('2. Job Reference No. (每次測試派號)', '2. Job Reference No. (Assigned per Test)')}</span>
+              <span>{tx('2. Job Reference No. (每次測試編號)', '2. Job Reference No. (Assigned per Test)')}</span>
               <button
                 type="button"
                 onClick={handleDispatchNewRefNo}
                 className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2 py-0.5 text-[10px] font-extrabold text-white hover:bg-indigo-700 cursor-pointer"
               >
                 <Hash className="h-2.5 w-2.5" />
-                {tx('🎯 派發新 Ref. No.', '🎯 Assign New Ref. No.')}
+                {tx('🎯 編配新 Ref. No.', '🎯 Assign New Ref. No.')}
               </button>
             </label>
             <input
@@ -377,7 +377,7 @@ export const ToolGuideCard: React.FC<{
           </div>
           <div className="sm:col-span-2">
             <label className="text-[11px] font-bold text-slate-600">
-              {tx('3. Client 名稱 (手打輸入或從下拉式 Menu 揀選以前嘅 Client)', '3. Client Name (Manual Input or Select Previous Client)')}
+              {tx('3. Client 客戶名稱 (手動輸入或從下拉選單選擇歷史客戶)', '3. Client Name (Manual Input or Select Previous Client)')}
             </label>
             <div className="mt-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
               <input
@@ -400,7 +400,7 @@ export const ToolGuideCard: React.FC<{
                 }}
                 className="sm:col-span-5 rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 font-bold text-slate-800 cursor-pointer"
               >
-                <option value="">{tx('📂 下拉揀選以前嘅 Client...', '📂 Select Previous Client...')}</option>
+                <option value="">{tx('📂 選擇歷史客戶 (Previous Clients)...', '📂 Select Previous Client...')}</option>
                 {previousClients.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -410,7 +410,7 @@ export const ToolGuideCard: React.FC<{
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('4. Works Order No. (手打輸入)', '4. Works Order No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('4. Works Order No. (手動輸入)', '4. Works Order No. (Manual Input)')}</label>
             <input
               value={worksOrderNo}
               onChange={(e) => setWorksOrderNo(e.target.value)}
@@ -428,7 +428,7 @@ export const ToolGuideCard: React.FC<{
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('6. Batch No. (手打輸入)', '6. Batch No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('6. Batch No. (手動輸入)', '6. Batch No. (Manual Input)')}</label>
             <input
               value={batchNo}
               onChange={(e) => setBatchNo(e.target.value)}
@@ -437,7 +437,7 @@ export const ToolGuideCard: React.FC<{
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('7. Sample Identification No. (手打輸入)', '7. Sample Identification No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('7. Sample Identification No. (手動輸入)', '7. Sample Identification No. (Manual Input)')}</label>
             <input
               value={sampleId}
               onChange={(e) => setSampleId(e.target.value)}

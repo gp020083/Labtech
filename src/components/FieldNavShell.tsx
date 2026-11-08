@@ -19,11 +19,11 @@ export const FieldNavShell: React.FC<{
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const tabs: { id: FieldTabId; label: string; mobileLabel: string; icon: React.FC<{ className?: string }> }[] = [
-    { id: 'jobs', label: tx('工程及地盤 (Projects)', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
-    { id: 'equipment', label: tx('儀器及 Cal 期 (Equipment)', 'Equipment & Cal'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
-    { id: 'stp', label: tx('STP 標準程序 (STP Vault)', 'STP Vault'), mobileLabel: 'STP', icon: FileText },
-    { id: 'tools', label: tx('測試計算及出表 (Test & Report)', 'Test & Worksheet'), mobileLabel: tx('測試出表', 'Test/Report'), icon: Calculator },
-    { id: 'calendar', label: tx('排程日曆 (Schedule)', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
+    { id: 'jobs', label: tx('工程項目管理 (Projects)', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
+    { id: 'equipment', label: tx('儀器及校準管理 (Equipment)', 'Equipment & Cal'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
+    { id: 'stp', label: tx('STP 標準測試程序 (STP Vault)', 'STP Vault'), mobileLabel: 'STP', icon: FileText },
+    { id: 'tools', label: tx('測試計算及報告 (Test & Report)', 'Test & Worksheet'), mobileLabel: tx('測試報告', 'Test/Report'), icon: Calculator },
+    { id: 'calendar', label: tx('測試排程日曆 (Schedule)', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
   ];
 
   const activeJobsCount = jobs.filter((j) => j.status === 'active').length;

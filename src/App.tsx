@@ -11,6 +11,7 @@ import { DriveSyncModal } from './components/DriveSyncModal';
 import { EquipmentCertStatusPage } from './components/EquipmentCertStatusPage';
 import { ToastHost } from './components/ToastHost';
 import { OfflineIndicator } from './components/PwaStatusWidgets';
+import { GlobalModalDragController } from './components/GlobalModalDragController';
 import {
   parseEquipmentCodeFromUrl,
   EQUIPMENT_ROUTE_EVENT,
@@ -145,6 +146,7 @@ const FieldShellContent: React.FC = () => {
 export const App: React.FC = () => (
   <PrefsProvider>
     <AppProvider>
+      <GlobalModalDragController />
       <FieldShellContent />
     </AppProvider>
   </PrefsProvider>

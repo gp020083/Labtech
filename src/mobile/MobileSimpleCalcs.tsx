@@ -251,13 +251,13 @@ export const MobileCalcFooter: React.FC<{
               onClick={handleDispatchNewRefNo}
               className="shrink-0 rounded-xl bg-brand px-2 py-1.5 text-[10px] font-extrabold text-white cursor-pointer"
             >
-              🎯 {tx('派號', 'Ref')}
+              🎯 {tx('編配', 'Ref')}
             </button>
           </div>
           <input
             value={worksOrderNo}
             onChange={(e) => setWorksOrderNo(e.target.value)}
-            placeholder={tx('Works Order No. (手打)', 'Works Order No. (Manual)')}
+            placeholder={tx('Works Order No. (手動輸入)', 'Works Order No. (Manual)')}
             className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
         </div>
@@ -266,7 +266,7 @@ export const MobileCalcFooter: React.FC<{
             list={`mob-prev-clients-${stpCode}`}
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
-            placeholder={tx('Client 名稱 (手打)', 'Client Name (Manual)')}
+            placeholder={tx('Client 客戶名稱 (手動輸入)', 'Client Name (Manual)')}
             className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-[11px] font-bold text-slate-900"
           />
           <datalist id={`mob-prev-clients-${stpCode}`}>
@@ -281,7 +281,7 @@ export const MobileCalcFooter: React.FC<{
             }}
             className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-800"
           >
-            <option value="">{tx('📂 揀選以前 Client...', '📂 Previous Clients...')}</option>
+            <option value="">{tx('📂 選擇歷史客戶...', '📂 Previous Clients...')}</option>
             {previousClients.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -291,13 +291,13 @@ export const MobileCalcFooter: React.FC<{
           <input
             value={batchNo}
             onChange={(e) => setBatchNo(e.target.value)}
-            placeholder={tx('Batch No. (手打)', 'Batch No. (Manual)')}
+            placeholder={tx('Batch No. (手動輸入)', 'Batch No. (Manual)')}
             className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
           <input
             value={sampleId}
             onChange={(e) => setSampleId(e.target.value)}
-            placeholder={tx('Sample ID No. (手打)', 'Sample ID No. (Manual)')}
+            placeholder={tx('Sample ID No. (手動輸入)', 'Sample ID No. (Manual)')}
             className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
         </div>
