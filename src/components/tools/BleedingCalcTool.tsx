@@ -45,8 +45,8 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
   const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
   const [waterTempText, setWaterTempText] = useState('25.3 °C');
   const [testDateIso, setTestDateIso] = useState(() => getHkTodayIso());
-  const [batchNo, setBatchNo] = useState('B-01');
-  const [sampleId, setSampleId] = useState('BL-01');
+  const [batchNo, setBatchNo] = useState('');
+  const [sampleId, setSampleId] = useState('');
 
   const isMl = unit === 'mL';
   const sym1 = isMl ? 'V1' : 'H1';
@@ -273,8 +273,8 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
           <div><label className="font-bold text-slate-600">Ambient Temp</label><input value={ambientTempText} onChange={(e) => setAmbientTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
           <div><label className="font-bold text-slate-600">Water Temp</label><input value={waterTempText} onChange={(e) => setWaterTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
           <div><label className="font-bold text-slate-600">Date of Testing</label><input type="date" value={testDateIso} onChange={(e) => setTestDateIso(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono" /></div>
-          <div><label className="font-bold text-slate-600">Batch No.</label><input value={batchNo} onChange={(e) => setBatchNo(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
-          <div><label className="font-bold text-slate-600">Sample ID</label><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-amber-900">Batch No. (手打輸入 / Manual)</label><input value={batchNo} onChange={(e) => setBatchNo(e.target.value)} placeholder="Manual Batch No. (e.g. B-01)" className="mt-0.5 w-full rounded-lg border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono font-bold" /></div>
+          <div><label className="font-bold text-amber-900">Sample Identification No. (手打 / Manual)</label><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} placeholder="Manual Sample ID (e.g. BL-01)" className="mt-0.5 w-full rounded-lg border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono font-bold" /></div>
         </div>
       </div>
 

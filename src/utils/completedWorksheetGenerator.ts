@@ -342,6 +342,8 @@ export interface CompletedExcelGeneratorParams {
   reportRefNo: string;
   jobRefNo?: string;
   worksOrderNo?: string;
+  batchNo?: string;
+  sampleId?: string;
   testedAt: string;
   jobNo: string;
   companyProjNo: string;
@@ -419,6 +421,54 @@ export function generateSequentialJobRefNo(
   ).length;
   const nextSeq = String(matchingCount + 1).padStart(3, '0');
   return `${cleanJob}-${cleanStp}-${ymd}-${nextSeq}`;
+}
+
+const DEFAULT_HK_CLIENTS = [
+  'CEDD',
+  'ArchSD',
+  'Highways Department (HyD)',
+  'Water Supplies Department (WSD)',
+  'Drainage Services Department (DSD)',
+  'Hong Kong Housing Authority (HKHA)',
+  'Buildings Department (BD)',
+  'MTR Corporation Limited',
+  'Airport Authority Hong Kong',
+  'Gammon Construction Limited',
+  'China State Construction Engineering (HK) Ltd.',
+  'Hip Hing Construction Co., Ltd.',
+  'Build King / Leighton Joint Venture',
+  'Sanfield Building Contractors Ltd.',
+  'Yau Lee Construction Co., Ltd.',
+];
+
+/**
+ * Collects unique English Client names from historical calculation records, existing jobs, and standard HK clients.
+ */
+export function collectPreviousClientOptions(
+  jobs: JobItem[] = [],
+  calcRecords: FieldCalcRecord[] = []
+): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  const addClient = (raw?: string | null) => {
+    const clean = toEnglishWorksheetText(raw, '').trim();
+    if (!clean) return;
+    const key = clean.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(clean);
+    }
+  };
+  for (const r of calcRecords) {
+    addClient(r.clientName);
+  }
+  for (const j of jobs) {
+    addClient(j.client);
+  }
+  for (const c of DEFAULT_HK_CLIENTS) {
+    addClient(c);
+  }
+  return result;
 }
 
 /**

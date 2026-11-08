@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../store';
 import { usePrefs } from '../../prefs';
 import { FieldCalcPhoto, FieldCalcRecord } from '../../types';
@@ -11,6 +11,7 @@ import {
   triggerCompletedExcelDownload,
   generateSequentialJobRefNo,
   toEnglishWorksheetText,
+  collectPreviousClientOptions,
 } from '../../utils/completedWorksheetGenerator';
 import { downloadCalcRecordCsv, nowTimestamp } from '../../utils';
 import { FieldSignOffBox } from '../FieldSignOffBox';
@@ -56,7 +57,10 @@ export const ToolGuideCard: React.FC<{
   const [jobRefNo, setJobRefNo] = useState<string>(() =>
     generateSequentialJobRefNo(jobs[0]?.no || 'LT0002', stpCode, calcRecords)
   );
+  const [clientName, setClientName] = useState<string>('');
   const [worksOrderNo, setWorksOrderNo] = useState<string>('');
+  const [batchNo, setBatchNo] = useState<string>('');
+  const [sampleId, setSampleId] = useState<string>('');
   const [locationNote, setLocationNote] = useState<string>('');
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
   const [signOffExpanded, setSignOffExpanded] = useState<boolean>(false);
@@ -71,6 +75,22 @@ export const ToolGuideCard: React.FC<{
 
   const passStatus = detectCalcPassStatus(copyText);
   const recentForStp = calcRecords.filter((r) => r.stpCode === stpCode).slice(0, 5);
+  const previousClients = useMemo(
+    () => collectPreviousClientOptions(jobs, calcRecords),
+    [jobs, calcRecords]
+  );
+  const effectiveBatchNo =
+    batchNo.trim() ||
+    (structuredData?.kind === 'FC' || structuredData?.kind === 'BL'
+      ? structuredData.batchNo?.trim()
+      : '') ||
+    undefined;
+  const effectiveSampleId =
+    sampleId.trim() ||
+    (structuredData?.kind === 'FC' || structuredData?.kind === 'BL'
+      ? structuredData.sampleId?.trim()
+      : '') ||
+    undefined;
 
   const handleSelectJob = (nextJobNo: string) => {
     setSelectedJobNo(nextJobNo);
@@ -85,6 +105,9 @@ export const ToolGuideCard: React.FC<{
       jobNo: selectedJobNo,
       jobRefNo: nextRef,
       worksOrderNo: worksOrderNo.trim() || undefined,
+      clientName: clientName.trim() || undefined,
+      batchNo: effectiveBatchNo,
+      sampleId: effectiveSampleId,
       projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
       title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
@@ -126,6 +149,9 @@ export const ToolGuideCard: React.FC<{
       jobNo: selectedJobNo,
       jobRefNo: activeRefNo,
       worksOrderNo: worksOrderNo.trim() || undefined,
+      clientName: clientName.trim() || undefined,
+      batchNo: effectiveBatchNo,
+      sampleId: effectiveSampleId,
       projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
       title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
@@ -152,6 +178,9 @@ export const ToolGuideCard: React.FC<{
       jobNo: selectedJobNo,
       jobRefNo: activeRefNo,
       worksOrderNo: worksOrderNo.trim() || undefined,
+      clientName: clientName.trim() || undefined,
+      batchNo: effectiveBatchNo,
+      sampleId: effectiveSampleId,
       projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
       title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
@@ -186,6 +215,9 @@ export const ToolGuideCard: React.FC<{
       jobNo: selectedJobNo,
       jobRefNo: draft.jobRefNo,
       worksOrderNo: draft.worksOrderNo,
+      clientName: draft.clientName,
+      batchNo: draft.batchNo,
+      sampleId: draft.sampleId,
       projectTitle: draft.projectTitle,
       stpCode,
       title: draft.title,
@@ -210,6 +242,8 @@ export const ToolGuideCard: React.FC<{
       reportRefNo: ws.reportRefNo,
       jobRefNo: ws.jobRefNo,
       worksOrderNo: ws.worksOrderNo,
+      batchNo: ws.batchNo,
+      sampleId: ws.sampleId,
       testedAt: ws.testedAt,
       jobNo: ws.jobNo,
       companyProjNo: ws.companyProjNo,
@@ -338,8 +372,42 @@ export const ToolGuideCard: React.FC<{
               className="mt-1 w-full rounded-xl border border-indigo-300 bg-indigo-50/40 px-2.5 py-1.5 font-mono font-extrabold text-indigo-950"
             />
           </div>
+          <div className="sm:col-span-2">
+            <label className="text-[11px] font-bold text-slate-600">
+              {tx('3. Client 名稱 (手打輸入或從下拉式 Menu 揀選以前嘅 Client)', '3. Client Name (Manual Input or Select Previous Client)')}
+            </label>
+            <div className="mt-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
+              <input
+                list={`prev-clients-${stpCode}`}
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="Type Client Name manually (e.g. CEDD / Gammon Construction Ltd.)"
+                className="sm:col-span-7 rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-bold text-slate-900"
+              />
+              <datalist id={`prev-clients-${stpCode}`}>
+                {previousClients.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+              <select
+                aria-label="Select Previous Client"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) setClientName(e.target.value);
+                }}
+                className="sm:col-span-5 rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 font-bold text-slate-800 cursor-pointer"
+              >
+                <option value="">{tx('📂 下拉揀選以前嘅 Client...', '📂 Select Previous Client...')}</option>
+                {previousClients.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('3. Works Order No. (手打輸入)', '3. Works Order No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('4. Works Order No. (手打輸入)', '4. Works Order No. (Manual Input)')}</label>
             <input
               value={worksOrderNo}
               onChange={(e) => setWorksOrderNo(e.target.value)}
@@ -348,12 +416,30 @@ export const ToolGuideCard: React.FC<{
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('4. 測試位置 / 樁號 (Location in Work)', '4. Test Location / Pile Ref')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('5. 測試位置 / 樁號 (Location in Work)', '5. Test Location / Pile Ref')}</label>
             <input
               value={locationNote}
               onChange={(e) => setLocationNote(e.target.value)}
               placeholder="e.g. Pile P12 / Batch #4 / BH08"
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-slate-900"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-slate-600">{tx('6. Batch No. (手打輸入)', '6. Batch No. (Manual Input)')}</label>
+            <input
+              value={batchNo}
+              onChange={(e) => setBatchNo(e.target.value)}
+              placeholder="Manual Batch No. (e.g. B-01)"
+              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-mono font-bold text-slate-900"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-slate-600">{tx('7. Sample Identification No. (手打輸入)', '7. Sample Identification No. (Manual Input)')}</label>
+            <input
+              value={sampleId}
+              onChange={(e) => setSampleId(e.target.value)}
+              placeholder="Manual Sample ID (e.g. GS-01)"
+              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-mono font-bold text-slate-900"
             />
           </div>
         </div>

@@ -204,6 +204,26 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
               {siteForm.ambientTemp} / {siteForm.weatherNote}
             </td>
           </tr>
+          <tr>
+            <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">Batch No. *:</td>
+            <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+              <input
+                value={siteForm.batchNo ?? ''}
+                onChange={(e) => setSiteForm((s) => ({ ...s, batchNo: e.target.value }))}
+                placeholder="Manual Input (e.g. B-01)"
+                className="w-full bg-transparent font-mono font-bold outline-none placeholder:text-slate-400"
+              />
+            </td>
+            <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">Sample ID No. *:</td>
+            <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+              <input
+                value={siteForm.sampleId ?? ''}
+                onChange={(e) => setSiteForm((s) => ({ ...s, sampleId: e.target.value }))}
+                placeholder="Manual Input (e.g. GS-01)"
+                className="w-full bg-transparent font-mono font-bold outline-none placeholder:text-slate-400"
+              />
+            </td>
+          </tr>
         </tbody>
       </table>
 

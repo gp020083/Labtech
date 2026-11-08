@@ -10,6 +10,7 @@ import {
   getOfficialTemplateMeta,
   triggerCompletedExcelDownload,
   generateSequentialJobRefNo,
+  collectPreviousClientOptions,
 } from '../utils/completedWorksheetGenerator';
 import { downloadCalcRecordCsv, nowTimestamp } from '../utils';
 import { SitePhotoAttachmentControl } from '../components/SitePhotoAttachmentControl';
@@ -31,7 +32,10 @@ export const MobileCalcFooter: React.FC<{
   const [jobRefNo, setJobRefNo] = useState(() =>
     generateSequentialJobRefNo(jobs[0]?.no || 'LT0002', stpCode, calcRecords)
   );
+  const [clientName, setClientName] = useState('');
   const [worksOrderNo, setWorksOrderNo] = useState('');
+  const [batchNo, setBatchNo] = useState('');
+  const [sampleId, setSampleId] = useState('');
   const [locNote, setLocNote] = useState('');
   const [sitePhotos, setSitePhotos] = useState<FieldCalcPhoto[]>([]);
   const [signOffExpanded, setSignOffExpanded] = useState(false);
@@ -49,12 +53,31 @@ export const MobileCalcFooter: React.FC<{
   const selectedJob = jobs.find((j) => j.no === jobNo) || null;
   const effectiveRefNo =
     jobRefNo.trim() || generateSequentialJobRefNo(jobNo, stpCode, calcRecords);
+  const previousClients = useMemo(
+    () => collectPreviousClientOptions(jobs, calcRecords),
+    [jobs, calcRecords]
+  );
+  const effectiveBatchNo =
+    batchNo.trim() ||
+    (structuredData?.kind === 'FC' || structuredData?.kind === 'BL'
+      ? structuredData.batchNo?.trim()
+      : '') ||
+    undefined;
+  const effectiveSampleId =
+    sampleId.trim() ||
+    (structuredData?.kind === 'FC' || structuredData?.kind === 'BL'
+      ? structuredData.sampleId?.trim()
+      : '') ||
+    undefined;
 
   const buildDraftRecord = (): FieldCalcRecord => ({
     id: `${stpCode}-${Date.now().toString().slice(-4)}`,
     jobNo,
     jobRefNo: effectiveRefNo,
     worksOrderNo: worksOrderNo.trim() || undefined,
+    clientName: clientName.trim() || undefined,
+    batchNo: effectiveBatchNo,
+    sampleId: effectiveSampleId,
     projectTitle: selectedJob?.project || selectedJob?.shortName || undefined,
     stpCode,
     title: `${stpCode} Field Calculation`,
@@ -83,6 +106,9 @@ export const MobileCalcFooter: React.FC<{
       jobNo,
       jobRefNo: nextRef,
       worksOrderNo: worksOrderNo.trim() || undefined,
+      clientName: clientName.trim() || undefined,
+      batchNo: effectiveBatchNo,
+      sampleId: effectiveSampleId,
       projectTitle: selectedJob?.project || selectedJob?.shortName || undefined,
       stpCode,
       title: `${stpCode} Field Calculation`,
@@ -103,6 +129,9 @@ export const MobileCalcFooter: React.FC<{
       jobNo,
       jobRefNo: effectiveRefNo,
       worksOrderNo: worksOrderNo.trim() || undefined,
+      clientName: clientName.trim() || undefined,
+      batchNo: effectiveBatchNo,
+      sampleId: effectiveSampleId,
       projectTitle: selectedJob?.project || selectedJob?.shortName || undefined,
       stpCode,
       title: `${stpCode} Field Calculation`,
@@ -137,6 +166,8 @@ export const MobileCalcFooter: React.FC<{
       reportRefNo: ws.reportRefNo,
       jobRefNo: ws.jobRefNo,
       worksOrderNo: ws.worksOrderNo,
+      batchNo: ws.batchNo,
+      sampleId: ws.sampleId,
       testedAt: ws.testedAt,
       jobNo: ws.jobNo,
       companyProjNo: ws.companyProjNo,

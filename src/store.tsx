@@ -769,7 +769,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const saveCalcRecord: AppContextType['saveCalcRecord'] = ({
-    jobNo, jobRefNo, worksOrderNo, projectTitle, stpCode, title, locationNote, summary, pass,
+    jobNo, jobRefNo, worksOrderNo, clientName, batchNo, sampleId, projectTitle, stpCode, title, locationNote, summary, pass,
     signatureDataUrl, signedBy, signedRole, signedAt, sitePhotos, structuredData,
   }) => {
     const ts = nowTimestamp();
@@ -808,6 +808,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       jobNo,
       jobRefNo: resolvedRefNo,
       worksOrderNo: worksOrderNo?.trim() || undefined,
+      clientName: clientName?.trim() || undefined,
+      batchNo: batchNo?.trim() || undefined,
+      sampleId: sampleId?.trim() || undefined,
       projectTitle: resolvedProjTitle,
       stpCode,
       title,

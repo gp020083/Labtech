@@ -13,6 +13,8 @@ export interface OfficialFormSiteState {
   jobNo: string;
   jobRefNo?: string;
   worksOrderNo?: string;
+  batchNo?: string;
+  sampleId?: string;
   companyProjNo: string;
   projectTitle: string;
   clientName: string;
@@ -226,6 +228,29 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
               value={siteForm.worksOrderNo ?? ''}
               onChange={(e) => setSiteForm({ ...siteForm, worksOrderNo: e.target.value })}
               placeholder="Manual Input (e.g. WO/2026/01)"
+              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="col-span-3 sm:col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">
+            Batch No :
+          </div>
+          <div className="col-span-9 sm:col-span-5 px-2 py-1 border-r border-slate-400 font-mono">
+            <input
+              value={siteForm.batchNo ?? ''}
+              onChange={(e) => setSiteForm({ ...siteForm, batchNo: e.target.value })}
+              placeholder="Manual Input (e.g. B-01)"
+              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
+            />
+          </div>
+          <div className="col-span-3 sm:col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">
+            Sample ID No :
+          </div>
+          <div className="col-span-9 sm:col-span-3 px-2 py-1 font-mono">
+            <input
+              value={siteForm.sampleId ?? ''}
+              onChange={(e) => setSiteForm({ ...siteForm, sampleId: e.target.value })}
+              placeholder="Manual Input (e.g. GS-01)"
               className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
             />
           </div>

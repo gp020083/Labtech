@@ -108,8 +108,10 @@ export function buildOfficialTemplateSheetCellMaps(
   const en = (v?: string | null, fb = '') => toEnglishWorksheetText(v, fb);
   const jobRefNo = en(params.jobRefNo || params.reportRefNo || params.jobNo, params.jobNo);
   const contractNo = en(params.job?.contractNo || params.companyProjNo || 'CEDD/2026/01', 'CEDD/2026/01');
-  const worksOrderNo = en(params.worksOrderNo ?? '', '');
-  const clientName = en(params.clientName, 'CEDD');
+  const worksOrderNo = en(params.worksOrderNo ?? params.record?.worksOrderNo ?? '', '');
+  const manualBatchNo = en(params.batchNo ?? params.record?.batchNo ?? '', '');
+  const manualSampleId = en(params.sampleId ?? params.record?.sampleId ?? '', '');
+  const clientName = en(params.clientName || params.record?.clientName, 'CEDD');
   const projectTitle = en(params.projectTitle, params.jobNo);
   const siteLocation = en(params.siteLocation, params.jobNo);
   const locationNote = en(params.locationNote, 'Field Station');
@@ -146,10 +148,10 @@ export function buildOfficialTemplateSheetCellMaps(
         I9: projectTitle,
         I10: siteLocation,
         AG10: contractNo,
-        I11: en(fc?.batchNo, `B-${dateOnly.replace(/-/g, '')}-01`),
+        I11: en(fc?.batchNo || manualBatchNo, ''),
         AG11: worksOrderNo,
         I12: locationNote,
-        I13: en(fc?.sampleId, `${params.jobNo}-FC-01`),
+        I13: en(fc?.sampleId || manualSampleId, ''),
         I18: en(fc?.cementBrand, 'Green Island OPC (BS EN 197-1 CEM I 52.5N)'),
         AG18: en(fc?.cementQty, '50 kg (1 Bag)'),
         I19: en(fc?.admixtureBrand, 'Sika Grout Aid / Cebex 100'),
@@ -193,10 +195,10 @@ export function buildOfficialTemplateSheetCellMaps(
       I9: projectTitle,
       I10: siteLocation,
       AH10: contractNo,
-      I11: en(bl?.batchNo, `B-${dateOnly.replace(/-/g, '')}-01`),
+      I11: en(bl?.batchNo || manualBatchNo, ''),
       AH11: worksOrderNo,
       J12: locationNote,
-      J13: en(bl?.sampleId, `${params.jobNo}-BL-01`),
+      J13: en(bl?.sampleId || manualSampleId, ''),
       I18: en(bl?.cementBrand, 'Green Island OPC (BS EN 197-1 CEM I 52.5N)'),
       AH18: en(bl?.cementQty, '50 kg (1 Bag)'),
       I19: en(bl?.admixtureBrand, 'Sika Grout Aid / Cebex 100'),
@@ -370,7 +372,7 @@ export function buildOfficialTemplateSheetCellMaps(
         D20: '15.50 m',
         D21: siteLocation,
         D22: 'Slightly decomposed granite (Grade II)',
-        D23: `${en(params.jobNo, 'LT0001')}-PO-01`,
+        D23: manualSampleId,
         D24: Number((dMm * 1.5).toFixed(1)),
         D25: 'Random (R)',
         E27: tdId,

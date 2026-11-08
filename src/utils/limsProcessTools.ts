@@ -31,6 +31,8 @@ export interface HoklasWorksheetPayload {
   reportRefNo: string;
   jobRefNo: string;
   worksOrderNo: string;
+  batchNo: string;
+  sampleId: string;
   jobNo: string;
   companyProjNo: string;
   projectTitle: string;
@@ -146,15 +148,25 @@ export function buildHoklasFieldWorksheetData(params: {
   const defaultSignatory =
     stpMethod?.approvedSignatories?.[0] || 'Shih Chak Lung, Ben (HOKLAS Approved Signatory)';
   const fallbackRefNo = record.jobRefNo || `HKL-${record.jobNo}-${record.id}`;
+  const stBatchNo =
+    record.structuredData?.kind === 'FC' || record.structuredData?.kind === 'BL'
+      ? record.structuredData.batchNo
+      : undefined;
+  const stSampleId =
+    record.structuredData?.kind === 'FC' || record.structuredData?.kind === 'BL'
+      ? record.structuredData.sampleId
+      : undefined;
 
   return {
     reportRefNo: toEnglishWorksheetText(fallbackRefNo, `HKL-${record.jobNo}-${record.id}`),
     jobRefNo: toEnglishWorksheetText(fallbackRefNo, `HKL-${record.jobNo}-${record.id}`),
     worksOrderNo: toEnglishWorksheetText(record.worksOrderNo, ''),
+    batchNo: toEnglishWorksheetText(record.batchNo ?? stBatchNo, ''),
+    sampleId: toEnglishWorksheetText(record.sampleId ?? stSampleId, ''),
     jobNo: toEnglishWorksheetText(record.jobNo, 'LT0001'),
     companyProjNo: toEnglishWorksheetText(job?.companyProjNo || record.jobNo, record.jobNo),
     projectTitle: toEnglishWorksheetText(record.projectTitle || job?.project || job?.shortName || record.jobNo, record.jobNo),
-    clientName: toEnglishWorksheetText(job?.client, 'Main Contractor / Resident Site Staff'),
+    clientName: toEnglishWorksheetText(record.clientName || job?.client, 'Main Contractor / Resident Site Staff'),
     siteLocation: toEnglishWorksheetText(job?.mapAddress || job?.site || record.jobNo, record.jobNo),
     locationNote: toEnglishWorksheetText(record.locationNote, 'Standard Field Station'),
     stpCode: record.stpCode,
