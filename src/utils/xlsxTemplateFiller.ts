@@ -52,13 +52,18 @@ export function injectCellsIntoSheetXml(
         const isNum = typeof val === 'number' && Number.isFinite(val);
 
         if (cellMatch) {
+          const fullCellXml = cellMatch[0];
           const rawAttrs = cellMatch[1];
           const styleMatch = /\bs="(\d+)"/.exec(rawAttrs);
           const styleAttr = styleMatch ? ` s="${styleMatch[1]}"` : '';
+          const formulaMatch = /<f\b[^>]*>[\s\S]*?<\/f>/.exec(fullCellXml);
+          const formulaXml = formulaMatch ? formulaMatch[0] : '';
           const replacement = isNum
-            ? `<c r="${ref}"${styleAttr}><v>${val}</v></c>`
+            ? `<c r="${ref}"${styleAttr}>${formulaXml}<v>${val}</v></c>`
+            : formulaXml
+            ? `<c r="${ref}"${styleAttr} t="str">${formulaXml}<v>${xmlEscape(val)}</v></c>`
             : `<c r="${ref}"${styleAttr} t="inlineStr"><is><t xml:space="preserve">${xmlEscape(val)}</t></is></c>`;
-          rowInner = rowInner.replace(cellRegex, replacement);
+          rowInner = rowInner.replace(cellRegex, () => replacement);
         } else {
           // Insert cell in column order inside rowInner
           const newCellXml = isNum
@@ -80,7 +85,7 @@ export function injectCellsIntoSheetXml(
           }
         }
       }
-      updatedXml = updatedXml.replace(rowRegex, `${rowMatch[1]}${rowInner}${rowMatch[3]}`);
+      updatedXml = updatedXml.replace(rowRegex, () => `${rowMatch[1]}${rowInner}${rowMatch[3]}`);
     }
   }
 
@@ -279,6 +284,10 @@ export function buildOfficialTemplateSheetCellMaps(
         H10: dateOnly,
         AB10: timeOnly,
         W13: params.locationNote,
+        W27: 0,
+        W28: -depthM,
+        AN27: 0,
+        AN28: -depthM,
         W29: depthM,
         AN29: depthM,
         W32: Number((dxMm / 1000).toFixed(4)),

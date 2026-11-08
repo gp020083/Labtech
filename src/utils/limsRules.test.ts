@@ -53,6 +53,10 @@ import {
   getOfficialTemplateMeta,
   buildCompletedExcelWorkbookXml,
 } from './completedWorksheetGenerator';
+import {
+  buildOfficialTemplateSheetCellMaps,
+  injectCellsIntoSheetXml,
+} from './xlsxTemplateFiller';
 
 const sampleEq = (overrides: Partial<EquipmentItem> = {}): EquipmentItem => ({
   code: 'LT-FC-01',
@@ -754,7 +758,7 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   assert.equal(blMeta.templateFileCode, 'FST04-GTT-C940-3-261001_Worksheet_template.xlsx');
 
   const pltMeta = getOfficialTemplateMeta('PLT');
-  assert.equal(pltMeta.templateFileCode, 'STP07-PLT_AppendixC_Completed_Worksheet.xlsx');
+  assert.equal(pltMeta.templateFileCode, 'STP07-PLT_Worksheet_template.xlsx');
 
   const blExcel = buildCompletedExcelWorkbookXml({
     stpCode: 'BL',
@@ -803,16 +807,38 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   });
 
   assert.ok(blExcel.fileName.startsWith('FST04-GTT-C940-3-261001'));
-  assert.ok(blExcel.fileName.endsWith('_Completed.xls'));
+  assert.ok(blExcel.fileName.endsWith('_Completed.xlsx'));
   assert.deepEqual(blExcel.sheetNames, ['1_Completed_Worksheet', '2_Formal_Report']);
   assert.ok(blExcel.xmlContent.includes('Worksheet ss:Name="1_Completed_Worksheet"'));
   assert.ok(blExcel.xmlContent.includes('Worksheet ss:Name="2_Formal_Report"'));
   assert.ok(blExcel.xmlContent.includes('=MAX(0,RC[-2]-RC[-1])'));
   assert.ok(blExcel.xmlContent.includes('180 min (3hr)'));
+
+  const kdMaps = buildOfficialTemplateSheetCellMaps({
+    stpCode: 'KD',
+    reportRefNo: 'HKL-LT0001-KD-0001',
+    testedAt: '2026-11-08 10:00',
+    jobNo: 'LT0001',
+    companyProjNo: 'PRJ-01',
+    projectTitle: 'Northern Metropolis Pile Works',
+    clientName: 'CEDD',
+    siteLocation: 'Kwu Tung North',
+    locationNote: 'BP-12',
+    ambientTemp: '26.5 °C',
+    weatherNote: 'Fine',
+    operatorName: 'Shih Chak Lung, Ben',
+    approvedSignatory: 'Lam Hoi Fan, James',
+    pass: true,
+    equipmentRows: [],
+    measurementRows: [],
+  });
+  assert.equal(kdMaps['xl/worksheets/sheet1.xml']?.H9, 'HKL-LT0001-KD-0001');
+  assert.equal(kdMaps['xl/worksheets/sheet1.xml']?.H10, 'LT0001 (PRJ-01)');
+  assert.equal(kdMaps['xl/worksheets/sheet4.xml']?.W27, 0);
+
+  const sampleXml = '<sheetData><row r="7"><c r="H7" s="12"><f>Sheet1!H9</f><v>0</v></c></row></sheetData>';
+  const injectedXml = injectCellsIntoSheetXml(sampleXml, { H7: 'LT0001' });
+  assert.ok(injectedXml.includes('<f>Sheet1!H9</f>'));
+  assert.ok(injectedXml.includes('<t>LT0001</t>'));
 });
-
-
-
-
-
 

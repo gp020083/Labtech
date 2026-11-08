@@ -152,7 +152,7 @@ export const ToolGuideCard: React.FC<{
       record: draft,
     });
     pushToast(
-      tx('已按上傳 Excel 底板產生 Completed Worksheet (.xls)', 'Generated Completed Excel Worksheet (.xls)'),
+      tx('已按官方 Excel 底板產生 Completed Worksheet (.xlsx)', 'Generated Official Completed Excel Worksheet (.xlsx)'),
       `${downloadedName} (${templateMeta.templateFileCode})`
     );
   };
@@ -293,7 +293,10 @@ export const ToolGuideCard: React.FC<{
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 font-extrabold text-white hover:bg-emerald-700 transition cursor-pointer whitespace-nowrap shadow-xs"
           >
             <FileSpreadsheet className="h-4 w-4" />
-            {tx('📊 Gen Completed Excel (.xls 含公式)', '📊 Gen Completed Excel (.xls)')}
+            {tx(
+              `📊 一鍵匯出官方 Excel (.xlsx · ${templateMeta.templateFileCode.split('_')[0]})`,
+              `📊 Gen Official Excel (.xlsx · ${templateMeta.templateFileCode.split('_')[0]})`
+            )}
           </button>
         </div>
 
@@ -305,7 +308,10 @@ export const ToolGuideCard: React.FC<{
             className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 font-extrabold text-white hover:bg-slate-800 transition cursor-pointer whitespace-nowrap"
           >
             <Printer className="h-3.5 w-3.5" />
-            {tx('📋 Completed Worksheet (A4 工作紙)', '📋 Completed Worksheet (A4)')}
+            {tx(
+              `📋 官方工作紙 (${templateMeta.templateFileCode.split('_')[0]})`,
+              `📋 Official Worksheet (${templateMeta.templateFileCode.split('_')[0]})`
+            )}
           </button>
           <button
             type="button"
@@ -313,7 +319,7 @@ export const ToolGuideCard: React.FC<{
             className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/80 bg-amber-50 px-3 py-2 font-extrabold text-amber-950 hover:bg-amber-100 transition cursor-pointer whitespace-nowrap"
           >
             <Award className="h-3.5 w-3.5 text-amber-700" />
-            {tx('📜 Formal Report (A4 正式報告)', '📜 Formal Report (A4)')}
+            {tx('📜 HOKLAS 正式報告 (A4)', '📜 Formal Report (A4)')}
           </button>
           <button
             type="button"

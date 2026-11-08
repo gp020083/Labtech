@@ -115,7 +115,7 @@ export const MobileCalcFooter: React.FC<{
       record: draft,
     });
     pushToast(
-      tx('已產生 Completed Excel (.xls)', 'Generated Completed Excel (.xls)'),
+      tx('已產生官方 Completed Excel (.xlsx)', 'Generated Official Completed Excel (.xlsx)'),
       `${downloadedName} (${templateMeta.templateFileCode})`
     );
   };
@@ -187,7 +187,7 @@ export const MobileCalcFooter: React.FC<{
             <Save className="h-4 w-4" /> {tx(`存入 ${jobNo}`, `Save to ${jobNo}`)}
           </button>
           <button type="button" onClick={handleDirectExcel} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 font-extrabold text-white cursor-pointer">
-            <FileSpreadsheet className="h-4 w-4" /> {tx('📊 Completed Excel', '📊 Completed Excel')}
+            <FileSpreadsheet className="h-4 w-4" /> {tx('📊 官方 Excel (.xlsx)', '📊 Official Excel (.xlsx)')}
           </button>
         </div>
 
