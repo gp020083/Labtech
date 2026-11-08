@@ -9,6 +9,7 @@ import {
   StructuredCalcPayload,
   getOfficialTemplateMeta,
   triggerCompletedExcelDownload,
+  generateSequentialJobRefNo,
 } from '../utils/completedWorksheetGenerator';
 import { downloadCalcRecordCsv, nowTimestamp } from '../utils';
 import { SitePhotoAttachmentControl } from '../components/SitePhotoAttachmentControl';
@@ -23,10 +24,14 @@ export const MobileCalcFooter: React.FC<{
   notes: string[];
   structuredData?: StructuredCalcPayload;
 }> = ({ stpCode, formula, copyText, notes, structuredData }) => {
-  const { jobs, equipment, tests, saveCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
+  const { jobs, equipment, tests, calcRecords, saveCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
   const { lang, tx } = usePrefs();
   const [open, setOpen] = useState(false);
   const [jobNo, setJobNo] = useState(jobs[0]?.no || 'LT0002');
+  const [jobRefNo, setJobRefNo] = useState(() =>
+    generateSequentialJobRefNo(jobs[0]?.no || 'LT0002', stpCode, calcRecords)
+  );
+  const [worksOrderNo, setWorksOrderNo] = useState('');
   const [locNote, setLocNote] = useState('');
   const [sitePhotos, setSitePhotos] = useState<FieldCalcPhoto[]>([]);
   const [signOffExpanded, setSignOffExpanded] = useState(false);
@@ -41,10 +46,16 @@ export const MobileCalcFooter: React.FC<{
   const spec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
   const templateMeta = getOfficialTemplateMeta(stpCode, tests);
   const passStatus = detectCalcPassStatus(copyText);
+  const selectedJob = jobs.find((j) => j.no === jobNo) || null;
+  const effectiveRefNo =
+    jobRefNo.trim() || generateSequentialJobRefNo(jobNo, stpCode, calcRecords);
 
   const buildDraftRecord = (): FieldCalcRecord => ({
     id: `${stpCode}-${Date.now().toString().slice(-4)}`,
     jobNo,
+    jobRefNo: effectiveRefNo,
+    worksOrderNo: worksOrderNo.trim() || undefined,
+    projectTitle: selectedJob?.name || selectedJob?.shortName || undefined,
     stpCode,
     title: `${stpCode} Field Calculation`,
     locationNote: locNote.trim() || undefined,
@@ -65,9 +76,14 @@ export const MobileCalcFooter: React.FC<{
     pushToast(tx('已複製計算結果', 'Calculation Copied'), tx('可直接貼上至報告或訊息', 'Ready to paste'));
   };
 
-  const handleSave = () => {
+  const handleDispatchNewRefNo = () => {
+    const nextRef = generateSequentialJobRefNo(jobNo, stpCode, calcRecords);
+    setJobRefNo(nextRef);
     saveCalcRecord({
       jobNo,
+      jobRefNo: nextRef,
+      worksOrderNo: worksOrderNo.trim() || undefined,
+      projectTitle: selectedJob?.name || selectedJob?.shortName || undefined,
       stpCode,
       title: `${stpCode} Field Calculation`,
       locationNote: locNote.trim() || undefined,
@@ -82,6 +98,31 @@ export const MobileCalcFooter: React.FC<{
     });
   };
 
+  const handleSave = () => {
+    saveCalcRecord({
+      jobNo,
+      jobRefNo: effectiveRefNo,
+      worksOrderNo: worksOrderNo.trim() || undefined,
+      projectTitle: selectedJob?.name || selectedJob?.shortName || undefined,
+      stpCode,
+      title: `${stpCode} Field Calculation`,
+      locationNote: locNote.trim() || undefined,
+      summary: copyText,
+      pass: passStatus,
+      signatureDataUrl: signatureDataUrl || undefined,
+      signedBy: signedBy.trim() || undefined,
+      signedRole: signedRole.trim() || undefined,
+      signedAt: signatureDataUrl ? nowTimestamp() : undefined,
+      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      structuredData,
+    });
+    const nextAfterSave = generateSequentialJobRefNo(jobNo, stpCode, [
+      ...calcRecords,
+      { id: 'tmp', jobNo, jobRefNo: effectiveRefNo, stpCode, title: '', summary: '', pass: true, testedAt: '', operatorName: '' },
+    ]);
+    setJobRefNo(nextAfterSave);
+  };
+
   const handleDirectExcel = () => {
     const draft = buildDraftRecord();
     const job = jobs.find((j) => j.no === jobNo) || null;
@@ -94,6 +135,8 @@ export const MobileCalcFooter: React.FC<{
     const downloadedName = triggerCompletedExcelDownload({
       stpCode,
       reportRefNo: ws.reportRefNo,
+      jobRefNo: ws.jobRefNo,
+      worksOrderNo: ws.worksOrderNo,
       testedAt: ws.testedAt,
       jobNo: ws.jobNo,
       companyProjNo: ws.companyProjNo,
@@ -149,12 +192,43 @@ export const MobileCalcFooter: React.FC<{
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <select value={jobNo} onChange={(e) => setJobNo(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 font-bold text-slate-900">
+          <select
+            value={jobNo}
+            onChange={(e) => {
+              const nextJob = e.target.value;
+              setJobNo(nextJob);
+              setJobRefNo(generateSequentialJobRefNo(nextJob, stpCode, calcRecords));
+            }}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 font-bold text-slate-900"
+          >
             {jobs.map((j) => (
               <option key={j.no} value={j.no}>{j.no} · {j.shortName}</option>
             ))}
           </select>
           <input value={locNote} onChange={(e) => setLocNote(e.target.value)} placeholder={tx('樁號 / 樣本號 (選填)', 'Pile / Sample Ref')} className="rounded-xl border border-slate-200 px-2.5 py-2" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex gap-1">
+            <input
+              value={jobRefNo}
+              onChange={(e) => setJobRefNo(e.target.value)}
+              placeholder="Job Ref. No."
+              className="min-w-0 flex-1 rounded-xl border border-brand/40 bg-brand-wash/30 px-2 py-1.5 font-mono text-[11px] font-extrabold text-brand-deep"
+            />
+            <button
+              type="button"
+              onClick={handleDispatchNewRefNo}
+              className="shrink-0 rounded-xl bg-brand px-2 py-1.5 text-[10px] font-extrabold text-white cursor-pointer"
+            >
+              🎯 {tx('派號', 'Ref')}
+            </button>
+          </div>
+          <input
+            value={worksOrderNo}
+            onChange={(e) => setWorksOrderNo(e.target.value)}
+            placeholder={tx('Works Order No. (手打)', 'Works Order No. (Manual)')}
+            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
+          />
         </div>
 
         {/* 1-2 Site Photos Attachment */}
@@ -274,6 +348,18 @@ export const MobileBleedingCalc: React.FC = () => {
   const [decantedVw, setDecantedVw] = useState('12');
   const [specLimit, setSpecLimit] = useState('2.0');
   const [rows, setRows] = useState(ML_ROWS);
+  const [cementBrand, setCementBrand] = useState('Green Island OPC (BS EN 197-1 CEM I 52.5N)');
+  const [cementQty, setCementQty] = useState('50 kg (1 Bag)');
+  const [admixtureBrand, setAdmixtureBrand] = useState('Sika Grout Aid / Cebex 100');
+  const [admixtureQty, setAdmixtureQty] = useState('0.225 kg');
+  const [waterSource, setWaterSource] = useState('Mains Potable Water (WSD)');
+  const [waterQty, setWaterQty] = useState('21.0 L');
+  const [wcRatio, setWcRatio] = useState('0.42');
+  const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
+  const [waterTempText, setWaterTempText] = useState('25.3 °C');
+  const [testDateIso, setTestDateIso] = useState(() => new Date().toISOString().slice(0, 10));
+  const [batchNo, setBatchNo] = useState('GR-B01');
+  const [sampleId, setSampleId] = useState('GS-01');
 
   const isMl = unit === 'mL';
   const s1 = isMl ? 'V1' : 'H1';
@@ -351,6 +437,25 @@ export const MobileBleedingCalc: React.FC = () => {
         <button type="button" onClick={() => setRows((p) => [...p, { timeLabel: `${(p.length + 1) * 30} min`, v2: p[p.length - 1]?.v2 || '806', vg: p[p.length - 1]?.vg || '794' }])} className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-slate-300 bg-white py-2.5 font-extrabold text-slate-700 cursor-pointer"><Plus className="h-4 w-4" /> {tx('新增讀數時段', 'Add Reading Interval')}</button>
       </div>
 
+      {/* Editable Sample Information (FST04 Worksheet) */}
+      <div className="rounded-2xl border border-sky-200 bg-sky-50/40 p-3 space-y-2">
+        <div className="font-extrabold text-[11px] text-sky-950">🧪 Sample Information (FST04 Worksheet — Editable before Gen)</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Brand of Cement</span><input value={cementBrand} onChange={(e) => setCementBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Quantity (Cement)</span><input value={cementQty} onChange={(e) => setCementQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Brand of Admixture</span><input value={admixtureBrand} onChange={(e) => setAdmixtureBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Quantity (Admixture)</span><input value={admixtureQty} onChange={(e) => setAdmixtureQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Water</span><input value={waterSource} onChange={(e) => setWaterSource(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Quantity (Water)</span><input value={waterQty} onChange={(e) => setWaterQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Water / Cement Ratio</span><input value={wcRatio} onChange={(e) => setWcRatio(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Date of Testing</span><input type="date" value={testDateIso} onChange={(e) => setTestDateIso(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Ambient Temp</span><input value={ambientTempText} onChange={(e) => setAmbientTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Water Temp</span><input value={waterTempText} onChange={(e) => setWaterTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Batch No.</span><input value={batchNo} onChange={(e) => setBatchNo(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Sample ID</span><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+        </div>
+      </div>
+
       <MobileCalcFooter
         stpCode="BL"
         formula={`Bleeding (%) = (${s2} − ${sG}) / ${s1} × 100% ｜ Expansion (%) = (${s2} − ${s1}) / ${s1} × 100%`}
@@ -365,6 +470,18 @@ export const MobileBleedingCalc: React.FC = () => {
           finalBleedPct,
           finalExpPct,
           isPass,
+          cementBrand,
+          cementQty,
+          admixtureBrand,
+          admixtureQty,
+          waterSource,
+          waterQty,
+          wcRatio,
+          ambientTempText,
+          waterTempText,
+          testDateIso,
+          batchNo,
+          sampleId,
           intervals: computed
             .filter((r) => r.valid)
             .map((r) => ({
@@ -424,6 +541,20 @@ export const MobileFlowConeCalc: React.FC = () => {
   const [t1Sec, setT1Sec] = useState('16.4');
   const [t2Sec, setT2Sec] = useState('16.8');
   const [temp, setTemp] = useState('26.5');
+  const [cementBrand, setCementBrand] = useState('Green Island OPC (BS EN 197-1 CEM I 52.5N)');
+  const [cementQty, setCementQty] = useState('50 kg (1 Bag)');
+  const [admixtureBrand, setAdmixtureBrand] = useState('Sika Grout Aid / Cebex 100');
+  const [admixtureQty, setAdmixtureQty] = useState('0.225 kg');
+  const [waterSource, setWaterSource] = useState('Mains Potable Water (WSD)');
+  const [waterQty, setWaterQty] = useState('21.0 L');
+  const [wcRatio, setWcRatio] = useState('0.42');
+  const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
+  const [waterTempText, setWaterTempText] = useState('25.3 °C');
+  const [testDateIso, setTestDateIso] = useState(() => new Date().toISOString().slice(0, 10));
+  const [batchNo, setBatchNo] = useState('GR-B01');
+  const [sampleId, setSampleId] = useState('GS-01');
+  const [timeWaterAdded, setTimeWaterAdded] = useState('09:15');
+  const [timeDrawingGrout, setTimeDrawingGrout] = useState('09:20');
   const wNum = parseFloat(waterSec) || 0;
   const wOk = wNum >= 7.8 && wNum <= 8.2;
   const n1 = parseFloat(t1Sec) || 0;
@@ -447,6 +578,28 @@ export const MobileFlowConeCalc: React.FC = () => {
           <span className={`rounded-xl px-3 py-1.5 font-extrabold text-white ${repOk ? 'bg-emerald-600' : 'bg-rose-600'}`}>{repOk ? 'OK' : tx('重測', 'RETEST')}</span>
         </div>
       </div>
+
+      {/* Editable Sample Information (FST05 Worksheet) */}
+      <div className="rounded-2xl border border-sky-200 bg-sky-50/40 p-3 space-y-2">
+        <div className="font-extrabold text-[11px] text-sky-950">🧪 Sample Information (FST05 Worksheet — Editable before Gen)</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Brand of Cement</span><input value={cementBrand} onChange={(e) => setCementBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Quantity (Cement)</span><input value={cementQty} onChange={(e) => setCementQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Brand of Admixture</span><input value={admixtureBrand} onChange={(e) => setAdmixtureBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Quantity (Admixture)</span><input value={admixtureQty} onChange={(e) => setAdmixtureQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Water</span><input value={waterSource} onChange={(e) => setWaterSource(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Quantity (Water)</span><input value={waterQty} onChange={(e) => setWaterQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Water / Cement Ratio</span><input value={wcRatio} onChange={(e) => setWcRatio(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Date of Testing</span><input type="date" value={testDateIso} onChange={(e) => setTestDateIso(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Ambient Temp</span><input value={ambientTempText} onChange={(e) => setAmbientTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Water Temp</span><input value={waterTempText} onChange={(e) => setWaterTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Batch No.</span><input value={batchNo} onChange={(e) => setBatchNo(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Sample ID</span><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Time Water Added</span><input value={timeWaterAdded} onChange={(e) => setTimeWaterAdded(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+          <label className="block"><span className="text-[10px] font-bold text-slate-600">Time Drawing Grout</span><input value={timeDrawingGrout} onChange={(e) => setTimeDrawingGrout(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-[11px] font-bold" /></label>
+        </div>
+      </div>
+
       <MobileCalcFooter
         stpCode="FC"
         formula="Water = 8.0±0.2s (1725 mL) ｜ Mean = (T1+T2)/2 ｜ |T1−T2| ≤ 1.8s"
@@ -461,6 +614,20 @@ export const MobileFlowConeCalc: React.FC = () => {
           meanSec: avg,
           diffSec: diff,
           repeatOk: repOk,
+          cementBrand,
+          cementQty,
+          admixtureBrand,
+          admixtureQty,
+          waterSource,
+          waterQty,
+          wcRatio,
+          ambientTempText,
+          waterTempText,
+          testDateIso,
+          batchNo,
+          sampleId,
+          timeWaterAdded,
+          timeDrawingGrout,
         }}
         notes={[tx('於流嘴首次斷流透光 (First Break) 即停錶。', 'Stop timing at the first break in continuous stream.')]}
       />

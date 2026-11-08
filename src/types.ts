@@ -183,6 +183,9 @@ export interface FieldCalcPhoto {
 export interface FieldCalcRecord {
   id: string;
   jobNo: string;
+  jobRefNo?: string;
+  worksOrderNo?: string;
+  projectTitle?: string;
   stpCode: string;
   title: string;
   locationNote?: string;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePrefs } from '../../prefs';
+import { getHkTodayIso } from '../../utils';
 import { ToolGuideCard } from './ToolGuideCard';
 
 export const KodenVerticalityTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ onViewAllSpecs }) => {
@@ -94,6 +95,20 @@ export const FlowConeCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
   const [t1Sec, setT1Sec] = useState('16.4');
   const [t2Sec, setT2Sec] = useState('16.8');
   const [groutTemp, setGroutTemp] = useState('26.5');
+  const [cementBrand, setCementBrand] = useState('Green Island OPC (BS EN 197-1 CEM I 52.5N)');
+  const [cementQty, setCementQty] = useState('50 kg (1 Bag)');
+  const [admixtureBrand, setAdmixtureBrand] = useState('Sika Grout Aid / Cebex 100');
+  const [admixtureQty, setAdmixtureQty] = useState('0.225 kg');
+  const [waterSource, setWaterSource] = useState('Mains Potable Water (WSD)');
+  const [waterQty, setWaterQty] = useState('21.0 L');
+  const [wcRatio, setWcRatio] = useState('0.42');
+  const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
+  const [waterTempText, setWaterTempText] = useState('25.3 °C');
+  const [testDateIso, setTestDateIso] = useState(() => getHkTodayIso());
+  const [batchNo, setBatchNo] = useState('B-01');
+  const [sampleId, setSampleId] = useState('FC-01');
+  const [timeWaterAdded, setTimeWaterAdded] = useState('09:45');
+  const [timeDrawingGrout, setTimeDrawingGrout] = useState('09:52');
 
   const wNum = parseFloat(waterSec) || 0;
   const waterOk = wNum >= 7.8 && wNum <= 8.2;
@@ -129,6 +144,31 @@ Efflux T1 = ${n1.toFixed(1)} s, T2 = ${n2.toFixed(1)} s → Mean Efflux Time = $
           <div className={`rounded-2xl p-4 border ${repeatOk ? 'border-emerald-200 bg-emerald-50/70' : 'border-rose-200 bg-rose-50/70'}`}><div className="text-xs font-bold text-slate-600">Repeatability |T1 - T2|</div><div className={`mt-1 font-mono text-2xl font-extrabold ${repeatOk ? 'text-emerald-700' : 'text-rose-700'}`}>{diffSec.toFixed(1)} s</div><div className="text-[11px] font-bold">{repeatOk ? '✓ ASTM C939 OK (≤1.8s)' : tx('⚠️ 差值超出 1.8s，須重測', '⚠️ Diff > 1.8s, run 3rd trial')}</div></div>
           <div className={`rounded-2xl p-4 border ${waterOk ? 'border-emerald-200 bg-emerald-50/70' : 'border-amber-200 bg-amber-50/70'}`}><div className="text-xs font-bold text-slate-600">Cone Water Calibration</div><div className="mt-1 font-mono text-xl font-extrabold text-slate-900">{waterOk ? '✓ Nozzle OK' : '⚠️ Clean Nozzle'}</div><div className="text-[11px] text-slate-500">Temp: {groutTemp} °C</div></div>
         </div>
+
+        {/* Editable Sample Information (FST05-GTT-C939) */}
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5 text-xs">
+          <div className="font-extrabold text-slate-900">
+            🧪 Sample Information (FST05 Worksheet Fields — Editable before Gen)
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div><label className="font-bold text-slate-600">Brand of Cement</label><input value={cementBrand} onChange={(e) => setCementBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold" /></div>
+            <div><label className="font-bold text-slate-600">Cement Quantity</label><input value={cementQty} onChange={(e) => setCementQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Brand of Admixture</label><input value={admixtureBrand} onChange={(e) => setAdmixtureBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold" /></div>
+            <div><label className="font-bold text-slate-600">Admixture Quantity</label><input value={admixtureQty} onChange={(e) => setAdmixtureQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Water</label><input value={waterSource} onChange={(e) => setWaterSource(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold" /></div>
+            <div><label className="font-bold text-slate-600">Water Quantity</label><input value={waterQty} onChange={(e) => setWaterQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div><label className="font-bold text-slate-600">W/C Ratio</label><input value={wcRatio} onChange={(e) => setWcRatio(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold" /></div>
+            <div><label className="font-bold text-slate-600">Ambient Temp</label><input value={ambientTempText} onChange={(e) => setAmbientTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Water Temp</label><input value={waterTempText} onChange={(e) => setWaterTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Date of Testing</label><input type="date" value={testDateIso} onChange={(e) => setTestDateIso(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Batch No.</label><input value={batchNo} onChange={(e) => setBatchNo(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Sample ID</label><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Time Water Added</label><input value={timeWaterAdded} onChange={(e) => setTimeWaterAdded(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+            <div><label className="font-bold text-slate-600">Time Drawing Grout</label><input value={timeDrawingGrout} onChange={(e) => setTimeDrawingGrout(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          </div>
+        </div>
       </div>
       <div className="xl:col-span-5 xl:sticky xl:top-20">
         <ToolGuideCard
@@ -146,6 +186,20 @@ Efflux T1 = ${n1.toFixed(1)} s, T2 = ${n2.toFixed(1)} s → Mean Efflux Time = $
             meanSec: avgSec,
             diffSec,
             repeatOk,
+            cementBrand,
+            cementQty,
+            admixtureBrand,
+            admixtureQty,
+            waterSource,
+            waterQty,
+            wcRatio,
+            ambientTempText,
+            waterTempText,
+            testDateIso,
+            batchNo,
+            sampleId,
+            timeWaterAdded,
+            timeDrawingGrout,
           }}
           onViewAllSpecs={onViewAllSpecs}
           steps={[

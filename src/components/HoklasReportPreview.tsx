@@ -12,9 +12,10 @@ import {
   StructuredCalcPayload,
   getOfficialTemplateMeta,
   triggerCompletedExcelDownload,
+  toEnglishWorksheetText,
 } from '../utils/completedWorksheetGenerator';
 import { downloadCalcRecordCsv, getHkTodayIso } from '../utils';
-import { OfficialWorksheetView } from './OfficialWorksheetView';
+import { OfficialWorksheetView, OfficialFormSiteState } from './OfficialWorksheetView';
 import { OfficialFormalReportView } from './OfficialFormalReportView';
 import {
   X,
@@ -31,6 +32,8 @@ import {
 
 export interface HoklasDynamicSiteDetails {
   jobNo?: string;
+  jobRefNo?: string;
+  worksOrderNo?: string;
   companyProjNo?: string;
   projectTitle?: string;
   clientName?: string;
@@ -132,21 +135,24 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
       (equipmentItems && equipmentItems.length > 0)
   );
 
-  const [siteForm, setSiteForm] = useState({
-    jobNo: siteDetails?.jobNo || baseWorksheet.jobNo,
-    companyProjNo: siteDetails?.companyProjNo || baseWorksheet.companyProjNo,
-    projectTitle: siteDetails?.projectTitle || baseWorksheet.projectTitle,
-    clientName: siteDetails?.clientName || baseWorksheet.clientName,
-    siteLocation: siteDetails?.siteLocation || baseWorksheet.siteLocation,
-    locationNote: siteDetails?.locationNote || baseWorksheet.locationNote,
-    ambientTemp: siteDetails?.ambientTemp || '26.5 °C',
-    weatherNote: siteDetails?.weatherNote || 'Fine / Sunny',
+  const [siteForm, setSiteForm] = useState<OfficialFormSiteState>({
+    jobNo: toEnglishWorksheetText(siteDetails?.jobNo || baseWorksheet.jobNo, 'LT0001'),
+    jobRefNo: toEnglishWorksheetText(siteDetails?.jobRefNo || fallbackRecord.jobRefNo || baseWorksheet.jobRefNo, baseWorksheet.reportRefNo),
+    worksOrderNo: toEnglishWorksheetText(siteDetails?.worksOrderNo ?? fallbackRecord.worksOrderNo ?? baseWorksheet.worksOrderNo, ''),
+    companyProjNo: toEnglishWorksheetText(siteDetails?.companyProjNo || baseWorksheet.companyProjNo, 'LT0001'),
+    projectTitle: toEnglishWorksheetText(siteDetails?.projectTitle || baseWorksheet.projectTitle, baseWorksheet.jobNo),
+    clientName: toEnglishWorksheetText(siteDetails?.clientName || baseWorksheet.clientName, 'CEDD'),
+    siteLocation: toEnglishWorksheetText(siteDetails?.siteLocation || baseWorksheet.siteLocation, baseWorksheet.jobNo),
+    locationNote: toEnglishWorksheetText(siteDetails?.locationNote || baseWorksheet.locationNote, 'Field Station'),
+    ambientTemp: toEnglishWorksheetText(siteDetails?.ambientTemp || '26.5 °C', '26.5 °C'),
+    weatherNote: toEnglishWorksheetText(siteDetails?.weatherNote || 'Fine / Sunny', 'Fine / Sunny'),
   });
 
   const initialEqRows = useMemo<HoklasWorksheetEquipmentRow[]>(() => {
     if (equipmentItems && equipmentItems.length > 0) {
       return equipmentItems.map((e) => ({
         ...e,
+        name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
         calDue: calibrationDueDates?.[e.code] || e.calDue,
       }));
     }
@@ -155,7 +161,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
         const found = equipment.find((e) => e.code.toUpperCase() === code.toUpperCase());
         return {
           code: found?.code || code,
-          name: found?.name || 'Calibrated Test Instrument',
+          name: toEnglishWorksheetText(found?.name, 'Calibrated Test Instrument'),
           model: found?.model || '—',
           serial: found?.serial || '—',
           calDue: calibrationDueDates?.[code] || found?.certDue || found?.due || '—',
@@ -165,6 +171,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     }
     return baseWorksheet.equipmentList.map((e) => ({
       ...e,
+      name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
       calDue: calibrationDueDates?.[e.code] || e.calDue,
     }));
   }, [equipmentItems, equipmentIds, calibrationDueDates, equipment, baseWorksheet]);
@@ -175,29 +182,31 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     testValues && testValues.length > 0 ? testValues : baseWorksheet.rows
   );
   const [activeOperator, setActiveOperator] = useState<string>(
-    propOperatorName || baseWorksheet.operatorName
+    toEnglishWorksheetText(propOperatorName || baseWorksheet.operatorName, 'Shih Chak Lung, Ben')
   );
   const [activeSignatory, setActiveSignatory] = useState<string>(
-    propApprovedSignatory || baseWorksheet.approvedSignatory
+    toEnglishWorksheetText(propApprovedSignatory || baseWorksheet.approvedSignatory, 'Shih Chak Lung, Ben (HOKLAS AS)')
   );
   const [signatoryEndorsed] = useState<boolean>(true);
 
   React.useEffect(() => {
     setSiteForm({
-      jobNo: siteDetails?.jobNo || baseWorksheet.jobNo,
-      companyProjNo: siteDetails?.companyProjNo || baseWorksheet.companyProjNo,
-      projectTitle: siteDetails?.projectTitle || baseWorksheet.projectTitle,
-      clientName: siteDetails?.clientName || baseWorksheet.clientName,
-      siteLocation: siteDetails?.siteLocation || baseWorksheet.siteLocation,
-      locationNote: siteDetails?.locationNote || baseWorksheet.locationNote,
-      ambientTemp: siteDetails?.ambientTemp || '26.5 °C',
-      weatherNote: siteDetails?.weatherNote || 'Fine / Sunny',
+      jobNo: toEnglishWorksheetText(siteDetails?.jobNo || baseWorksheet.jobNo, 'LT0001'),
+      jobRefNo: toEnglishWorksheetText(siteDetails?.jobRefNo || fallbackRecord.jobRefNo || baseWorksheet.jobRefNo, baseWorksheet.reportRefNo),
+      worksOrderNo: toEnglishWorksheetText(siteDetails?.worksOrderNo ?? fallbackRecord.worksOrderNo ?? baseWorksheet.worksOrderNo, ''),
+      companyProjNo: toEnglishWorksheetText(siteDetails?.companyProjNo || baseWorksheet.companyProjNo, 'LT0001'),
+      projectTitle: toEnglishWorksheetText(siteDetails?.projectTitle || baseWorksheet.projectTitle, baseWorksheet.jobNo),
+      clientName: toEnglishWorksheetText(siteDetails?.clientName || baseWorksheet.clientName, 'CEDD'),
+      siteLocation: toEnglishWorksheetText(siteDetails?.siteLocation || baseWorksheet.siteLocation, baseWorksheet.jobNo),
+      locationNote: toEnglishWorksheetText(siteDetails?.locationNote || baseWorksheet.locationNote, 'Field Station'),
+      ambientTemp: toEnglishWorksheetText(siteDetails?.ambientTemp || '26.5 °C', '26.5 °C'),
+      weatherNote: toEnglishWorksheetText(siteDetails?.weatherNote || 'Fine / Sunny', 'Fine / Sunny'),
     });
     setEqRows(initialEqRows);
     setMeasurementRows(testValues && testValues.length > 0 ? testValues : baseWorksheet.rows);
-    setActiveOperator(propOperatorName || baseWorksheet.operatorName);
-    setActiveSignatory(propApprovedSignatory || baseWorksheet.approvedSignatory);
-  }, [baseWorksheet, initialEqRows, siteDetails, testValues, propOperatorName, propApprovedSignatory]);
+    setActiveOperator(toEnglishWorksheetText(propOperatorName || baseWorksheet.operatorName, 'Shih Chak Lung, Ben'));
+    setActiveSignatory(toEnglishWorksheetText(propApprovedSignatory || baseWorksheet.approvedSignatory, 'Shih Chak Lung, Ben (HOKLAS AS)'));
+  }, [baseWorksheet, initialEqRows, siteDetails, testValues, propOperatorName, propApprovedSignatory, fallbackRecord]);
 
   const [activeSignPadTarget, setActiveSignPadTarget] = useState<'operator' | 'signatory' | null>(null);
   const [operatorSigDataUrl, setOperatorSigDataUrl] = useState<string | null>(null);
@@ -207,7 +216,9 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
 
   const inUseEquipment = useMemo(() => equipment.filter((e) => e.inUse !== 'N'), [equipment]);
   const signatoryOptions = useMemo(() => {
-    if (stpMethod?.approvedSignatories?.length) return stpMethod.approvedSignatories;
+    if (stpMethod?.approvedSignatories?.length) {
+      return stpMethod.approvedSignatories.map((s) => toEnglishWorksheetText(s, s));
+    }
     return [
       'Shih Chak Lung, Ben (Director / HOKLAS AS)',
       'Lam Hoi Fan, James (HOKLAS Approved Signatory)',
@@ -218,7 +229,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
   }, [stpMethod]);
 
   const operatorOptions = useMemo(() => {
-    const names = accounts.map((a) => `${a.zh ? `${a.zh} ` : ''}${a.name}`);
+    const names = accounts.map((a) => toEnglishWorksheetText(a.name, a.name));
     if (!names.includes(activeOperator)) names.unshift(activeOperator);
     return names;
   }, [accounts, activeOperator]);
@@ -302,7 +313,9 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
   const handleDownloadCompletedExcel = () => {
     const downloadedName = triggerCompletedExcelDownload({
       stpCode: fallbackRecord.stpCode,
-      reportRefNo: baseWorksheet.reportRefNo,
+      reportRefNo: siteForm.jobRefNo || baseWorksheet.reportRefNo,
+      jobRefNo: siteForm.jobRefNo || baseWorksheet.jobRefNo,
+      worksOrderNo: siteForm.worksOrderNo ?? '',
       testedAt: baseWorksheet.testedAt,
       jobNo: siteForm.jobNo,
       companyProjNo: siteForm.companyProjNo,

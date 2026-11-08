@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { usePrefs } from '../../prefs';
+import { getHkTodayIso } from '../../utils';
 import { ToolGuideCard } from './ToolGuideCard';
 import { Plus, RotateCcw } from 'lucide-react';
 
@@ -34,6 +35,18 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
   const [decantedVw, setDecantedVw] = useState('12');
   const [specLimit, setSpecLimit] = useState('2.0');
   const [rows, setRows] = useState<BleedRow[]>(DEFAULT_ML_ROWS);
+  const [cementBrand, setCementBrand] = useState('Green Island OPC (BS EN 197-1 CEM I 52.5N)');
+  const [cementQty, setCementQty] = useState('50 kg (1 Bag)');
+  const [admixtureBrand, setAdmixtureBrand] = useState('Sika Grout Aid / Cebex 100');
+  const [admixtureQty, setAdmixtureQty] = useState('0.225 kg');
+  const [waterSource, setWaterSource] = useState('Mains Potable Water (WSD)');
+  const [waterQty, setWaterQty] = useState('21.0 L');
+  const [wcRatio, setWcRatio] = useState('0.42');
+  const [ambientTempText, setAmbientTempText] = useState('26.5 °C');
+  const [waterTempText, setWaterTempText] = useState('25.3 °C');
+  const [testDateIso, setTestDateIso] = useState(() => getHkTodayIso());
+  const [batchNo, setBatchNo] = useState('B-01');
+  const [sampleId, setSampleId] = useState('BL-01');
 
   const isMl = unit === 'mL';
   const sym1 = isMl ? 'V1' : 'H1';
@@ -242,6 +255,29 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
         </div>
       </div>
 
+      {/* Editable Sample Information (FST04-GTT-C940) */}
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5 text-xs">
+        <div className="font-extrabold text-slate-900">
+          🧪 Sample Information (FST04 Worksheet Fields — Editable before Gen)
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div><label className="font-bold text-slate-600">Brand of Cement</label><input value={cementBrand} onChange={(e) => setCementBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold" /></div>
+          <div><label className="font-bold text-slate-600">Cement Quantity</label><input value={cementQty} onChange={(e) => setCementQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-slate-600">Brand of Admixture</label><input value={admixtureBrand} onChange={(e) => setAdmixtureBrand(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold" /></div>
+          <div><label className="font-bold text-slate-600">Admixture Quantity</label><input value={admixtureQty} onChange={(e) => setAdmixtureQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-slate-600">Water</label><input value={waterSource} onChange={(e) => setWaterSource(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold" /></div>
+          <div><label className="font-bold text-slate-600">Water Quantity</label><input value={waterQty} onChange={(e) => setWaterQty(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div><label className="font-bold text-slate-600">W/C Ratio</label><input value={wcRatio} onChange={(e) => setWcRatio(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold" /></div>
+          <div><label className="font-bold text-slate-600">Ambient Temp</label><input value={ambientTempText} onChange={(e) => setAmbientTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-slate-600">Water Temp</label><input value={waterTempText} onChange={(e) => setWaterTempText(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-slate-600">Date of Testing</label><input type="date" value={testDateIso} onChange={(e) => setTestDateIso(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-slate-600">Batch No.</label><input value={batchNo} onChange={(e) => setBatchNo(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+          <div><label className="font-bold text-slate-600">Sample ID</label><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono" /></div>
+        </div>
+      </div>
+
       <ToolGuideCard
         stpCode="BL"
         standardRef={isMl ? 'ASTM C940 · STP04-GTT-C940 (Volume mL)' : 'ASTM C940 / GS Height Method · STP04-GTT-C940 (Height mm)'}
@@ -256,6 +292,18 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
           finalBleedPct,
           finalExpPct,
           isPass,
+          cementBrand,
+          cementQty,
+          admixtureBrand,
+          admixtureQty,
+          waterSource,
+          waterQty,
+          wcRatio,
+          ambientTempText,
+          waterTempText,
+          testDateIso,
+          batchNo,
+          sampleId,
           intervals: computedRows
             .filter((r) => r.valid)
             .map((r) => ({

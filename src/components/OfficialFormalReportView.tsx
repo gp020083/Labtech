@@ -15,6 +15,8 @@ export interface OfficialFormalReportViewProps {
   templateMeta: OfficialTemplateMeta;
   siteForm: {
     jobNo: string;
+    jobRefNo?: string;
+    worksOrderNo?: string;
     companyProjNo: string;
     projectTitle: string;
     clientName: string;
@@ -26,6 +28,8 @@ export interface OfficialFormalReportViewProps {
   setSiteForm: React.Dispatch<
     React.SetStateAction<{
       jobNo: string;
+      jobRefNo?: string;
+      worksOrderNo?: string;
       companyProjNo: string;
       projectTitle: string;
       clientName: string;
@@ -89,7 +93,7 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           </div>
           <div>
             <div className="text-sm font-black tracking-wide text-slate-950">
-              LabTech Testing Limited <span className="font-bold">力 達 檢 測 有 限 公 司</span>
+              LabTech Testing Limited
             </div>
             <div className="text-[9.5px] font-semibold text-slate-800 leading-tight mt-0.5">
               BLK A &amp; B, 8/F., HONG KONG SPINNERS INDUSTRIAL BUILDING, PHASE VI,
@@ -119,7 +123,7 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           HOKLAS ENDORSED TEST REPORT
         </div>
         <div className="text-[11px] font-extrabold text-slate-900 mt-0.5">
-          {templateMeta.formalReportTitleEn} ({templateMeta.formalReportTitleZh})
+          {templateMeta.formalReportTitleEn}
         </div>
         <div className="text-[9.5px] font-mono font-bold text-slate-700">
           Test Method: {templateMeta.testStandard} &nbsp;|&nbsp; LabTech In-House Procedure: {templateMeta.stpDocRef}
@@ -130,9 +134,13 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
       <table className="w-full border-collapse border-2 border-slate-950 text-[10.5px] mb-2">
         <tbody>
           <tr className="bg-slate-100">
-            <td className="border border-slate-950 px-2 py-1 font-bold w-[18%]">Report No.:</td>
+            <td className="border border-slate-950 px-2 py-1 font-bold w-[18%]">Job Ref. No.:</td>
             <td className="border border-slate-950 px-2 py-1 font-mono font-black w-[32%]">
-              {baseWorksheet.reportRefNo}
+              <input
+                value={siteForm.jobRefNo ?? baseWorksheet.reportRefNo}
+                onChange={(e) => setSiteForm((s) => ({ ...s, jobRefNo: e.target.value }))}
+                className="w-full bg-transparent font-mono font-black outline-none"
+              />
             </td>
             <td className="border border-slate-950 px-2 py-1 font-bold w-[18%]">Date of Issue:</td>
             <td className="border border-slate-950 px-2 py-1 font-mono font-bold w-[32%]">
@@ -148,9 +156,14 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
                 className="w-full bg-transparent font-semibold outline-none"
               />
             </td>
-            <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">LabTech Job No.:</td>
+            <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">Works Order No. *:</td>
             <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
-              {siteForm.jobNo} ({siteForm.companyProjNo})
+              <input
+                value={siteForm.worksOrderNo ?? ''}
+                onChange={(e) => setSiteForm((s) => ({ ...s, worksOrderNo: e.target.value }))}
+                placeholder="Manual Input (e.g. WO/2026/01)"
+                className="w-full bg-transparent font-mono font-bold outline-none placeholder:text-slate-400"
+              />
             </td>
           </tr>
           <tr>

@@ -1,5 +1,7 @@
 import { CalendarEvent, EquipmentItem, FieldCalcRecord, JobItem, TestMethodItem } from '../types';
 import { getHkTodayIso } from '../utils';
+import { localizeJob, localizeEquipment, localizeTest } from '../data/enTranslations';
+import { toEnglishWorksheetText } from './completedWorksheetGenerator';
 import {
   buildEquipmentCertStatusPath,
   buildEquipmentQrUrl,
@@ -27,6 +29,8 @@ export interface HoklasWorksheetEquipmentRow {
 
 export interface HoklasWorksheetPayload {
   reportRefNo: string;
+  jobRefNo: string;
+  worksOrderNo: string;
   jobNo: string;
   companyProjNo: string;
   projectTitle: string;
@@ -108,9 +112,11 @@ export function buildHoklasFieldWorksheetData(params: {
   equipment: EquipmentItem[];
   tests: TestMethodItem[];
 }): HoklasWorksheetPayload {
-  const { record, job, equipment, tests } = params;
-  const stpMethod = tests.find((t) => t.code === record.stpCode);
-  const inUseEq = equipment.filter((e) => e.inUse !== 'N');
+  const { record, job: rawJob, equipment, tests } = params;
+  const job = rawJob ? localizeJob(rawJob, 'en') : null;
+  const rawStpMethod = tests.find((t) => t.code === record.stpCode);
+  const stpMethod = rawStpMethod ? localizeTest(rawStpMethod, 'en') : undefined;
+  const inUseEq = equipment.filter((e) => e.inUse !== 'N').map((e) => localizeEquipment(e, 'en'));
 
   const onSiteEq = inUseEq.filter((e) => {
     if (e.currentLoan?.jobNo !== record.jobNo) return false;
@@ -130,7 +136,7 @@ export function buildHoklasFieldWorksheetData(params: {
 
   const equipmentList: HoklasWorksheetEquipmentRow[] = matchingTagEq.map((e) => ({
     code: e.code,
-    name: e.name,
+    name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
     model: e.model || '—',
     serial: e.serial || '—',
     calDue: e.certDue || e.due || '—',
@@ -139,30 +145,36 @@ export function buildHoklasFieldWorksheetData(params: {
 
   const defaultSignatory =
     stpMethod?.approvedSignatories?.[0] || 'Shih Chak Lung, Ben (HOKLAS Approved Signatory)';
+  const fallbackRefNo = record.jobRefNo || `HKL-${record.jobNo}-${record.id}`;
 
   return {
-    reportRefNo: `HKL-${record.jobNo}-${record.id}`,
-    jobNo: record.jobNo,
-    companyProjNo: job?.companyProjNo || record.jobNo,
-    projectTitle: job?.project || job?.shortName || record.jobNo,
-    clientName: job?.client || 'Main Contractor / Resident Site Staff',
-    siteLocation: job?.mapAddress || job?.site || record.jobNo,
-    locationNote: record.locationNote || 'Standard Field Station',
+    reportRefNo: toEnglishWorksheetText(fallbackRefNo, `HKL-${record.jobNo}-${record.id}`),
+    jobRefNo: toEnglishWorksheetText(fallbackRefNo, `HKL-${record.jobNo}-${record.id}`),
+    worksOrderNo: toEnglishWorksheetText(record.worksOrderNo, ''),
+    jobNo: toEnglishWorksheetText(record.jobNo, 'LT0001'),
+    companyProjNo: toEnglishWorksheetText(job?.companyProjNo || record.jobNo, record.jobNo),
+    projectTitle: toEnglishWorksheetText(record.projectTitle || job?.project || job?.shortName || record.jobNo, record.jobNo),
+    clientName: toEnglishWorksheetText(job?.client, 'Main Contractor / Resident Site Staff'),
+    siteLocation: toEnglishWorksheetText(job?.mapAddress || job?.site || record.jobNo, record.jobNo),
+    locationNote: toEnglishWorksheetText(record.locationNote, 'Standard Field Station'),
     stpCode: record.stpCode,
-    testName: stpMethod?.name || record.title,
-    standardMethod: stpMethod?.std || record.title,
+    testName: toEnglishWorksheetText(stpMethod?.name || record.title, record.title),
+    standardMethod: toEnglishWorksheetText(stpMethod?.std || record.title, record.title),
     stpDocCode: stpMethod?.stpDocCode || `STP-${record.stpCode}`,
     stpRev: stpMethod?.stpRev || 'Rev.4',
     worksheetCode: stpMethod?.worksheetCode || `F${record.stpCode}01`,
     testedAt: record.testedAt,
-    operatorName: record.operatorName,
-    approvedSignatory: defaultSignatory,
+    operatorName: toEnglishWorksheetText(record.operatorName, 'Shih Chak Lung, Ben'),
+    approvedSignatory: toEnglishWorksheetText(defaultSignatory, 'Shih Chak Lung, Ben (HOKLAS AS)'),
     pass: record.pass,
-    rows: parseCalcSummaryToRows(record.summary),
+    rows: parseCalcSummaryToRows(record.summary).map((r) => ({
+      parameter: toEnglishWorksheetText(r.parameter, r.parameter),
+      value: toEnglishWorksheetText(r.value, r.value),
+    })),
     equipmentList,
     signatureDataUrl: record.signatureDataUrl,
-    signedBy: record.signedBy,
-    signedRole: record.signedRole,
+    signedBy: record.signedBy ? toEnglishWorksheetText(record.signedBy) : undefined,
+    signedRole: record.signedRole ? toEnglishWorksheetText(record.signedRole) : undefined,
     signedAt: record.signedAt,
     sitePhotos: record.sitePhotos || [],
   };

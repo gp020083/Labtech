@@ -11,6 +11,8 @@ import {
 
 export interface OfficialFormSiteState {
   jobNo: string;
+  jobRefNo?: string;
+  worksOrderNo?: string;
   companyProjNo: string;
   projectTitle: string;
   clientName: string;
@@ -102,10 +104,7 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             />
             <div>
               <div className="text-sm font-black tracking-tight text-slate-950">
-                {LABTECH_COMPANY_HEADER.nameEn}{' '}
-                <span className="font-normal text-xs text-slate-700">
-                  {LABTECH_COMPANY_HEADER.nameZh}
-                </span>
+                {LABTECH_COMPANY_HEADER.nameEn}
               </div>
               <div className="text-[9.5px] font-semibold text-slate-700 leading-tight">
                 {LABTECH_COMPANY_HEADER.addressLine1}
@@ -142,9 +141,9 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
           <div className="flex items-center gap-1">
             <span className="font-bold">Job Reference No : </span>
             <input
-              value={siteForm.jobNo}
-              onChange={(e) => setSiteForm({ ...siteForm, jobNo: e.target.value })}
-              className="w-28 border-b border-slate-800 bg-transparent px-1 font-mono font-black text-slate-950 outline-none"
+              value={siteForm.jobRefNo ?? reportRefNo}
+              onChange={(e) => setSiteForm({ ...siteForm, jobRefNo: e.target.value })}
+              className="w-40 border-b border-slate-800 bg-transparent px-1 font-mono font-black text-slate-950 outline-none"
             />
           </div>
         </div>
@@ -223,7 +222,12 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             Works Order No :
           </div>
           <div className="col-span-9 sm:col-span-3 px-2 py-1 font-mono font-semibold">
-            {siteForm.jobNo}-WO-01
+            <input
+              value={siteForm.worksOrderNo ?? ''}
+              onChange={(e) => setSiteForm({ ...siteForm, worksOrderNo: e.target.value })}
+              placeholder="Manual Input (e.g. WO/2026/01)"
+              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
+            />
           </div>
         </div>
       </div>
@@ -239,7 +243,7 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             </div>
             <div className="grid grid-cols-12 divide-y divide-slate-400">
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Brand of Cement :</div>
-              <div className="col-span-4 px-2 py-1 border-r border-slate-400">{structured.cementBrand || 'Green Island OPC (CEM I 52.5N)'}</div>
+              <div className="col-span-4 px-2 py-1 border-r border-slate-400">{structured.cementBrand || 'Green Island OPC (BS EN 197-1 CEM I 52.5N)'}</div>
               <div className="col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Quantity :</div>
               <div className="col-span-3 px-2 py-1 font-mono">{structured.cementQty || '50 kg (1 Bag)'}</div>
 
@@ -249,19 +253,19 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
               <div className="col-span-3 px-2 py-1 font-mono">{structured.admixtureQty || '0.225 kg'}</div>
 
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Water :</div>
-              <div className="col-span-4 px-2 py-1 border-r border-slate-400">Mains Potable Water</div>
+              <div className="col-span-4 px-2 py-1 border-r border-slate-400">{structured.waterSource || 'Mains Potable Water (WSD)'}</div>
               <div className="col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Quantity :</div>
               <div className="col-span-3 px-2 py-1 font-mono">{structured.waterQty || '21.0 L'}</div>
 
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Water / Cement Ratio :</div>
               <div className="col-span-3 px-2 py-1 font-mono font-bold border-r border-slate-400">{structured.wcRatio || '0.42'}</div>
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Ambient Temperature :</div>
-              <div className="col-span-3 px-2 py-1 font-mono">{siteForm.ambientTemp}</div>
+              <div className="col-span-3 px-2 py-1 font-mono">{structured.ambientTempText || siteForm.ambientTemp}</div>
 
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Water Temperature :</div>
-              <div className="col-span-3 px-2 py-1 font-mono border-r border-slate-400">{(structured.groutTempC - 0.5).toFixed(1)} °C</div>
+              <div className="col-span-3 px-2 py-1 font-mono border-r border-slate-400">{structured.waterTempText || `${(structured.groutTempC - 0.5).toFixed(1)} °C`}</div>
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Date of Testing :</div>
-              <div className="col-span-3 px-2 py-1 font-mono font-bold">{dateOnly}</div>
+              <div className="col-span-3 px-2 py-1 font-mono font-bold">{structured.testDateIso || dateOnly}</div>
             </div>
           </div>
 
@@ -380,7 +384,7 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             </div>
             <div className="grid grid-cols-12 divide-y divide-slate-400">
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Brand of Cement :</div>
-              <div className="col-span-4 px-2 py-1 border-r border-slate-400">{structured.cementBrand || 'Green Island OPC (CEM I 52.5N)'}</div>
+              <div className="col-span-4 px-2 py-1 border-r border-slate-400">{structured.cementBrand || 'Green Island OPC (BS EN 197-1 CEM I 52.5N)'}</div>
               <div className="col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Quantity :</div>
               <div className="col-span-3 px-2 py-1 font-mono">{structured.cementQty || '50 kg (1 Bag)'}</div>
 
@@ -390,19 +394,19 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
               <div className="col-span-3 px-2 py-1 font-mono">{structured.admixtureQty || '0.225 kg'}</div>
 
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Water :</div>
-              <div className="col-span-4 px-2 py-1 border-r border-slate-400">Mains Potable Water</div>
+              <div className="col-span-4 px-2 py-1 border-r border-slate-400">{structured.waterSource || 'Mains Potable Water (WSD)'}</div>
               <div className="col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Quantity :</div>
               <div className="col-span-3 px-2 py-1 font-mono">{structured.waterQty || '21.0 L'}</div>
 
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Water / Cement Ratio :</div>
               <div className="col-span-3 px-2 py-1 font-mono font-bold border-r border-slate-400">{structured.wcRatio || '0.42'}</div>
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Ambient Temperature :</div>
-              <div className="col-span-3 px-2 py-1 font-mono">{siteForm.ambientTemp}</div>
+              <div className="col-span-3 px-2 py-1 font-mono">{structured.ambientTempText || siteForm.ambientTemp}</div>
 
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Water Temperature :</div>
-              <div className="col-span-3 px-2 py-1 font-mono border-r border-slate-400">25.0 °C</div>
+              <div className="col-span-3 px-2 py-1 font-mono border-r border-slate-400">{structured.waterTempText || '25.3 °C'}</div>
               <div className="col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Date of Testing :</div>
-              <div className="col-span-3 px-2 py-1 font-mono font-bold">{dateOnly}</div>
+              <div className="col-span-3 px-2 py-1 font-mono font-bold">{structured.testDateIso || dateOnly}</div>
             </div>
           </div>
 

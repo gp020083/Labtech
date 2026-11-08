@@ -33,8 +33,12 @@ export interface FlowConeStructuredPayload {
   cementQty?: string;
   admixtureBrand?: string;
   admixtureQty?: string;
+  waterSource?: string;
   waterQty?: string;
   wcRatio?: string;
+  ambientTempText?: string;
+  waterTempText?: string;
+  testDateIso?: string;
   batchNo?: string;
   sampleId?: string;
   timeWaterAdded?: string;
@@ -65,8 +69,12 @@ export interface BleedingStructuredPayload {
   cementQty?: string;
   admixtureBrand?: string;
   admixtureQty?: string;
+  waterSource?: string;
   waterQty?: string;
   wcRatio?: string;
+  ambientTempText?: string;
+  waterTempText?: string;
+  testDateIso?: string;
   batchNo?: string;
   sampleId?: string;
 }
@@ -332,6 +340,8 @@ function buildCell(
 export interface CompletedExcelGeneratorParams {
   stpCode: string;
   reportRefNo: string;
+  jobRefNo?: string;
+  worksOrderNo?: string;
   testedAt: string;
   jobNo: string;
   companyProjNo: string;
@@ -351,6 +361,64 @@ export interface CompletedExcelGeneratorParams {
   equipmentRegistry?: EquipmentItem[];
   job?: JobItem | null;
   record?: FieldCalcRecord | null;
+}
+
+const ZH_TO_EN_PHRASES: Record<string, string> = {
+  '土木工程拓展署': 'CEDD',
+  '建築署': 'ArchSD',
+  '房屋署': 'Housing Department',
+  '屋宇署': 'Buildings Department',
+  '路政署': 'Highways Department',
+  '渠務署': 'DSD',
+  '水務署': 'WSD',
+  '香港鐵路有限公司': 'MTR Corporation Ltd.',
+  '新輝建築': 'Sanfield Building Contractors Ltd.',
+  '金門建築': 'Gammon Construction Ltd.',
+  '中國建築': 'China State Construction',
+  '有利建築': 'Yau Lee Construction Co., Ltd.',
+  '協興建築': 'Hip Hing Construction Co., Ltd.',
+  '晴朗': 'Fine / Sunny',
+  '多雲': 'Cloudy',
+  '微雨': 'Light Rain',
+};
+
+/**
+ * Ensures all Worksheet / Formal Report strings are 100% English (strips Chinese characters).
+ */
+export function toEnglishWorksheetText(input?: string | null, fallback = ''): string {
+  if (!input) return fallback;
+  let s = String(input);
+  for (const [zh, en] of Object.entries(ZH_TO_EN_PHRASES)) {
+    if (s.includes(zh)) {
+      s = s.split(zh).join(en);
+    }
+  }
+  // Remove CJK Ideographs and full-width punctuation
+  s = s
+    .replace(/[\u3400-\u9FFF\uF900-\uFAFF\u3000-\u303F\uFF00-\uFFEF]+/g, ' ')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return s || fallback;
+}
+
+/**
+ * Generates the next sequential Job Reference No. for a given Job and Test Method.
+ */
+export function generateSequentialJobRefNo(
+  jobNo: string,
+  stpCode: string,
+  existingRecords: FieldCalcRecord[] = [],
+  dateIso?: string
+): string {
+  const cleanJob = toEnglishWorksheetText(jobNo, 'LT0001').toUpperCase();
+  const cleanStp = toEnglishWorksheetText(stpCode, 'KD').toUpperCase();
+  const ymd = (dateIso || new Date().toISOString().slice(0, 10)).replace(/-/g, '').slice(2, 8);
+  const matchingCount = existingRecords.filter(
+    (r) => r.jobNo.toUpperCase() === cleanJob && r.stpCode.toUpperCase() === cleanStp
+  ).length;
+  const nextSeq = String(matchingCount + 1).padStart(3, '0');
+  return `${cleanJob}-${cleanStp}-${ymd}-${nextSeq}`;
 }
 
 /**

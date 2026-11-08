@@ -9,6 +9,8 @@ import {
   StructuredCalcPayload,
   getOfficialTemplateMeta,
   triggerCompletedExcelDownload,
+  generateSequentialJobRefNo,
+  toEnglishWorksheetText,
 } from '../../utils/completedWorksheetGenerator';
 import { downloadCalcRecordCsv, nowTimestamp } from '../../utils';
 import { FieldSignOffBox } from '../FieldSignOffBox';
@@ -28,6 +30,7 @@ import {
   PenTool,
   FileSpreadsheet,
   Award,
+  Hash,
 } from 'lucide-react';
 
 export interface GuideStep {
@@ -50,6 +53,10 @@ export const ToolGuideCard: React.FC<{
   const govSpec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
   const templateMeta = getOfficialTemplateMeta(stpCode, tests);
   const [selectedJobNo, setSelectedJobNo] = useState<string>(jobs[0]?.no || 'LT0002');
+  const [jobRefNo, setJobRefNo] = useState<string>(() =>
+    generateSequentialJobRefNo(jobs[0]?.no || 'LT0002', stpCode, calcRecords)
+  );
+  const [worksOrderNo, setWorksOrderNo] = useState<string>('');
   const [locationNote, setLocationNote] = useState<string>('');
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
   const [signOffExpanded, setSignOffExpanded] = useState<boolean>(false);
@@ -63,7 +70,44 @@ export const ToolGuideCard: React.FC<{
   } | null>(null);
 
   const passStatus = detectCalcPassStatus(copyText);
-  const recentForStp = calcRecords.filter((r) => r.stpCode === stpCode).slice(0, 3);
+  const recentForStp = calcRecords.filter((r) => r.stpCode === stpCode).slice(0, 5);
+
+  const handleSelectJob = (nextJobNo: string) => {
+    setSelectedJobNo(nextJobNo);
+    setJobRefNo(generateSequentialJobRefNo(nextJobNo, stpCode, calcRecords));
+  };
+
+  const handleDispatchNewRefNo = () => {
+    const nextRef = generateSequentialJobRefNo(selectedJobNo, stpCode, calcRecords);
+    setJobRefNo(nextRef);
+    const job = jobs.find((j) => j.no === selectedJobNo);
+    const rec = saveCalcRecord({
+      jobNo: selectedJobNo,
+      jobRefNo: nextRef,
+      worksOrderNo: worksOrderNo.trim() || undefined,
+      projectTitle: job?.project || job?.shortName || selectedJobNo,
+      stpCode,
+      title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
+      locationNote: locationNote.trim() || undefined,
+      summary: copyText,
+      pass: passStatus,
+      signatureDataUrl: signatureDataUrl || undefined,
+      signedBy: signedBy.trim() || undefined,
+      signedRole: signedRole.trim() || undefined,
+      signedAt: signatureDataUrl ? nowTimestamp() : undefined,
+      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      structuredData,
+    });
+    setJustSavedId(rec.id);
+    setTimeout(() => setJustSavedId(null), 3500);
+    pushToast(
+      tx(`🎯 已派發新 Job Ref. No.: ${nextRef}`, `🎯 Assigned New Job Ref. No.: ${nextRef}`),
+      tx(
+        `已登記至工程 ${selectedJobNo} (${job?.shortName || ''}) · 操作員: ${user?.name || 'Operator'}`,
+        `Logged under Project ${selectedJobNo} · Operator: ${user?.name || 'Operator'}`
+      )
+    );
+  };
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(copyText);
@@ -73,27 +117,42 @@ export const ToolGuideCard: React.FC<{
     );
   };
 
-  const buildCurrentDraftRecord = (): FieldCalcRecord => ({
-    id: `${stpCode}-${Date.now().toString().slice(-4)}`,
-    jobNo: selectedJobNo,
-    stpCode,
-    title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
-    locationNote: locationNote.trim() || undefined,
-    summary: copyText,
-    pass: passStatus,
-    testedAt: nowTimestamp(),
-    operatorName: user?.name || 'Operator',
-    signatureDataUrl: signatureDataUrl || undefined,
-    signedBy: signedBy.trim() || undefined,
-    signedRole: signedRole.trim() || undefined,
-    signedAt: signatureDataUrl ? nowTimestamp() : undefined,
-    sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
-    structuredData,
-  });
+  const buildCurrentDraftRecord = (): FieldCalcRecord => {
+    const job = jobs.find((j) => j.no === selectedJobNo);
+    const activeRefNo =
+      jobRefNo.trim() || generateSequentialJobRefNo(selectedJobNo, stpCode, calcRecords);
+    return {
+      id: `${stpCode}-${Date.now().toString().slice(-4)}`,
+      jobNo: selectedJobNo,
+      jobRefNo: activeRefNo,
+      worksOrderNo: worksOrderNo.trim() || undefined,
+      projectTitle: job?.project || job?.shortName || selectedJobNo,
+      stpCode,
+      title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
+      locationNote: locationNote.trim() || undefined,
+      summary: copyText,
+      pass: passStatus,
+      testedAt: nowTimestamp(),
+      operatorName: toEnglishWorksheetText(user?.name || 'Operator', 'Operator'),
+      signatureDataUrl: signatureDataUrl || undefined,
+      signedBy: signedBy.trim() || undefined,
+      signedRole: signedRole.trim() || undefined,
+      signedAt: signatureDataUrl ? nowTimestamp() : undefined,
+      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
+      structuredData,
+    };
+  };
 
   const handleSaveToJob = () => {
+    const job = jobs.find((j) => j.no === selectedJobNo);
+    const activeRefNo =
+      jobRefNo.trim() || generateSequentialJobRefNo(selectedJobNo, stpCode, calcRecords);
+    setJobRefNo(activeRefNo);
     const rec = saveCalcRecord({
       jobNo: selectedJobNo,
+      jobRefNo: activeRefNo,
+      worksOrderNo: worksOrderNo.trim() || undefined,
+      projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
       title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
       locationNote: locationNote.trim() || undefined,
@@ -122,6 +181,24 @@ export const ToolGuideCard: React.FC<{
   const handleDirectGenExcel = () => {
     const draft = buildCurrentDraftRecord();
     const job = jobs.find((j) => j.no === selectedJobNo) || null;
+    // Automatically register this test's Job Reference No. under the selected Project
+    saveCalcRecord({
+      jobNo: selectedJobNo,
+      jobRefNo: draft.jobRefNo,
+      worksOrderNo: draft.worksOrderNo,
+      projectTitle: draft.projectTitle,
+      stpCode,
+      title: draft.title,
+      locationNote: draft.locationNote,
+      summary: copyText,
+      pass: passStatus,
+      signatureDataUrl: draft.signatureDataUrl,
+      signedBy: draft.signedBy,
+      signedRole: draft.signedRole,
+      signedAt: draft.signedAt,
+      sitePhotos: draft.sitePhotos,
+      structuredData,
+    });
     const ws = buildHoklasFieldWorksheetData({
       record: draft,
       job,
@@ -131,6 +208,8 @@ export const ToolGuideCard: React.FC<{
     const downloadedName = triggerCompletedExcelDownload({
       stpCode,
       reportRefNo: ws.reportRefNo,
+      jobRefNo: ws.jobRefNo,
+      worksOrderNo: ws.worksOrderNo,
       testedAt: ws.testedAt,
       jobNo: ws.jobNo,
       companyProjNo: ws.companyProjNo,
@@ -153,7 +232,7 @@ export const ToolGuideCard: React.FC<{
     });
     pushToast(
       tx('已按官方 Excel 底板產生 Completed Worksheet (.xlsx)', 'Generated Official Completed Excel Worksheet (.xlsx)'),
-      `${downloadedName} (${templateMeta.templateFileCode})`
+      `${downloadedName} (Ref: ${ws.jobRefNo})`
     );
   };
 
@@ -226,11 +305,11 @@ export const ToolGuideCard: React.FC<{
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('選擇工程地盤 (Job No.)', 'Select Site (Job No.)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('1. 選擇所屬工程 (Project / Site)', '1. Select Project / Site')}</label>
             <select
               aria-label="Select Site Job No"
               value={selectedJobNo}
-              onChange={(e) => setSelectedJobNo(e.target.value)}
+              onChange={(e) => handleSelectJob(e.target.value)}
               className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-bold text-slate-900"
             >
               {jobs.map((j) => (
@@ -241,11 +320,39 @@ export const ToolGuideCard: React.FC<{
             </select>
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('樁號 / 樣本編號 (選填)', 'Pile / Sample Ref (Optional)')}</label>
+            <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+              <span>{tx('2. Job Reference No. (每次測試派號)', '2. Job Reference No. (Assigned per Test)')}</span>
+              <button
+                type="button"
+                onClick={handleDispatchNewRefNo}
+                className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-2 py-0.5 text-[10px] font-extrabold text-white hover:bg-indigo-700 cursor-pointer"
+              >
+                <Hash className="h-2.5 w-2.5" />
+                {tx('🎯 派發新 Ref. No.', '🎯 Assign New Ref. No.')}
+              </button>
+            </label>
+            <input
+              value={jobRefNo}
+              onChange={(e) => setJobRefNo(e.target.value)}
+              placeholder="e.g. LT0001-FC-261108-001"
+              className="mt-1 w-full rounded-xl border border-indigo-300 bg-indigo-50/40 px-2.5 py-1.5 font-mono font-extrabold text-indigo-950"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-slate-600">{tx('3. Works Order No. (手打輸入)', '3. Works Order No. (Manual Input)')}</label>
+            <input
+              value={worksOrderNo}
+              onChange={(e) => setWorksOrderNo(e.target.value)}
+              placeholder="e.g. WO/2026/11/018 (Manual Input)"
+              className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-2.5 py-1.5 font-mono font-bold text-slate-900"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-slate-600">{tx('4. 測試位置 / 樁號 (Location in Work)', '4. Test Location / Pile Ref')}</label>
             <input
               value={locationNote}
               onChange={(e) => setLocationNote(e.target.value)}
-              placeholder={tx('如：P12 / Trial Batch #4 / BH08', 'e.g. Pile P12 / Batch #4 / BH08')}
+              placeholder="e.g. Pile P12 / Batch #4 / BH08"
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-slate-900"
             />
           </div>
@@ -332,37 +439,54 @@ export const ToolGuideCard: React.FC<{
 
         {recentForStp.length > 0 && (
           <div className="border-t border-slate-100 pt-2 space-y-1">
-            <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              {tx(`最近已儲存之 ${stpCode} 現場紀錄 (${recentForStp.length})`, `Recent Saved ${stpCode} Logs (${recentForStp.length})`)}
+            <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              {tx(
+                `📋 已派發 Job Ref. No. 及測試工程紀錄表 (${recentForStp.length})`,
+                `📋 Dispatched Job Ref. No. & Project Registry (${recentForStp.length})`
+              )}
             </div>
-            {recentForStp.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-1 text-[11px]">
-                <span className="truncate font-semibold text-slate-700">
-                  <b className="font-mono text-slate-900">{r.jobNo}</b> · {r.locationNote || r.id} ({r.testedAt.slice(5)})
-                  {r.signatureDataUrl ? ' · ✍️已簽' : ''}
-                  {r.sitePhotos?.length ? ` · 📷${r.sitePhotos.length}圖` : ''}
-                </span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewState({ record: r, mode: 'worksheet' })}
-                    className="font-extrabold text-brand-deep hover:underline cursor-pointer"
-                  >
-                    {tx('📋 工作紙', '📋 Worksheet')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewState({ record: r, mode: 'formal_report' })}
-                    className="font-extrabold text-amber-800 hover:underline cursor-pointer"
-                  >
-                    {tx('📜 正式報告', '📜 Report')}
-                  </button>
-                  <span className={`font-mono text-[10px] font-extrabold ${r.pass ? 'text-emerald-700' : 'text-rose-700'}`}>
-                    {r.pass ? '✓ PASS' : '⚠ REVIEW'}
-                  </span>
+            {recentForStp.map((r) => {
+              const matchedJob = jobs.find((j) => j.no === r.jobNo);
+              return (
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200/70 px-2.5 py-1.5 text-[11px]">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold text-slate-800">
+                      <span className="rounded bg-indigo-100 px-1.5 py-0.5 font-mono font-extrabold text-indigo-950 mr-1.5">
+                        {r.jobRefNo || `HKL-${r.jobNo}-${r.id}`}
+                      </span>
+                      <b className="font-mono text-slate-900">{r.jobNo}</b>
+                      <span className="text-slate-600">
+                        {' '}· {r.projectTitle || matchedJob?.shortName || r.jobNo}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                      {r.worksOrderNo ? `WO: ${r.worksOrderNo} · ` : ''}
+                      {r.locationNote ? `Loc: ${r.locationNote} · ` : ''}
+                      Op: {r.operatorName} ({r.testedAt.slice(5)})
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewState({ record: r, mode: 'worksheet' })}
+                      className="font-extrabold text-brand-deep hover:underline cursor-pointer"
+                    >
+                      {tx('📋 工作紙', '📋 Worksheet')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewState({ record: r, mode: 'formal_report' })}
+                      className="font-extrabold text-amber-800 hover:underline cursor-pointer"
+                    >
+                      {tx('📜 正式報告', '📜 Report')}
+                    </button>
+                    <span className={`font-mono text-[10px] font-extrabold ${r.pass ? 'text-emerald-700' : 'text-rose-700'}`}>
+                      {r.pass ? '✓ PASS' : '⚠ REVIEW'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

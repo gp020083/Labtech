@@ -52,6 +52,8 @@ import {
 import {
   getOfficialTemplateMeta,
   buildCompletedExcelWorkbookXml,
+  toEnglishWorksheetText,
+  generateSequentialJobRefNo,
 } from './completedWorksheetGenerator';
 import {
   buildOfficialTemplateSheetCellMaps,
@@ -840,5 +842,67 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   const injectedXml = injectCellsIntoSheetXml(sampleXml, { H7: 'LT0001', C7: 'CEDD' });
   assert.ok(injectedXml.includes('<f>Sheet1!H9</f><v>LT0001</v>'));
   assert.ok(injectedXml.includes('<is><t xml:space="preserve">CEDD</t></is>'));
+
+  // All-English sanitizer & Sequential Job Reference No. Dispatch + Manual Works Order No. + FC/BL Sample Information
+  assert.equal(toEnglishWorksheetText('總工程師陳大文 Ch.E. T.M. Chan', 'Fallback'), 'Ch.E. T.M. Chan');
+  const nextRef1 = generateSequentialJobRefNo('LT0001', 'FC', [], '2026-11-08');
+  assert.equal(nextRef1, 'LT0001-FC-261108-001');
+  const nextRef2 = generateSequentialJobRefNo(
+    'LT0001',
+    'FC',
+    [{ jobNo: 'LT0001', stpCode: 'FC', jobRefNo: 'LT0001-FC-261108-001' }],
+    '2026-11-08'
+  );
+  assert.equal(nextRef2, 'LT0001-FC-261108-002');
+
+  const fcMaps = buildOfficialTemplateSheetCellMaps({
+    stpCode: 'FC',
+    reportRefNo: 'HKL-LT0001-FC-0001',
+    jobRefNo: nextRef2,
+    worksOrderNo: 'WO/CEDD/2026/088',
+    testedAt: '2026-11-08 09:30',
+    jobNo: 'LT0001',
+    companyProjNo: 'PRJ-01',
+    projectTitle: 'Northern Metropolis Pile Works',
+    clientName: 'CEDD',
+    siteLocation: 'Kwu Tung North',
+    locationNote: 'BP-12',
+    ambientTemp: '26.5 °C',
+    weatherNote: 'Fine',
+    operatorName: 'Shih Chak Lung, Ben',
+    approvedSignatory: 'Lam Hoi Fan, James',
+    pass: true,
+    equipmentRows: [],
+    measurementRows: [],
+    structured: {
+      kind: 'FC',
+      waterCheckSec: 8.0,
+      waterOk: true,
+      groutTempC: 25.4,
+      t1Sec: 16.2,
+      t2Sec: 16.6,
+      meanSec: 16.4,
+      diffSec: 0.4,
+      repeatOk: true,
+      cementBrand: 'Green Island OPC (52.5N)',
+      cementQty: '100 kg (2 Bags)',
+      admixtureBrand: 'Sika Grout Aid',
+      admixtureQty: '0.45 kg',
+      waterSource: 'WSD Mains Water',
+      waterQty: '42.0 L',
+      wcRatio: '0.42',
+      ambientTempText: '27.1 °C',
+      waterTempText: '24.8 °C',
+      testDateIso: '2026-11-08',
+    },
+  });
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AF4, 'LT0001-FC-261108-002');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AG11, 'WO/CEDD/2026/088');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I18, 'Green Island OPC (52.5N)');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AG18, '100 kg (2 Bags)');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I20, 'WSD Mains Water');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I21, 0.42);
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I22, '27.1 °C');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I23, '24.8 °C');
 });
 

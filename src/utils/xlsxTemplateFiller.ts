@@ -1,4 +1,7 @@
-import { CompletedExcelGeneratorParams } from './completedWorksheetGenerator';
+import {
+  CompletedExcelGeneratorParams,
+  toEnglishWorksheetText,
+} from './completedWorksheetGenerator';
 
 function xmlEscape(val: unknown): string {
   return String(val ?? '')
@@ -102,8 +105,16 @@ export function buildOfficialTemplateSheetCellMaps(
   const st = params.structured;
   const dateOnly = (params.testedAt || '').slice(0, 10);
   const timeOnly = (params.testedAt || '').slice(11, 16) || '10:00';
-  const contractNo = params.job?.contractNo || params.companyProjNo || 'CEDD/2026/01';
-  const worksOrderNo = params.reportRefNo || `${params.jobNo}-WO-01`;
+  const en = (v?: string | null, fb = '') => toEnglishWorksheetText(v, fb);
+  const jobRefNo = en(params.jobRefNo || params.reportRefNo || params.jobNo, params.jobNo);
+  const contractNo = en(params.job?.contractNo || params.companyProjNo || 'CEDD/2026/01', 'CEDD/2026/01');
+  const worksOrderNo = en(params.worksOrderNo ?? '', '');
+  const clientName = en(params.clientName, 'CEDD');
+  const projectTitle = en(params.projectTitle, params.jobNo);
+  const siteLocation = en(params.siteLocation, params.jobNo);
+  const locationNote = en(params.locationNote, 'Field Station');
+  const operatorName = en(params.operatorName, 'Operator');
+  const approvedSignatory = en(params.approvedSignatory, 'Approved Signatory');
 
   const findEqCode = (keywords: string[], fallback: string): string => {
     const matched = params.equipmentRows.find((e) =>
@@ -123,34 +134,35 @@ export function buildOfficialTemplateSheetCellMaps(
     const groutTemp = fc?.groutTempC ?? 25.0;
     const ambTemp = fc?.ambientTempC ?? (parseFloat(params.ambientTemp) || 26.5);
     const waterTemp = Number((groutTemp - 0.5).toFixed(1));
+    const wcNum = Number(fc?.wcRatio ?? '0.42');
     const tmId = findEqCode(['tm', 'mm', 'therm'], 'LT-TM-01');
     const fcId = findEqCode(['fc', 'flow', 'cone'], 'LT-FC-01');
     const tdId = findEqCode(['td', 'stop', 'timer'], 'LT-TD-01');
 
     return {
       'xl/worksheets/sheet1.xml': {
-        AF4: params.jobNo,
-        I8: params.clientName,
-        I9: params.projectTitle,
-        I10: params.siteLocation,
+        AF4: jobRefNo,
+        I8: clientName,
+        I9: projectTitle,
+        I10: siteLocation,
         AG10: contractNo,
-        I11: fc?.batchNo || `B-${dateOnly.replace(/-/g, '')}-01`,
+        I11: en(fc?.batchNo, `B-${dateOnly.replace(/-/g, '')}-01`),
         AG11: worksOrderNo,
-        I12: params.locationNote,
-        I13: fc?.sampleId || `${params.jobNo}-FC-01`,
-        I18: fc?.cementBrand || 'Green Island OPC (BS EN 197-1 CEM I 52.5N)',
-        AG18: fc?.cementQty || '50 kg (1 Bag)',
-        I19: fc?.admixtureBrand || 'Sika Grout Aid / Cebex 100',
-        AG19: fc?.admixtureQty || '0.225 kg',
-        I20: 'Mains Potable Water (WSD)',
-        AG20: fc?.waterQty || '21.0 L',
-        I21: fc?.wcRatio || '0.42',
-        I22: `${ambTemp} °C`,
-        I23: `${waterTemp} °C`,
-        I24: dateOnly,
-        O29: params.locationNote,
-        O30: fc?.timeWaterAdded || '09:45',
-        O31: fc?.timeDrawingGrout || '09:52',
+        I12: locationNote,
+        I13: en(fc?.sampleId, `${params.jobNo}-FC-01`),
+        I18: en(fc?.cementBrand, 'Green Island OPC (BS EN 197-1 CEM I 52.5N)'),
+        AG18: en(fc?.cementQty, '50 kg (1 Bag)'),
+        I19: en(fc?.admixtureBrand, 'Sika Grout Aid / Cebex 100'),
+        AG19: en(fc?.admixtureQty, '0.225 kg'),
+        I20: en(fc?.waterSource, 'Mains Potable Water (WSD)'),
+        AG20: en(fc?.waterQty, '21.0 L'),
+        I21: Number.isFinite(wcNum) ? wcNum : en(fc?.wcRatio, '0.42'),
+        I22: en(fc?.ambientTempText, `${ambTemp} °C`),
+        I23: en(fc?.waterTempText, `${waterTemp} °C`),
+        I24: en(fc?.testDateIso, dateOnly),
+        O29: locationNote,
+        O30: en(fc?.timeWaterAdded, '09:45'),
+        O31: en(fc?.timeDrawingGrout, '09:52'),
         A32: `Thermometer ID:   ${tmId}                                  Flow Cone ID:   ${fcId}                                           Timer ID:   ${tdId}`,
         O33: groutTemp,
         O34: timeOnly,
@@ -163,10 +175,10 @@ export function buildOfficialTemplateSheetCellMaps(
         O41: avg <= 35 ? 'Yes' : 'No',
         O42: Math.abs(t1 - t2) <= 1.8 ? 'Yes' : 'No',
         D46: fc ? `Pre-test 1725mL Water Efflux Check = ${fc.waterCheckSec.toFixed(1)}s (8.0±0.2s OK). Conforms to ASTM C939M-22.` : 'Conforms to ASTM C939M-22.',
-        I48: params.operatorName,
-        AG48: params.approvedSignatory,
-        I50: dateOnly,
-        AG50: dateOnly,
+        I48: operatorName,
+        AG48: approvedSignatory,
+        I50: en(fc?.testDateIso, dateOnly),
+        AG50: en(fc?.testDateIso, dateOnly),
       },
     };
   }
@@ -174,35 +186,36 @@ export function buildOfficialTemplateSheetCellMaps(
   if (stp === 'BL') {
     const bl = st?.kind === 'BL' ? st : undefined;
     const ambTemp = parseFloat(params.ambientTemp) || 26.5;
+    const wcNum = Number(bl?.wcRatio ?? '0.42');
     const sheetCells: Record<string, string | number> = {
-      AH4: params.jobNo,
-      J8: params.clientName,
-      I9: params.projectTitle,
-      I10: params.siteLocation,
+      AH4: jobRefNo,
+      J8: clientName,
+      I9: projectTitle,
+      I10: siteLocation,
       AH10: contractNo,
-      I11: bl?.batchNo || `B-${dateOnly.replace(/-/g, '')}-01`,
+      I11: en(bl?.batchNo, `B-${dateOnly.replace(/-/g, '')}-01`),
       AH11: worksOrderNo,
-      J12: params.locationNote,
-      J13: bl?.sampleId || `${params.jobNo}-BL-01`,
-      I18: bl?.cementBrand || 'Green Island OPC (BS EN 197-1 CEM I 52.5N)',
-      AH18: bl?.cementQty || '50 kg (1 Bag)',
-      I19: bl?.admixtureBrand || 'Sika Grout Aid / Cebex 100',
-      AH19: bl?.admixtureQty || '0.225 kg',
-      I20: 'Mains Potable Water (WSD)',
-      AH20: bl?.waterQty || '21.0 L',
-      I21: bl?.wcRatio || '0.42',
-      I22: `${ambTemp} °C`,
-      I23: `${(ambTemp - 1.2).toFixed(1)} °C`,
-      I24: dateOnly,
+      J12: locationNote,
+      J13: en(bl?.sampleId, `${params.jobNo}-BL-01`),
+      I18: en(bl?.cementBrand, 'Green Island OPC (BS EN 197-1 CEM I 52.5N)'),
+      AH18: en(bl?.cementQty, '50 kg (1 Bag)'),
+      I19: en(bl?.admixtureBrand, 'Sika Grout Aid / Cebex 100'),
+      AH19: en(bl?.admixtureQty, '0.225 kg'),
+      I20: en(bl?.waterSource, 'Mains Potable Water (WSD)'),
+      AH20: en(bl?.waterQty, '21.0 L'),
+      I21: Number.isFinite(wcNum) ? wcNum : en(bl?.wcRatio, '0.42'),
+      I22: en(bl?.ambientTempText, `${ambTemp} °C`),
+      I23: en(bl?.waterTempText, `${(ambTemp - 1.2).toFixed(1)} °C`),
+      I24: en(bl?.testDateIso, dateOnly),
       K29: '( ✓',
       AG29: '( ✓ )',
       D50: bl
         ? `Initial Grout Reading (${bl.unit === 'mL' ? 'V1' : 'H1'}) = ${bl.v1} ${bl.unit}; Final Bleeding = ${bl.finalBleedPct.toFixed(2)}% (Spec <= ${bl.specLimitPct}%); Free Expansion = ${bl.finalExpPct.toFixed(2)}%.`
         : 'Conforms to ASTM C940-22.',
-      I52: params.operatorName,
-      AH52: params.approvedSignatory,
-      I54: dateOnly,
-      AH54: dateOnly,
+      I52: operatorName,
+      AH52: approvedSignatory,
+      I54: en(bl?.testDateIso, dateOnly),
+      AH54: en(bl?.testDateIso, dateOnly),
     };
 
     // Map interval rows to rows 35..41 (15min, 30min, 45min, 60min, 2hour, 3hour, 24hour)
@@ -246,17 +259,17 @@ export function buildOfficialTemplateSheetCellMaps(
 
     return {
       'xl/worksheets/sheet1.xml': {
-        H9: params.reportRefNo,
+        H9: jobRefNo,
         AB9: dateOnly,
         H10: dateOnly,
         AB10: timeOnly,
-        L13: params.clientName,
+        L13: clientName,
         L16: contractNo,
         L17: worksOrderNo,
-        L18: params.projectTitle,
-        L19: params.siteLocation,
-        AQ19: `${params.weatherNote} / ${params.ambientTemp}`,
-        O22: params.locationNote,
+        L18: projectTitle,
+        L19: siteLocation,
+        AQ19: `${en(params.weatherNote, 'Fine')} / ${en(params.ambientTemp, '26.5 °C')}`,
+        O22: locationNote,
         AQ22: 'Bored Pile',
         O23: pileDia,
         AQ23: pileDia - 70,
@@ -271,19 +284,19 @@ export function buildOfficialTemplateSheetCellMaps(
         AQ46: tmId,
       },
       'xl/worksheets/sheet2.xml': {
-        H9: params.reportRefNo,
+        H9: jobRefNo,
         AB9: dateOnly,
         H10: dateOnly,
         AB10: timeOnly,
-        M43: params.operatorName,
-        AN43: params.approvedSignatory,
+        M43: operatorName,
+        AN43: approvedSignatory,
       },
       'xl/worksheets/sheet4.xml': {
-        H9: params.reportRefNo,
+        H9: jobRefNo,
         AB9: dateOnly,
         H10: dateOnly,
         AB10: timeOnly,
-        W13: params.locationNote,
+        W13: locationNote,
         W27: 0,
         W28: -depthM,
         AN27: 0,
@@ -304,15 +317,15 @@ export function buildOfficialTemplateSheetCellMaps(
     const tmId = findEqCode(['tm', 'therm'], 'LT-TM-01');
     return {
       'xl/worksheets/sheet1.xml': {
-        F4: params.clientName,
-        Z4: params.reportRefNo,
-        F5: params.projectTitle,
+        F4: clientName,
+        Z4: jobRefNo,
+        F5: projectTitle,
         Z5: worksOrderNo,
         Z6: 'ASTM D6760-16',
-        F7: params.siteLocation,
+        F7: siteLocation,
         Z7: dateOnly,
-        F8: params.clientName,
-        F11: params.locationNote,
+        F8: clientName,
+        F11: locationNote,
         Z11: '2.50 m',
         F12: 'Bored Pile',
         F15: '45.0 m',
@@ -321,8 +334,8 @@ export function buildOfficialTemplateSheetCellMaps(
         F18: mtId,
         Q18: tmId,
         Z18: `${caId}-PRB`,
-        F54: params.operatorName,
-        F55: params.approvedSignatory,
+        F54: operatorName,
+        F55: approvedSignatory,
       },
     };
   }
@@ -342,22 +355,22 @@ export function buildOfficialTemplateSheetCellMaps(
 
     return {
       'xl/worksheets/sheet1.xml': {
-        D4: params.reportRefNo,
-        D8: params.clientName,
-        M8: params.reportRefNo,
+        D4: jobRefNo,
+        D8: clientName,
+        M8: worksOrderNo,
         D9: contractNo,
-        D10: params.projectTitle,
+        D10: projectTitle,
         M11: dateOnly,
         M12: dateOnly,
         M13: dateOnly,
-        M14: `On-site (${params.siteLocation})`,
-        M15: params.ambientTemp,
-        D18: params.locationNote,
-        D19: params.locationNote,
+        M14: `On-site (${siteLocation})`,
+        M15: en(params.ambientTemp, '26.5 °C'),
+        D18: locationNote,
+        D19: locationNote,
         D20: '15.50 m',
-        D21: params.siteLocation,
+        D21: siteLocation,
         D22: 'Slightly decomposed granite (Grade II)',
-        D23: `${params.jobNo}-PO-01`,
+        D23: `${en(params.jobNo, 'LT0001')}-PO-01`,
         D24: Number((dMm * 1.5).toFixed(1)),
         D25: 'Random (R)',
         E27: tdId,
@@ -381,8 +394,8 @@ export function buildOfficialTemplateSheetCellMaps(
         D43: po?.mode === 'axial' ? 'b (Valid axial)' : 'a (Valid diametral)',
         D44: 'Middle third',
         D45: 'm (Material failure)',
-        D52: params.operatorName,
-        M52: params.approvedSignatory,
+        D52: operatorName,
+        M52: approvedSignatory,
       },
     };
   }
@@ -395,14 +408,14 @@ export function buildOfficialTemplateSheetCellMaps(
   const lcId = findEqCode(['lc', 'load'], 'LT-LC-01');
   const dgId = findEqCode(['dg', 'dial'], 'LT-DG-01 ~ 04');
   const pltCells: Record<string, string | number> = {
-    F4: params.jobNo,
-    U4: params.locationNote,
+    F4: jobRefNo,
+    U4: locationNote,
     AG4: dateOnly,
-    F5: params.clientName,
+    F5: clientName,
     U5: contractNo,
     AG5: worksOrderNo,
-    F6: params.projectTitle,
-    U6: params.siteLocation,
+    F6: projectTitle,
+    U6: siteLocation,
     G9: wkKpa,
     U9: wkKpa * 3,
     AH9: plt ? `${plt.plateSizeMm / 1000} m (${plt.plateShape})` : '0.30 m',
@@ -414,8 +427,8 @@ export function buildOfficialTemplateSheetCellMaps(
     E37: plt
       ? `Peak Pressure = ${plt.peakPressureKpa.toFixed(1)} kPa (${plt.peakLoadKn.toFixed(1)} kN); Max Settlement = ${plt.peakSettlementMm.toFixed(2)} mm; Es = ${plt.esMpa ? plt.esMpa.toFixed(2) : '—'} MPa.`
       : 'Plate Load Test completed per STP07-PLT.',
-    E39: params.operatorName,
-    T39: params.approvedSignatory,
+    E39: operatorName,
+    T39: approvedSignatory,
     E40: dateOnly,
     T40: dateOnly,
   };

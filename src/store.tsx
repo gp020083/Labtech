@@ -121,6 +121,9 @@ export interface AppContextType {
   calcRecords: FieldCalcRecord[];
   saveCalcRecord: (rec: {
     jobNo: string;
+    jobRefNo?: string;
+    worksOrderNo?: string;
+    projectTitle?: string;
     stpCode: string;
     title: string;
     locationNote?: string;
@@ -766,12 +769,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const saveCalcRecord: AppContextType['saveCalcRecord'] = ({
-    jobNo, stpCode, title, locationNote, summary, pass,
+    jobNo, jobRefNo, worksOrderNo, projectTitle, stpCode, title, locationNote, summary, pass,
     signatureDataUrl, signedBy, signedRole, signedAt, sitePhotos, structuredData,
   }) => {
     const ts = nowTimestamp();
     const actor = user?.name || 'Operator';
-    const recId = `${stpCode}-${Date.now().toString().slice(-5)}`;
+    const matchedJob = state.jobs.find((j) => j.no === jobNo);
+    const resolvedProjTitle = projectTitle?.trim() || matchedJob?.project || matchedJob?.shortName || jobNo;
+    const existingByRef = jobRefNo
+      ? (state.calcRecords || []).find((r) => r.jobRefNo === jobRefNo.trim())
+      : undefined;
+    const recId = existingByRef?.id || `${stpCode}-${Date.now().toString().slice(-5)}`;
+    const resolvedRefNo = jobRefNo?.trim() || `HKL-${jobNo}-${recId}`;
     const normalizedPhotos =
       sitePhotos && sitePhotos.length > 0
         ? sitePhotos.slice(0, MAX_SITE_PHOTOS_PER_RECORD).map((ph, idx) => {
@@ -797,6 +806,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const draftRec: FieldCalcRecord = {
       id: recId,
       jobNo,
+      jobRefNo: resolvedRefNo,
+      worksOrderNo: worksOrderNo?.trim() || undefined,
+      projectTitle: resolvedProjTitle,
       stpCode,
       title,
       locationNote: locationNote?.trim() || undefined,
@@ -842,7 +854,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setState((prev) => ({
       ...prev,
-      calcRecords: [rec, ...(prev.calcRecords || [])],
+      calcRecords: [
+        rec,
+        ...(prev.calcRecords || []).filter((r) => r.id !== rec.id && r.jobRefNo !== resolvedRefNo),
+      ],
       driveFiles: [...vaultEntries, ...(prev.driveFiles || [])],
     }));
 
