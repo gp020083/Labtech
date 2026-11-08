@@ -102,6 +102,7 @@ export interface JobItem {
   googleMapsUrl?: string;
   tender?: string;
   contract?: string;
+  contractNo?: string;
   status: 'active' | 'completed';
   remark?: string;
   updatedAt?: string;
