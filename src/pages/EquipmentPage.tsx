@@ -364,16 +364,16 @@ export const EquipmentPage: React.FC<{
                             )}
                           </td>
                           <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <div className="inline-flex items-center gap-1.5">
+                            <div className="inline-grid grid-cols-[88px_114px_34px] items-center justify-end gap-1.5">
                               {eq.currentLoan ? (
-                                <button type="button" onClick={() => setReturnItem(eq)} className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 font-extrabold text-white hover:bg-emerald-700 cursor-pointer">{tx('交還登記', 'Return')}</button>
+                                <button type="button" onClick={() => setReturnItem(eq)} className="inline-flex h-8 w-[88px] items-center justify-center rounded-xl bg-emerald-600 font-extrabold text-white hover:bg-emerald-700 cursor-pointer">{tx('交還登記', 'Return')}</button>
                               ) : (
-                                <button type="button" onClick={() => setCheckoutItem(eq)} className="inline-flex h-8 items-center justify-center rounded-xl bg-brand px-3 font-extrabold text-white hover:bg-brand-deep cursor-pointer">{tx('借出登記', 'Checkout')}</button>
+                                <button type="button" onClick={() => setCheckoutItem(eq)} className="inline-flex h-8 w-[88px] items-center justify-center rounded-xl bg-brand font-extrabold text-white hover:bg-brand-deep cursor-pointer">{tx('借出登記', 'Checkout')}</button>
                               )}
                               <button
                                 type="button"
                                 onClick={() => { setHistoryEqCode(eq.code); setLoanView('history'); }}
-                                className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 tabular-nums cursor-pointer"
+                                className="inline-flex h-8 w-[114px] items-center justify-center gap-1 rounded-xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50 tabular-nums cursor-pointer"
                               >
                                 <History className="h-3.5 w-3.5 text-slate-500 shrink-0" />
                                 <span>{tx('借還紀錄', 'Logs')}{loanCountMap.get(eq.code) ? ` (${loanCountMap.get(eq.code)})` : ''}</span>
@@ -382,7 +382,7 @@ export const EquipmentPage: React.FC<{
                                 type="button"
                                 onClick={() => setQrModal({ mode: 'labels', code: eq.code })}
                                 title={tx(`檢視／列印 ${eq.code} QR 標籤`, `View / Print ${eq.code} QR Label`)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand cursor-pointer"
+                                className="inline-flex h-8 w-[34px] items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand cursor-pointer"
                               >
                                 <QrCode className="h-3.5 w-3.5" />
                               </button>
