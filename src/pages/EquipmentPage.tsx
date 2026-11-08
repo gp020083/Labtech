@@ -290,3 +290,346 @@ export const EquipmentPage: React.FC<{
                   ))}
                 </div>
               </div>
+              <EquipmentMobileList
+                items={filtered}
+                loanCountMap={loanCountMap}
+                onOpenDetail={(code) => setDetailCode(code)}
+                onOpenCheckout={(eq) => setCheckoutItem(eq)}
+                onOpenReturn={(eq) => setReturnItem(eq)}
+                onOpenHistory={(code) => { setHistoryEqCode(code); setLoanView('history'); }}
+                onPreviewCert={(eq) => openPreviewDoc({ title: `${eq.code} — ${eq.certFile || 'Cal Cert'}`, url: eq.certUrl!, fileName: eq.certFile, subtitle: `${eq.name} (S/N: ${eq.serial}) · Due: ${eq.certDue || eq.due}` })}
+                onQuickUpload={handleQuickCalUpload}
+              />
+
+              <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200/85 bg-white shadow-xs">
+                <table className="w-full min-w-[900px] text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
+                    <tr className="whitespace-nowrap">
+                      <th className="px-4 py-3">Code</th>
+                      <th className="px-3 py-3">{tx('儀器名稱、型號及 S/N', 'Instrument, Model & S/N')}</th>
+                      <th className="px-3 py-3">{tx('適用測試', 'Test Tags')}</th>
+                      <th className="px-3 py-3">{tx('目前狀態及存放／借出位置', 'Current Status & Location')}</th>
+                      <th className="px-3 py-3">{tx('借用人及預計歸還日期', 'Borrower & Expected Return')}</th>
+                      <th className="px-4 py-3 text-right">{tx('借出／交還操作', 'Loan Actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filtered.map((eq) => {
+                      const ov = getLoanOverdueStatus(eq, undefined, lang);
+                      const tags = eq.testTags || eq.tests.split('+').map((s) => s.trim()).filter(Boolean);
+                      const shortBorrower = eq.currentLoan?.borrowerName
+                        ? (eq.currentLoan.borrowerName.split(',')[1]?.trim() || eq.currentLoan.borrowerName)
+                        : '';
+                      return (
+                        <tr key={eq.code} className="hover:bg-slate-50/80 transition">
+                          <td className="px-4 py-3 font-mono font-extrabold text-slate-900 whitespace-nowrap">
+                            <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-extrabold text-white">
+                              {eq.code}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 min-w-[220px] cursor-pointer" onClick={() => setDetailCode(eq.code)}>
+                            <div className="font-extrabold text-slate-900 hover:text-brand">{eq.name}</div>
+                            <div className="font-mono text-[11px] text-slate-500">{eq.maker} · {eq.model} ｜ S/N {eq.serial}</div>
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1 whitespace-nowrap">
+                              {tags.map((tg) => <span key={tg} className="rounded bg-brand-wash px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep whitespace-nowrap">{tg}</span>)}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            {eq.currentLoan ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-brand-deep">📍 {eq.currentLoan.siteLocation}</span>
+                                {ov.isOverdue && (
+                                  <span className="rounded-md bg-rose-100 border border-rose-300 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-rose-700">
+                                    🚨 {ov.label}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="font-semibold text-emerald-700 whitespace-nowrap">🏠 {tx('在庫：', 'In Lab: ')}{eq.loc || eq.store || 'Lab'}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            {eq.currentLoan ? (
+                              <div className="text-[11px] text-slate-700 font-semibold">
+                                {shortBorrower} · <span className="font-mono text-slate-500">{tx('預計歸還', 'Due')} {eq.currentLoan.expectedReturn}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-slate-400">{tx('可隨時借出 (Available)', 'Available for Checkout')}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5">
+                              {eq.currentLoan ? (
+                                <button type="button" onClick={() => setReturnItem(eq)} className="inline-flex h-8 items-center justify-center rounded-xl bg-emerald-600 px-3 font-extrabold text-white hover:bg-emerald-700 cursor-pointer">{tx('交還登記', 'Return')}</button>
+                              ) : (
+                                <button type="button" onClick={() => setCheckoutItem(eq)} className="inline-flex h-8 items-center justify-center rounded-xl bg-brand px-3 font-extrabold text-white hover:bg-brand-deep cursor-pointer">{tx('借出登記', 'Checkout')}</button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => { setHistoryEqCode(eq.code); setLoanView('history'); }}
+                                className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 tabular-nums cursor-pointer"
+                              >
+                                <History className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                                <span>{tx('借還紀錄', 'Logs')}{loanCountMap.get(eq.code) ? ` (${loanCountMap.get(eq.code)})` : ''}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setQrModal({ mode: 'labels', code: eq.code })}
+                                title={tx(`檢視／列印 ${eq.code} QR 標籤`, `View / Print ${eq.code} QR Label`)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand cursor-pointer"
+                              >
+                                <QrCode className="h-3.5 w-3.5" />
+                              </button>
+                              <button type="button" onClick={() => setDetailCode(eq.code)} className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                                <FileCheck2 className="h-3.5 w-3.5 text-brand shrink-0" /> {tx('詳情', 'Details')}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {([
+              ['all', tx('全部受控儀器 (Total Controlled)', 'Total Controlled'), counts.total, 'text-slate-900'],
+              ['valid', tx('✅ 校準有效 (Calibrated Valid)', '✅ Calibrated / Valid'), counts.validCal, 'text-emerald-700'],
+              ['alert', tx('⚠️ 校準到期／異常預警 (Cal Alert)', '⚠️ Cal Due / Alert'), counts.alert, 'text-amber-700'],
+              ['monthly', tx('📋 FCC01 每月內檢儀器', '📋 FCC01 Monthly Check'), counts.monthly, 'text-indigo-700'],
+            ] as const).map(([k, label, num, color]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => { setCalView('registry'); setCalFilter(k); }}
+                className={`rounded-2xl border p-3.5 text-left transition cursor-pointer ${
+                  calView === 'registry' && calFilter === k ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-500/20' : 'border-slate-200/85 bg-white hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-[11px] font-bold text-slate-500 truncate whitespace-nowrap">{label}</div>
+                <div className={`mt-1 font-mono text-2xl font-extrabold ${color}`}>{num}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+            <button
+              type="button"
+              onClick={() => setCalView('registry')}
+              className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+                calView === 'registry' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              {tx(`校準及證書總表 (${counts.total})`, `Calibration & Cert Registry (${counts.total})`)}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalView('forecast')}
+              className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+                calView === 'forecast' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-50'
+              }`}
+            >
+              <CalendarClock className="h-4 w-4" />
+              {tx(`📅 校準到期預警 (30/60/90日 · ${calForecast.counts.totalWithin90})`, `📅 Cal Forecast (30/60/90d · ${calForecast.counts.totalWithin90})`)}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setCalView('registry'); setCalFilter(calFilter === 'monthly' ? 'all' : 'monthly'); }}
+              className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+                calView === 'registry' && calFilter === 'monthly' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <CheckSquare className="h-4 w-4" />
+              {tx(`FCC01 每月內檢清單 (${counts.monthly})`, `FCC01 Monthly Check (${counts.monthly})`)}
+            </button>
+            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-1.5 text-xs">
+              <button type="button" onClick={() => openPreviewDoc({ title: tx('FQS38 年度校準及內檢時間表', 'FQS38 Calibration & Verification Schedule'), url: '/server-docs/forms/FQS38_Calibration_Verification_Schedule_260520.pdf', fileName: 'FQS38_Calibration_Verification_Schedule_260520.pdf' })} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
+                <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FQS38 年度校準時間表', 'FQS38 Schedule')}</span>
+              </button>
+              <button type="button" onClick={() => openPreviewDoc({ title: tx('FCC01 (2026) 每月內檢紀錄', 'FCC01 (2026) Monthly Verification Check Record'), url: '/server-docs/forms/FCC01_Monthly_Check_Record_2026.pdf', fileName: 'FCC01_Monthly_Check_Record_2026.pdf' })} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
+                <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FCC01 每月內檢紀錄', 'FCC01 Monthly')}</span>
+              </button>
+              {onOpenDriveBatch && (
+                <button
+                  type="button"
+                  onClick={onOpenDriveBatch}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 font-extrabold text-emerald-900 hover:bg-emerald-100 cursor-pointer"
+                >
+                  <UploadCloud className="h-3.5 w-3.5" /> {tx('批次上傳校準證書至 Drive', 'Batch Upload Certs')}
+                </button>
+              )}
+            </div>
+          </div>
+          {calView === 'forecast' ? (
+            <CalibrationForecastPanel
+              onOpenDetail={(code) => setDetailCode(code)}
+              onPreviewCert={(eq) =>
+                eq.certUrl &&
+                openPreviewDoc({
+                  title: `${eq.code} — ${eq.certFile || 'Cal Cert'}`,
+                  url: eq.certUrl,
+                  fileName: eq.certFile,
+                  subtitle: `${eq.name} (S/N: ${eq.serial}) · Due: ${eq.certDue || eq.due}`,
+                })
+              }
+            />
+          ) : (
+            <>
+              <CalibrationForecastPanel
+                compact
+                onExpandFullPlanner={() => setCalView('forecast')}
+                onOpenDetail={(code) => setDetailCode(code)}
+                onPreviewCert={(eq) =>
+                  eq.certUrl &&
+                  openPreviewDoc({
+                    title: `${eq.code} — ${eq.certFile || 'Cal Cert'}`,
+                    url: eq.certUrl,
+                    fileName: eq.certFile,
+                    subtitle: `${eq.name} (S/N: ${eq.serial}) · Due: ${eq.certDue || eq.due}`,
+                  })
+                }
+              />
+
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={tx('搜尋儀器編號 (Code)、名稱、序號 (S/N) 或校準證書...', 'Search Equipment Code, Name, S/N or Cal Cert...')}
+                    className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {TEST_TAGS.map((t) => (
+                    <button key={t} type="button" onClick={() => setTagFilter(t)} className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 font-mono text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${tagFilter === t ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                      {t === 'ALL' ? tx('ALL 全部', 'ALL') : t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-3xl border border-slate-200/85 bg-white shadow-xs">
+                <table className="w-full min-w-[900px] text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
+                    <tr className="whitespace-nowrap">
+                      <th className="px-4 py-3">Code</th>
+                      <th className="px-3 py-3">{tx('儀器名稱、型號及 S/N', 'Instrument, Model & S/N')}</th>
+                      <th className="px-3 py-3">{tx('校準狀態 (Calibration Status)', 'Calibration Status')}</th>
+                      <th className="px-3 py-3">{tx('校準到期日 (Cal Due Date)', 'Cal Due Date')}</th>
+                      <th className="px-3 py-3">{tx('內檢及驗證要求', 'Verification / Check')}</th>
+                      <th className="px-3 py-3">{tx('最新校準證書檔案', 'Latest Cal Cert PDF')}</th>
+                      <th className="px-4 py-3 text-right">{tx('證書及校準操作', 'Calibration Actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filtered.map((eq) => {
+                      const cal = getEquipmentCalStatus(eq, undefined, lang);
+                      const tags = eq.testTags || eq.tests.split('+').map((s) => s.trim()).filter(Boolean);
+                      return (
+                        <tr key={eq.code} className="hover:bg-slate-50/80 transition">
+                          <td className="px-4 py-3 font-mono font-extrabold text-slate-900 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => navigateToEquipmentCertPage(eq.code)}
+                              title={tx(`開啟專屬校準認證狀態頁 (${buildEquipmentCertStatusPath(eq.code)})`, `Open Cert Status Page (${buildEquipmentCertStatusPath(eq.code)})`)}
+                              className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-extrabold text-white hover:bg-brand transition cursor-pointer"
+                            >
+                              {eq.code}
+                            </button>
+                          </td>
+                          <td className="px-3 py-3 min-w-[220px] cursor-pointer" onClick={() => setDetailCode(eq.code)}>
+                            <div className="font-extrabold text-slate-900 hover:text-brand">{eq.name}</div>
+                            <div className="font-mono text-[11px] text-slate-500">{eq.maker} · {eq.model} ｜ S/N {eq.serial}</div>
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <Badge tone={cal.kind}>{cal.label}</Badge>
+                          </td>
+                          <td className="px-3 py-3 font-mono font-extrabold text-slate-800 whitespace-nowrap">
+                            {eq.certDue || eq.due || '—'}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              {tags.map((tg) => <span key={tg} className="rounded bg-brand-wash px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep">{tg}</span>)}
+                              {eq.monthlyCheck && (
+                                <span className="rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-700">
+                                  {tx('FCC01 每月內檢', 'FCC01 Monthly')}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 font-mono text-[11px] text-slate-600 truncate max-w-[200px]">
+                            {eq.certFile || (eq.certUrl ? 'Calibration_Cert.pdf' : tx('尚未上傳證書', 'No Cert Uploaded'))}
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5">
+                              {eq.certUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openPreviewDoc({ title: `${eq.code} — ${eq.certFile || 'Cal Cert'}`, url: eq.certUrl!, fileName: eq.certFile, subtitle: `${eq.name} (S/N: ${eq.serial}) · Due: ${eq.certDue || eq.due}` })}
+                                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-3 font-extrabold text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+                                >
+                                  <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽證書', 'Preview Cert')}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-100 bg-slate-50 px-3 font-semibold text-slate-300 cursor-not-allowed"
+                                >
+                                  <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('無證書', 'No Cert')}
+                                </button>
+                              )}
+                              <label title={tx('上傳新校準證書 PDF (支援多選)', 'Upload Calibration Cert PDF')} className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
+                                <UploadCloud className="h-3.5 w-3.5" />
+                                <span>{tx('上傳證書', 'Upload')}</span>
+                                <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" onChange={(ev) => handleQuickCalUpload(eq, ev)} className="hidden" />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => navigateToEquipmentCertPage(eq.code)}
+                                className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                              >
+                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" /> {tx('認證頁', 'Cert Page')}
+                              </button>
+                              <button type="button" onClick={() => setDetailCode(eq.code)} className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                                <FileCheck2 className="h-3.5 w-3.5 text-brand shrink-0" /> {tx('詳情', 'Details')}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      <EquipmentDetailDrawer item={activeDetailItem} onClose={() => setDetailCode(null)} onOpenCheckout={() => { if (activeDetailItem) { setCheckoutItem(activeDetailItem); setDetailCode(null); } }} onOpenReturn={() => { if (activeDetailItem) { setReturnItem(activeDetailItem); setDetailCode(null); } }} />
+      <EquipmentCheckoutModal item={checkoutItem} onClose={() => setCheckoutItem(null)} />
+      <EquipmentReturnModal item={returnItem} onClose={() => setReturnItem(null)} />
+      {newOpen && <NewEquipmentModal onClose={() => setNewOpen(false)} />}
+      {qrModal && (
+        <EquipmentQrModal
+          initialMode={qrModal.mode}
+          initialCode={qrModal.code}
+          onClose={() => setQrModal(null)}
+          onOpenCheckout={(eq) => setCheckoutItem(eq)}
+          onOpenReturn={(eq) => setReturnItem(eq)}
+          onOpenDetail={(code) => setDetailCode(code)}
+        />
+      )}
+    </div>
+  );
+};

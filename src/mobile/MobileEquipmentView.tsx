@@ -92,8 +92,8 @@ export const MobileEquipmentView: React.FC = () => {
       <div className="rounded-2xl bg-white p-3.5 border border-slate-200/90 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-base font-extrabold text-slate-900">{tx('🔧 器材借還及校準證書', '🔧 Equipment & Cal Certs')}</h1>
-            <p className="text-[11px] text-slate-500">{tx(`借出 ${counts.loaned} 件 · 逾期 ${counts.overdue} 件 · Cal 提示 ${counts.alert} 件`, `${counts.loaned} Out · ${counts.overdue} Overdue · ${counts.alert} Cal Alerts`)}</p>
+            <h1 className="text-base font-extrabold text-slate-900">{tx('🔧 儀器管理系統 (借還及校準)', '🔧 Equipment (Loan & Calibration)')}</h1>
+            <p className="text-[11px] text-slate-500">{tx(`借出 ${counts.loaned} 件 · 逾期 ${counts.overdue} 件 · 校準預警 ${counts.alert} 件`, `${counts.loaned} Out · ${counts.overdue} Overdue · ${counts.alert} Cal Alerts`)}</p>
           </div>
           <div className="flex items-center gap-1.5">
             <button type="button" onClick={() => setQrModal({ mode: 'lookup' })} className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-2.5 py-2 text-xs font-extrabold text-white cursor-pointer">
@@ -107,13 +107,13 @@ export const MobileEquipmentView: React.FC = () => {
 
         <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-slate-100 p-1 text-xs font-extrabold">
           <button type="button" onClick={() => setSubTab('list')} className={`rounded-lg py-2 cursor-pointer ${subTab === 'list' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>
-            {tx(`器材清單 (${counts.total})`, `Inventory (${counts.total})`)}
+            {tx(`1. 儀器借還 (${counts.total})`, `1. Loan List (${counts.total})`)}
           </button>
           <button type="button" onClick={() => setSubTab('history')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${subTab === 'history' ? 'bg-brand text-white shadow-xs' : 'text-slate-600'}`}>
-            <History className="h-3.5 w-3.5" /> {tx(`借還 (${loans.length})`, `History (${loans.length})`)}
+            <History className="h-3.5 w-3.5" /> {tx(`借還紀錄 (${loans.length})`, `History (${loans.length})`)}
           </button>
-          <button type="button" onClick={() => setSubTab('forecast')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${subTab === 'forecast' ? 'bg-amber-600 text-white shadow-xs' : 'text-amber-800'}`}>
-            <CalendarClock className="h-3.5 w-3.5" /> {tx(`預警 (${calForecast.counts.totalWithin90})`, `Forecast (${calForecast.counts.totalWithin90})`)}
+          <button type="button" onClick={() => setSubTab('forecast')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${subTab === 'forecast' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-800'}`}>
+            <CalendarClock className="h-3.5 w-3.5" /> {tx(`2. 校準管理 (${calForecast.counts.totalWithin90})`, `2. Calibration (${calForecast.counts.totalWithin90})`)}
           </button>
         </div>
 

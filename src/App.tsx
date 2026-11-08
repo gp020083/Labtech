@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './store';
 import { PrefsProvider, usePrefs } from './prefs';
-import { FieldNavShell, FieldTabId } from './components/FieldNavShell';
+import { FieldNavShell, FieldTabId, EquipmentSubSectionId } from './components/FieldNavShell';
 import { MobileAppShell } from './mobile/MobileAppShell';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { LoginScreen } from './components/LoginModal';
@@ -41,6 +41,7 @@ const FieldShellContent: React.FC = () => {
   });
   const [searchOpen, setSearchOpen] = useState(false);
   const [driveModalOpen, setDriveModalOpen] = useState(false);
+  const [equipmentSubTab, setEquipmentSubTab] = useState<EquipmentSubSectionId>('loans');
   const [toolJump, setToolJump] = useState<{ mode?: 'calc' | 'specs'; tool?: CalcToolId } | null>(null);
 
   useEffect(() => {
@@ -96,14 +97,22 @@ const FieldShellContent: React.FC = () => {
           <FieldNavShell
             activeTab={activeTab}
             onSelect={setActiveTab}
+            equipmentSubTab={equipmentSubTab}
+            onSelectEquipmentSubTab={setEquipmentSubTab}
             onOpenSearch={() => setSearchOpen(true)}
             onOpenGovSpecs={() => { setToolJump({ mode: 'specs' }); setActiveTab('tools'); }}
             onOpenDriveSync={() => setDriveModalOpen(true)}
           />
           <div className="lg:pl-64 flex-1 flex flex-col">
             <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-5 pb-10 sm:px-6 lg:px-8">
-              {activeTab === 'jobs' && <JobsPage onNavigateEquipment={() => setActiveTab('equipment')} />}
-              {activeTab === 'equipment' && <EquipmentPage onOpenDriveBatch={() => setDriveModalOpen(true)} />}
+              {activeTab === 'jobs' && <JobsPage onNavigateEquipment={() => { setEquipmentSubTab('loans'); setActiveTab('equipment'); }} />}
+              {activeTab === 'equipment' && (
+                <EquipmentPage
+                  subSection={equipmentSubTab}
+                  onChangeSubSection={setEquipmentSubTab}
+                  onOpenDriveBatch={() => setDriveModalOpen(true)}
+                />
+              )}
               {activeTab === 'stp' && <StpPage onOpenDriveBatch={() => setDriveModalOpen(true)} />}
               {activeTab === 'tools' && (
                 <ToolsPage
