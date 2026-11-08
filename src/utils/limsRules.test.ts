@@ -839,6 +839,6 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   const sampleXml = '<sheetData><row r="7"><c r="C7" s="10"/><c r="H7" s="12"><f>Sheet1!H9</f><v>0</v></c></row></sheetData>';
   const injectedXml = injectCellsIntoSheetXml(sampleXml, { H7: 'LT0001', C7: 'CEDD' });
   assert.ok(injectedXml.includes('<f>Sheet1!H9</f><v>LT0001</v>'));
-  assert.ok(injectedXml.includes('<is><t>CEDD</t></is>'));
+  assert.ok(injectedXml.includes('<is><t xml:space="preserve">CEDD</t></is>'));
 });
 
