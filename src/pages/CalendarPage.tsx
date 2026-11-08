@@ -194,7 +194,7 @@ export const CalendarPage: React.FC = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-extrabold ${isToday ? 'bg-brand text-white' : hol || c.weekday === 0 ? 'text-rose-600' : 'text-slate-800'}`}>{c.day}</span>
-                    {hasTraining && <span className="rounded-md bg-violet-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">🎓<span className="hidden sm:inline"> Training</span></span>}
+                    {hasTraining && <span className="rounded-md bg-violet-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">Training</span>}
                   </div>
                   {hol && <div className="mt-0.5 truncate text-[10px] font-bold text-rose-600">{lang === 'en' ? hol.name || hol.zh : hol.zh || hol.name}</div>}
                   <div className="mt-1 space-y-1">
@@ -215,7 +215,7 @@ export const CalendarPage: React.FC = () => {
         <div className="lg:col-span-4 rounded-3xl border border-slate-200/85 bg-white p-4 sm:p-5 shadow-sm space-y-3">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <div className="font-mono text-sm font-extrabold text-slate-900">📅 {selectedDate}</div>
+              <div className="font-mono text-sm font-extrabold text-slate-900">{selectedDate}</div>
               {selectedHoliday && <div className="text-xs font-bold text-rose-600">{lang === 'en' ? selectedHoliday.name || selectedHoliday.zh : selectedHoliday.zh || selectedHoliday.name}</div>}
             </div>
             <button type="button" onClick={() => setModalState({ date: selectedDate })} className="rounded-xl bg-violet-50 px-3 py-1.5 text-xs font-extrabold text-violet-700 hover:bg-violet-100 cursor-pointer">{tx('+ 新增', '+ Add')}</button>
@@ -228,14 +228,14 @@ export const CalendarPage: React.FC = () => {
               return (
                 <div key={ev.id} className={`rounded-2xl border p-3.5 space-y-2 text-xs ${ev.type === 'training' ? 'border-violet-200 bg-violet-50/50' : 'border-slate-200 bg-slate-50/60'}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`rounded-lg px-2 py-0.5 font-extrabold ${ev.type === 'training' ? 'bg-violet-600 text-white' : 'bg-brand text-white'}`}>{ev.type === 'training' ? '🎓 Training' : ev.type === 'hoklas' ? '🏅 HOKLAS' : '📍 Site Test'}</span>
+                    <span className={`rounded-lg px-2 py-0.5 font-extrabold ${ev.type === 'training' ? 'bg-violet-600 text-white' : 'bg-brand text-white'}`}>{ev.type === 'training' ? 'Training' : ev.type === 'hoklas' ? 'HOKLAS' : 'Site Test'}</span>
                     {ev.timeSlot && <span className="inline-flex items-center gap-1 font-mono font-bold text-slate-600"><Clock className="h-3 w-3" />{ev.timeSlot}</span>}
                   </div>
                   <div className="text-sm font-extrabold text-slate-900">{ev.title || ev.site}</div>
                   <div className="space-y-1 text-slate-600">
                     <div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-brand shrink-0" /><span>{ev.site}</span></div>
                     <div className="flex items-start gap-1.5"><Users className="h-3.5 w-3.5 text-violet-600 shrink-0 mt-0.5" /><span>{ev.operators.join(', ') || 'TBD'}</span></div>
-                    {ev.notes && <div className="rounded-xl bg-white/80 px-2.5 py-1.5 text-[11px] text-slate-700">📝 {ev.notes}</div>}
+                    {ev.notes && <div className="rounded-xl bg-white/80 px-2.5 py-1.5 text-[11px] text-slate-700">{ev.notes}</div>}
                   </div>
                   <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/70">
                     <button type="button" onClick={() => setStpPreviewCode(stpCode)} className="inline-flex items-center gap-1 rounded-lg bg-white border border-violet-200 px-2.5 py-1 font-extrabold text-violet-700 hover:bg-violet-100 cursor-pointer"><BookOpen className="h-3 w-3" /> {tx(`檢視 ${stpCode} STP`, `Open ${stpCode} STP`)}</button>
