@@ -43,7 +43,7 @@ export const EquipmentQrSvg: React.FC<{
       viewBox={`0 0 ${total} ${total}`}
       onClick={onClick}
       shapeRendering="crispEdges"
-      className={`rounded-lg border border-slate-200 bg-white p-1 shrink-0 ${
+      className={`light-island rounded-lg border border-slate-200 bg-white p-1 shrink-0 ${
         onClick ? 'cursor-pointer hover:border-brand transition' : ''
       }`}
       role="img"

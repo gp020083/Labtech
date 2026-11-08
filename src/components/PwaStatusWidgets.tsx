@@ -246,7 +246,7 @@ export const OfflineIndicator: React.FC = () => {
       role="status"
       aria-live="polite"
       data-testid="offline-indicator-banner"
-      className="fixed bottom-4 left-4 right-4 sm:right-auto z-50 flex items-center gap-2.5 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl"
+      className="lt-floating-bottom fixed bottom-4 left-4 right-4 sm:right-auto z-50 flex items-center gap-2.5 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl"
     >
       <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse shrink-0" />
       <WifiOff className="h-4 w-4 shrink-0" />

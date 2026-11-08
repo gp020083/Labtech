@@ -5,16 +5,17 @@ import { CalcToolId } from '../pages/ToolsPage';
 import { HK_GOV_SPECS, GOV_DEPTS, GovDeptId, BD_ROCK_TABLE_2_1 } from '../data/hkGovSpecs';
 import { MobileBleedingCalc, MobileKodenCalc, MobileFlowConeCalc, MobilePointLoadCalc } from './MobileSimpleCalcs';
 import { MobilePlateLoadCalc, MobileInclinometerCalc } from './MobileHeavyCalcs';
-import { Calculator, Landmark } from 'lucide-react';
+import { JobRefSummaryView } from '../components/tools/JobRefSummaryView';
+import { Calculator, Landmark, FolderKanban, Droplets, Layers, Radio, Timer, Hammer, Compass } from 'lucide-react';
 
 export const MobileToolsView: React.FC<{
   forcedMode?: 'calc' | 'specs' | null;
   forcedTool?: CalcToolId | null;
   onConsumeJump?: () => void;
 }> = ({ forcedMode, forcedTool, onConsumeJump }) => {
-  const { setStpPreviewCode } = useApp();
+  const { setStpPreviewCode, calcRecords } = useApp();
   const { lang, tx } = usePrefs();
-  const [mode, setMode] = useState<'calc' | 'specs'>('calc');
+  const [mode, setMode] = useState<'calc' | 'registry' | 'specs'>('calc');
   const [activeTool, setActiveTool] = useState<CalcToolId>('bleeding');
   const [deptFilter, setDeptFilter] = useState<'ALL' | GovDeptId>('ALL');
 
@@ -24,36 +25,42 @@ export const MobileToolsView: React.FC<{
     if (forcedMode || forcedTool) onConsumeJump?.();
   }, [forcedMode, forcedTool, onConsumeJump]);
 
-  const tools: { id: CalcToolId; emoji: string; title: string; sub: string; code: string }[] = [
-    { id: 'bleeding', emoji: '💧', title: 'Bleeding', sub: 'mL / mm · %', code: 'BL' },
-    { id: 'plt', emoji: '🏗️', title: 'Plate Load', sub: '3-Cycle · Es', code: 'PLT' },
-    { id: 'koden', emoji: '📡', title: 'Koden', sub: 'Offset · 1:N', code: 'KD' },
-    { id: 'flowcone', emoji: '⏱️', title: 'Flow Cone', sub: 'Efflux (s)', code: 'FC' },
-    { id: 'pointload', emoji: '🪨', title: 'Point Load', sub: 'Is(50) MPa', code: 'PO' },
-    { id: 'inclinometer', emoji: '📐', title: 'Verticality', sub: 'A0/A180 · 1:N', code: 'VC' },
+  const tools: { id: CalcToolId; Icon: React.ElementType; title: string; sub: string; code: string }[] = [
+    { id: 'bleeding', Icon: Droplets, title: 'Bleeding', sub: 'mL / mm · %', code: 'BL' },
+    { id: 'plt', Icon: Layers, title: 'Plate Load', sub: '3-Cycle · Es', code: 'PLT' },
+    { id: 'koden', Icon: Radio, title: 'Koden', sub: 'Offset · 1:N', code: 'KD' },
+    { id: 'flowcone', Icon: Timer, title: 'Flow Cone', sub: 'Efflux (s)', code: 'FC' },
+    { id: 'pointload', Icon: Hammer, title: 'Point Load', sub: 'Is(50) MPa', code: 'PO' },
+    { id: 'inclinometer', Icon: Compass, title: 'Verticality', sub: 'A0/A180 · 1:N', code: 'VC' },
   ];
 
   return (
     <div className="space-y-3">
       <div className="rounded-2xl bg-white p-3.5 border border-slate-200/90 shadow-xs space-y-2.5">
         <div>
-          <h1 className="text-base font-extrabold text-slate-900">{tx('🧮 現場計算工具及部門標準', '🧮 Field Calculators & Specs')}</h1>
-          <p className="text-[11px] text-slate-500">{tx('直向單手操作計算器 + CEDD / ASD / Housing / BD 驗收要求', 'Vertical mobile calculators + HK Dept acceptance criteria')}</p>
+          <h1 className="text-base font-extrabold text-slate-900">{tx('現場計算、編號及部門標準', 'Field Calculators, Job Ref. & Specs')}</h1>
+          <p className="text-[11px] text-slate-500">{tx('直向單手操作計算器、Job Ref. No. 總表及 CEDD / ASD / Housing / BD 驗收要求', 'Mobile calculators, Job Ref. registry and HK Dept acceptance criteria')}</p>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 p-1 text-xs font-extrabold">
-          <button type="button" onClick={() => setMode('calc')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${mode === 'calc' ? 'bg-white text-brand-deep shadow-xs' : 'text-slate-600'}`}><Calculator className="h-3.5 w-3.5" /> {tx('計算工具 (6)', 'Calculators (6)')}</button>
-          <button type="button" onClick={() => setMode('specs')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${mode === 'specs' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600'}`}><Landmark className="h-3.5 w-3.5" /> {tx('部門 Spec (8)', 'Gov Specs (8)')}</button>
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 text-[11px] font-extrabold">
+          <button type="button" onClick={() => setMode('calc')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${mode === 'calc' ? 'bg-white text-brand-deep shadow-xs' : 'text-slate-600'}`}><Calculator className="h-3.5 w-3.5" /> {tx('計算 (6)', 'Calc (6)')}</button>
+          <button type="button" onClick={() => setMode('registry')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${mode === 'registry' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600'}`}><FolderKanban className="h-3.5 w-3.5" /> {tx(`編號 (${calcRecords.length})`, `Ref. (${calcRecords.length})`)}</button>
+          <button type="button" onClick={() => setMode('specs')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${mode === 'specs' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600'}`}><Landmark className="h-3.5 w-3.5" /> {tx('標準 (8)', 'Specs (8)')}</button>
         </div>
       </div>
 
-      {mode === 'calc' ? (
+      {mode === 'registry' ? (
+        <div className="-mx-3 overflow-x-auto px-3">
+          <JobRefSummaryView />
+        </div>
+      ) : mode === 'calc' ? (
         <>
           <div className="grid grid-cols-3 gap-2 text-xs">
             {tools.map((t) => {
               const active = activeTool === t.id;
+              const ToolIcon = t.Icon;
               return (
                 <button key={t.id} type="button" onClick={() => setActiveTool(t.id)} className={`rounded-2xl border p-2.5 text-left transition cursor-pointer ${active ? 'border-brand bg-brand-wash ring-2 ring-brand/25' : 'border-slate-200 bg-white'}`}>
-                  <div className="flex items-center justify-between"><span className="text-base">{t.emoji}</span><span className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-extrabold ${active ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}>{t.code}</span></div>
+                  <div className="flex items-center justify-between"><ToolIcon className={`h-4 w-4 ${active ? 'text-brand' : 'text-slate-500'}`} /><span className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-extrabold ${active ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}>{t.code}</span></div>
                   <div className="mt-1.5 font-extrabold text-slate-900 truncate">{t.title}</div>
                   <div className="text-[10px] text-slate-500 truncate">{t.sub}</div>
                 </button>

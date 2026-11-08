@@ -16,11 +16,21 @@ function markDraggableModals() {
     const dialog = backdrop.firstElementChild as HTMLElement | null;
     if (!dialog) return;
     if (dialog.tagName === 'DIV' || dialog.tagName === 'FORM') {
+      if (backdrop.getAttribute('data-modal-backdrop') !== 'true') {
+        backdrop.setAttribute('data-modal-backdrop', 'true');
+      }
       if (dialog.getAttribute('data-draggable-dialog') !== 'true') {
         dialog.setAttribute('data-draggable-dialog', 'true');
       }
     }
   });
+}
+
+/** Dragging is a desktop-only affordance; on phones/touch it would block scrolling and can push windows off-screen. */
+function isDragAllowed(e: PointerEvent | MouseEvent): boolean {
+  if (window.innerWidth < 768) return false;
+  if ('pointerType' in e && (e as PointerEvent).pointerType === 'touch') return false;
+  return true;
 }
 
 function isDragHandleRegion(dialog: HTMLElement, target: HTMLElement, clientY: number): boolean {
@@ -50,6 +60,7 @@ export const GlobalModalDragController: React.FC = () => {
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
+      if (!isDragAllowed(e)) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
       const dialog = target.closest<HTMLElement>('[data-draggable-dialog="true"]');
@@ -91,7 +102,7 @@ export const GlobalModalDragController: React.FC = () => {
 
     const onDblClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
-      if (!target) return;
+      if (!target || !isDragAllowed(e)) return;
       const dialog = target.closest<HTMLElement>('[data-draggable-dialog="true"]');
       if (!dialog) return;
       if (!isDragHandleRegion(dialog, target, e.clientY)) return;

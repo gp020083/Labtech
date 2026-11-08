@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../store';
-import { usePrefs, FontScale } from '../prefs';
+import { usePrefs } from '../prefs';
+import { ThemeQuickToggle, ThemeSegmented, FontScaleSegmented } from '../components/ThemeToggle';
 import { FieldTabId } from '../components/FieldNavShell';
 import { CalcToolId } from '../pages/ToolsPage';
 import { REF_TODAY } from '../utils';
@@ -22,7 +23,7 @@ export const MobileAppShell: React.FC<{
   onConsumeJump: () => void;
 }> = ({ activeTab, onSelect, onOpenSearch, onOpenDriveSync, toolJump, onConsumeJump }) => {
   const { user, accounts, switchAccount, logout, resetAllDemoData, jobs, equipment, tests, events, driveSyncStatus, syncNowWithDrive } = useApp();
-  const { lang, toggleLang, fontScale, setFontScale, setViewMode, tx } = usePrefs();
+  const { lang, toggleLang, setViewMode, tx } = usePrefs();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const activeJobs = jobs.filter((j) => j.status === 'active').length;
@@ -39,23 +40,23 @@ export const MobileAppShell: React.FC<{
 
   return (
     <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-100/80 flex flex-col">
-      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 backdrop-blur-md">
+      <header className="pt-safe sticky top-0 z-30 border-b border-slate-200/90 bg-white/90 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-1.5 px-3 py-2.5">
           <div className="flex items-center gap-2 min-w-0">
             <img src="/labtech-logo.png" alt="LaBTECH" className="h-6 w-auto shrink-0" />
-            <span className="rounded-md bg-brand-wash px-1.5 py-0.5 text-[10px] font-extrabold text-brand-deep shrink-0">{tx('手機版', 'Mobile')}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <PWAInstallButton compact />
             <button type="button" onClick={onOpenSearch} className="rounded-xl border border-slate-200 bg-slate-50 p-2 text-slate-700 cursor-pointer" aria-label="Search"><Search className="h-4 w-4 text-brand" /></button>
-            <button type="button" onClick={() => syncNowWithDrive()} className={`inline-flex items-center gap-1 rounded-xl border px-2 py-1.5 text-[11px] font-extrabold cursor-pointer ${driveSyncStatus === 'synced' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : driveSyncStatus === 'syncing' ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-700'}`} title="Sync Cloud"><Cloud className="h-3.5 w-3.5" />{driveSyncStatus === 'syncing' ? tx('同步中', 'Sync...') : tx('同步', 'Sync')}</button>
-            <button type="button" onClick={toggleLang} className="inline-flex items-center gap-1 rounded-xl border border-brand/30 bg-brand-wash/70 px-2 py-1.5 text-[11px] font-extrabold text-brand-deep cursor-pointer"><Globe className="h-3.5 w-3.5" />{lang === 'zh' ? 'EN' : '中'}</button>
+            <button type="button" onClick={() => syncNowWithDrive()} className={`rounded-xl border p-2 cursor-pointer ${driveSyncStatus === 'synced' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : driveSyncStatus === 'syncing' ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-700'}`} title={tx('同步雲端資料', 'Sync Cloud')} aria-label="Sync"><Cloud className={`h-4 w-4 ${driveSyncStatus === 'syncing' ? 'animate-pulse' : ''}`} /></button>
+            <button type="button" onClick={toggleLang} className="inline-flex items-center gap-1 rounded-xl border border-brand/30 bg-brand-wash/70 px-2 py-2 text-[11px] font-extrabold leading-4 text-brand-deep cursor-pointer"><Globe className="h-3.5 w-3.5" />{lang === 'zh' ? 'EN' : '中'}</button>
+            <ThemeQuickToggle className="bg-slate-50" />
             <button type="button" onClick={() => setSettingsOpen(!settingsOpen)} className={`rounded-xl border p-2 cursor-pointer ${settingsOpen ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}`} aria-label="Settings">{settingsOpen ? <X className="h-4 w-4" /> : <Settings className="h-4 w-4" />}</button>
           </div>
         </div>
 
         {settingsOpen && (
-          <div className="border-t border-slate-200 bg-white px-3.5 py-3 shadow-lg space-y-2.5 text-xs">
+          <div className="max-h-[70dvh] overflow-y-auto border-t border-slate-200 bg-white px-3.5 py-3 shadow-lg space-y-3 text-xs">
             <div className="space-y-1">
               <div className="text-[11px] font-extrabold text-slate-500">{tx('當值同事身份', 'Active Operator')}</div>
               <select value={user?.id || ''} onChange={(e) => switchAccount(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-900">
@@ -64,16 +65,17 @@ export const MobileAppShell: React.FC<{
                 ))}
               </select>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
-                {(['md', 'lg', 'xl'] as FontScale[]).map((s, idx) => (
-                  <button key={s} type="button" onClick={() => setFontScale(s)} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold cursor-pointer ${fontScale === s ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>{['A', 'A+', 'A++'][idx]}</button>
-                ))}
-              </div>
-              <button type="button" onClick={() => { setViewMode('desktop'); setSettingsOpen(false); }} className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white py-2 font-extrabold text-slate-800 cursor-pointer">
-                <Monitor className="h-3.5 w-3.5 text-brand" /> {tx('切換至 PC 網頁版', 'Switch to PC Web')}
-              </button>
+            <div className="space-y-1">
+              <div className="text-[11px] font-extrabold text-slate-500">{tx('外觀主題', 'Appearance')}</div>
+              <ThemeSegmented />
             </div>
+            <div className="space-y-1">
+              <div className="text-[11px] font-extrabold text-slate-500">{tx('字體大小', 'Text Size')}</div>
+              <FontScaleSegmented />
+            </div>
+            <button type="button" onClick={() => { setViewMode('desktop'); setSettingsOpen(false); }} className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white py-2.5 font-extrabold text-slate-800 cursor-pointer">
+              <Monitor className="h-3.5 w-3.5 text-brand" /> {tx('切換至 PC 網頁版', 'Switch to PC Web')}
+            </button>
             <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
               <button type="button" onClick={() => { onOpenDriveSync(); setSettingsOpen(false); }} className="inline-flex items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50/70 py-2 font-bold text-emerald-800 cursor-pointer"><Cloud className="h-3.5 w-3.5" /> Drive</button>
               <button type="button" onClick={() => { resetAllDemoData(); setSettingsOpen(false); }} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 py-2 font-bold text-slate-600 cursor-pointer"><RotateCcw className="h-3.5 w-3.5" /> {tx('重設資料', 'Reset')}</button>
@@ -83,7 +85,7 @@ export const MobileAppShell: React.FC<{
         )}
       </header>
 
-      <main className="flex-1 w-full max-w-full px-3 pt-3 pb-24">
+      <main className="flex-1 w-full max-w-full px-3 pt-3" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
         {activeTab === 'jobs' && <MobileJobsView onNavigateEquipment={() => onSelect('equipment')} />}
         {activeTab === 'equipment' && <MobileEquipmentView />}
         {activeTab === 'stp' && <MobileStpView />}

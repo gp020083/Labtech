@@ -56,7 +56,7 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
   const dateOnly = baseWorksheet.testedAt.slice(0, 10);
 
   return (
-    <div className="mx-auto max-w-[210mm] bg-white p-5 sm:p-7 text-slate-950 font-sans text-[11px] leading-snug border-2 border-slate-900 shadow-sm print:border-none print:shadow-none print:p-0">
+    <div className="light-island mx-auto max-w-[210mm] bg-white p-5 sm:p-7 text-slate-950 font-sans text-[11px] leading-snug border-2 border-slate-900 shadow-sm print:border-none print:shadow-none print:p-0">
       {/* Official LabTech HOKLAS 298 Letterhead */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-slate-950 pb-3 mb-2">
         <div className="flex items-start gap-3">

@@ -93,7 +93,7 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
   };
 
   return (
-    <div className="font-sans text-[11px] leading-snug text-slate-950 space-y-3">
+    <div className="light-island font-sans text-[11px] leading-snug text-slate-950 space-y-3">
       {/* Official LabTech Paper Worksheet Header */}
       <div className="border-b-2 border-slate-900 pb-2.5">
         <div className="flex items-start justify-between gap-3">

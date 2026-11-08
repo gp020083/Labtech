@@ -7,11 +7,11 @@ export const ToastHost: React.FC = () => {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div className="lt-floating-bottom fixed bottom-4 right-4 z-[90] flex flex-col gap-2 max-w-sm">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="flex items-start gap-2.5 rounded-xl border border-line bg-paper px-4 py-3 text-xs shadow-xl"
+          className="flex items-start gap-2.5 rounded-2xl border border-line bg-paper/95 backdrop-blur-xl px-4 py-3 text-xs shadow-2xl"
         >
           {t.tone === 'warn' ? (
             <AlertTriangle className="h-4 w-4 shrink-0 text-[#a35f00] mt-0.5" />

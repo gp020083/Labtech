@@ -94,13 +94,13 @@ export const StpPage: React.FC<{
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-extrabold text-emerald-800">
+          <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-extrabold text-emerald-800">
             <ShieldCheck className="h-3.5 w-3.5" /> CONTROLLED WORKING DOCUMENTS &amp; TEMPLATES VAULT
           </div>
-          <h1 className="mt-2 text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="sm:mt-2 text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900">
             {tx('受控工作文件庫 (Controlled Working Documents Vault)', 'Controlled Working Documents & Templates Vault')}
           </h1>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="hidden sm:block mt-0.5 text-xs text-slate-500">
             {tx(
               '集中管理及預覽全部受控 STP 標準測試程序、測試工作紙範本 (Worksheet Templates)、委託單及品質表格 (Order Forms)、以及正式報告範本 (Formal Report Templates)。點擊任何一列即可直接打開預覽。',
               'Centralized vault for Controlled STP Procedures, Worksheet Templates, Test Order & Quality Forms, and Formal Report Templates. Click any row to open preview.'
@@ -123,7 +123,7 @@ export const StpPage: React.FC<{
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <div className="lt-scroll-tabs -mx-3 px-3 sm:mx-0 sm:px-0 flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-200 pb-3">
         <button
           type="button"
           onClick={() => handleSelectSection('stp')}

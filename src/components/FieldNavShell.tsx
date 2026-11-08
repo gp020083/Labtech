@@ -3,7 +3,8 @@ import { useApp } from '../store';
 import { usePrefs, FontScale } from '../prefs';
 import { REF_TODAY, getEquipmentCalStatus } from '../utils';
 import { PWAInstallButton } from './PwaStatusWidgets';
-import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award, ClipboardList, BookCheck } from 'lucide-react';
+import { ThemeQuickToggle, DisplaySettingsMenu, ThemeSegmented } from './ThemeToggle';
+import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award, ClipboardList, BookCheck, Activity, Smartphone } from 'lucide-react';
 
 export type FieldTabId = 'jobs' | 'equipment' | 'stp' | 'tools' | 'calendar';
 export type EquipmentSubSectionId = 'loans' | 'calibration';
@@ -186,9 +187,9 @@ export const FieldNavShell: React.FC<{
           </div>
 
           <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 space-y-2 text-[11px]">
-            <div className="font-extrabold text-slate-700">{tx('⚡ 即時狀態 Live Status', '⚡ Live Status')}</div>
+            <div className="flex items-center gap-1.5 font-extrabold text-slate-700"><Activity className="h-3.5 w-3.5 text-emerald-600" /> {tx('即時狀態', 'Live Status')}</div>
             <button type="button" onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); }} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-brand cursor-pointer">
-              <span>{tx('📍 借出中儀器', '📍 On-Site Gear')}</span>
+              <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-brand" /> {tx('借出中儀器', 'On-Site Gear')}</span>
               <span className="font-mono font-extrabold text-brand-deep">{loanedCount}</span>
             </button>
             {calAlertCount > 0 && (
@@ -198,7 +199,7 @@ export const FieldNavShell: React.FC<{
               </button>
             )}
             <button type="button" onClick={() => onSelect('calendar')} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-violet-700 cursor-pointer">
-              <span>{tx('📅 近期排程項目', '📅 Upcoming Events')}</span>
+              <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3 text-violet-600" /> {tx('近期排程項目', 'Upcoming Events')}</span>
               <span className="font-mono font-extrabold text-violet-700">{upcomingEventsCount}</span>
             </button>
           </div>
@@ -241,25 +242,6 @@ export const FieldNavShell: React.FC<{
           </button>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <div className="hidden sm:inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5" title={tx('字體大小 Font Size', 'Font Size')}>
-              {([
-                ['md', 'A'],
-                ['lg', 'A+'],
-                ['xl', 'A++'],
-              ] as [FontScale, string][]).map(([scale, lbl]) => (
-                <button
-                  key={scale}
-                  type="button"
-                  onClick={() => setFontScale(scale)}
-                  className={`rounded-lg px-2 py-1 text-[11px] font-extrabold transition cursor-pointer ${
-                    fontScale === scale ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {lbl}
-                </button>
-              ))}
-            </div>
-
             <PWAInstallButton />
 
             <button
@@ -281,9 +263,9 @@ export const FieldNavShell: React.FC<{
               <span>{lang === 'zh' ? '中/EN' : 'EN'}</span>
             </button>
 
-            <button type="button" onClick={() => setViewMode('mobile')} title={tx('切換至專屬手機版介面', 'Switch to Mobile App View')} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-extrabold text-slate-700 hover:border-brand hover:text-brand cursor-pointer"><Smartphone className="h-3.5 w-3.5 text-brand" /><span>{tx('手機版', 'Mobile')}</span></button>
-            <button type="button" title={tx('重設示範資料', 'Reset Demo Data')} onClick={resetAllDemoData} className="hidden sm:inline-flex rounded-xl border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900 cursor-pointer"><RotateCcw className="h-3.5 w-3.5" /></button>
-            <button type="button" title={tx('登出 Logout', 'Logout')} onClick={logout} className="lg:hidden rounded-xl border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"><LogOut className="h-3.5 w-3.5" /></button>
+            <ThemeQuickToggle />
+            <DisplaySettingsMenu onResetDemo={resetAllDemoData} />
+            <button type="button" title={tx('登出 Logout', 'Logout')} onClick={logout} className="lg:hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"><LogOut className="h-4 w-4" /></button>
           </div>
         </div>
         <div className="lg:hidden border-t border-slate-100 bg-slate-50/95 px-2.5 py-1.5">
@@ -382,6 +364,10 @@ export const FieldNavShell: React.FC<{
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
             </div>
+            <ThemeSegmented />
+            <button type="button" onClick={() => { setViewMode('mobile'); setMobileMenuOpen(false); }} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <Smartphone className="h-3.5 w-3.5 text-brand" /> {tx('切換至手機版介面', 'Switch to Mobile Layout')}
+            </button>
           </div>
         )}
       </header>
