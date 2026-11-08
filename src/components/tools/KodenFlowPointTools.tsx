@@ -31,10 +31,10 @@ Verticality = 1 : ${ratioDenom.toFixed(0)} (${vertPct.toFixed(3)}%) → ${isPass
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-              {tx('📡 Koden — Borehole Verticality & Offset 自動計算工具', '📡 Koden — Borehole Verticality & Offset Calculator')}
+              📡 Step 1 · Koden Ultrasonic Verticality Test (HKCI TM3 · FST02)
             </h2>
             <p className="text-xs text-slate-500">
-              {tx('輸入樁深 H 及 X-X / Y-Y 方向偏移量，自動計算合成偏移 Resultant Offset e (mm) 與垂直度 Verticality 1:N。', 'Enter depth H and X-X / Y-Y offsets to calculate Resultant Offset e (mm) and Verticality 1:N.')}
+              Enter Borehole Depth H and X-X / Y-Y Offsets to compute Resultant Offset e (mm) and Verticality 1:N.
             </p>
           </div>
           <div className="flex gap-1.5 text-[11px]">
@@ -127,10 +127,10 @@ Efflux T1 = ${n1.toFixed(1)} s, T2 = ${n2.toFixed(1)} s → Mean Efflux Time = $
       <div className="xl:col-span-7 rounded-3xl border border-slate-200/85 bg-white p-4 sm:p-5 shadow-sm space-y-4">
         <div>
           <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-            {tx('⏱️ Flow Cone — Efflux Time 自動計算工具 (ASTM C939)', '⏱️ Flow Cone — Efflux Time & Repeatability Calculator (ASTM C939)')}
+            ⏱️ Step 1 · Flow Cone Efflux Test (ASTM C939 · FST05)
           </h2>
           <p className="text-xs text-slate-500">
-            {tx('自動核對 1725 mL 清水校準時間 (8.0±0.2s)，並計算兩次測試 T1/T2 之平均流秒及重現性差值。', 'Checks 1725 mL water calibration (8.0±0.2s), computes mean efflux time, and verifies ASTM C939 repeatability.')}
+            1725 mL Water Calibration Check (8.0 ± 0.2 s), Efflux Time T1 / T2 Mean Calculation &amp; Repeatability Check (≤ 1.8 s).
           </p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -248,10 +248,10 @@ Uncorrected Is = ${isUncorr.toFixed(2)} MPa ｜ F = ${fFactor.toFixed(3)} → Is
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-              {tx('🪨 Point Load — Is(50) & UCS 自動計算工具 (ASTM D5731)', '🪨 Point Load — Is(50) & UCS Calculator (ASTM D5731)')}
+              🪨 Step 1 · Point Load Strength Index Test (ASTM D5731 · FST06)
             </h2>
             <p className="text-xs text-slate-500">
-              {tx('支援 Diametral 及 Axial / Block 測試，自動計算等效直徑 De、修正因子 F 及 Is(50)。', 'Supports Diametral and Axial / Block tests; auto-computes De, size factor F, and Is(50).')}
+              Diametral and Axial / Block Point Load Test — Equivalent Core Diameter De, Size Correction Factor F, and Is(50).
             </p>
           </div>
           <div className="flex gap-1.5 text-xs">

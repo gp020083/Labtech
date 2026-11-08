@@ -127,16 +127,17 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
   ].join('\n');
 
   return (
-    <div className="space-y-5">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+      <div className="xl:col-span-7 rounded-3xl border border-slate-200/85 bg-white p-4 sm:p-5 shadow-sm space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3.5">
         <div>
           <h2 className="text-base font-extrabold text-slate-900">
-            {tx('💧 Grout 泌水率及膨脹率計算器 (Bleeding & Expansion)', '💧 Grout Bleeding & Expansion Calculator')}
+            💧 Step 1 · Grout Bleeding &amp; Expansion Test (ASTM C940 · FST04)
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {isMl
-              ? tx('ASTM C940 量筒體積法（以 1000 mL 量筒讀取 mL 刻度）', 'ASTM C940 Graduated Cylinder Volume Method (mL readings)')
-              : tx('透明管／量筒液面高度法（以經校準鋼尺讀取 mm 高度）', 'Transparent Tube / Cylinder Height Method (Calibrated steel ruler mm readings)')}
+              ? 'ASTM C940 Graduated Cylinder Volume Method (1000 mL Cylinder — mL readings)'
+              : 'Transparent Tube / Cylinder Height Method (Calibrated Steel Ruler — mm readings)'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -146,14 +147,14 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
               onClick={() => switchUnit('mL')}
               className={`rounded-lg px-3 py-1.5 transition cursor-pointer whitespace-nowrap ${isMl ? 'bg-brand text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              {tx('體積單位 (mL)', 'Volume (mL)')}
+              Volume (mL)
             </button>
             <button
               type="button"
               onClick={() => switchUnit('mm')}
               className={`rounded-lg px-3 py-1.5 transition cursor-pointer whitespace-nowrap ${!isMl ? 'bg-brand text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              {tx('高度單位 (mm)', 'Height (mm)')}
+              Height (mm)
             </button>
           </div>
           <button
@@ -161,7 +162,7 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
             onClick={resetSample}
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer whitespace-nowrap"
           >
-            <RotateCcw className="h-3.5 w-3.5" /> {tx('重設範例', 'Reset Sample')}
+            <RotateCcw className="h-3.5 w-3.5" /> Reset
           </button>
         </div>
       </div>
@@ -169,54 +170,54 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
         <label className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3.5 space-y-1.5 block">
           <span className="font-extrabold text-slate-700">
-            {isMl ? tx('1. 初始漿體體積 V1 (mL)', '1. Initial Grout Volume V1 (mL)') : tx('1. 初始漿體高度 H1 (mm)', '1. Initial Grout Height H1 (mm)')}
+            {isMl ? '1. Initial Grout Volume V1 (mL)' : '1. Initial Grout Height H1 (mm)'}
           </span>
           <input type="number" step="any" value={v1} onChange={(e) => setV1(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-mono font-bold text-slate-900" />
           <span className={`block text-[11px] font-semibold ${!v1Valid ? 'text-amber-700' : 'text-slate-500'}`}>
             {isMl
-              ? (!v1Valid ? tx('⚠️ ASTM C940 標準要求 800 ± 10 mL', '⚠️ ASTM C940 requires 800 ± 10 mL') : tx('標準要求：800 ± 10 mL', 'Standard: 800 ± 10 mL'))
-              : tx('以經校準鋼尺 (LT-SR-12/13) 量度初始高度', 'Measure initial height with calibrated steel ruler')}
+              ? (!v1Valid ? '⚠️ ASTM C940 requires 800 ± 10 mL' : 'Standard: 800 ± 10 mL')
+              : 'Measure initial height H1 with calibrated steel ruler'}
           </span>
         </label>
         <label className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3.5 space-y-1.5 block">
           <span className="font-extrabold text-slate-700">
-            {isMl ? tx('2. 最終傾析泌水量 Vw (mL，選填)', '2. Final Decanted Water Vw (mL, Optional)') : tx('2. 最終泌水層高度 Hw (mm，選填)', '2. Final Bleed Layer Height Hw (mm, Optional)')}
+            {isMl ? '2. Final Decanted Water Vw (mL)' : '2. Final Bleed Water Height Hw (mm)'}
           </span>
-          <input type="number" step="any" value={decantedVw} onChange={(e) => setDecantedVw(e.target.value)} placeholder={tx('選填', 'Optional')} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-mono font-bold text-slate-900" />
+          <input type="number" step="any" value={decantedVw} onChange={(e) => setDecantedVw(e.target.value)} placeholder="Optional" className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-mono font-bold text-slate-900" />
           <span className="block text-[11px] text-slate-500">
-            {tx(`留空則自動按最後時段 (${sym2} − ${symG}) 計算`, `Blank uses last interval (${sym2} − ${symG})`)}
+            {`Blank uses last interval (${sym2} − ${symG})`}
           </span>
         </label>
         <label className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3.5 space-y-1.5 block">
-          <span className="font-extrabold text-slate-700">{tx('3. 驗收上限 Spec Max Bleeding (%)', '3. Spec Max Bleeding Limit (%)')}</span>
+          <span className="font-extrabold text-slate-700">3. Spec Max Bleeding Limit (%)</span>
           <input type="number" step="0.1" value={specLimit} onChange={(e) => setSpecLimit(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-mono font-bold text-slate-900" />
-          <span className="block text-[11px] text-slate-500">{tx('一般要求：3 小時 ≤ 2.0%（依合約規格為準）', 'Typical spec: ≤ 2.0% at 3 hrs')}</span>
+          <span className="block text-[11px] text-slate-500">Typical Spec: ≤ 2.0% at 3 hrs</span>
         </label>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className={`rounded-2xl border p-4 ${isPass ? 'border-emerald-200 bg-emerald-50/70' : 'border-rose-200 bg-rose-50/70'}`}>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-extrabold text-slate-600">{tx('最終泌水率 Final Bleeding', 'Final Bleeding (%)')}</span>
+            <span className="text-xs font-extrabold text-slate-600">Final Bleeding (%)</span>
             <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold whitespace-nowrap ${isPass ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
-              {isPass ? tx('合格 PASS', 'PASS') : tx('超標 EXCEED', 'EXCEED')}
+              {isPass ? 'PASS' : 'EXCEED'}
             </span>
           </div>
           <div className="mt-1.5 font-mono text-2xl font-black text-slate-900">{finalBleedPct.toFixed(2)}%</div>
-          <div className="text-[11px] text-slate-600 mt-0.5">{tx(`驗收標準 ≤ ${limitNum.toFixed(1)}%`, `Spec Limit ≤ ${limitNum.toFixed(1)}%`)}</div>
+          <div className="text-[11px] text-slate-600 mt-0.5">{`Spec Limit ≤ ${limitNum.toFixed(1)}%`}</div>
         </div>
         <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
-          <span className="text-xs font-extrabold text-slate-600">{tx('自由膨脹率 Free Expansion', 'Free Expansion (%)')}</span>
+          <span className="text-xs font-extrabold text-slate-600">Free Expansion (%)</span>
           <div className="mt-1.5 font-mono text-2xl font-black text-slate-900">{finalExpPct >= 0 ? '+' : ''}{finalExpPct.toFixed(2)}%</div>
           <div className="text-[11px] text-slate-600 mt-0.5 font-mono">({sym2} − {sym1}) / {sym1} × 100%</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <span className="text-xs font-extrabold text-slate-600">
-            {isMl ? tx('最終泌水體積 (mL)', 'Final Bleed Volume (mL)') : tx('最終泌水高度 (mm)', 'Final Bleed Height (mm)')}
+            {isMl ? 'Final Bleed Volume (mL)' : 'Final Bleed Height (mm)'}
           </span>
           <div className="mt-1.5 font-mono text-2xl font-black text-brand-deep">{fmtAmt(finalBleedAmt)} {unit}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">
-            {hasDecant ? tx(`按實測 ${symW} 計算`, `From measured ${symW}`) : tx(`按最後時段 (${sym2} − ${symG}) 計算`, `From last interval (${sym2} − ${symG})`)}
+            {hasDecant ? `Measured ${symW}` : `Last interval (${sym2} − ${symG})`}
           </div>
         </div>
       </div>
@@ -226,12 +227,12 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold whitespace-nowrap">
               <tr>
-                <th className="px-3 py-2.5">{tx('讀數時段', 'Time Interval')}</th>
-                <th className="px-3 py-2.5">{isMl ? tx('總液面 V2 (mL)', 'Upper Surface V2 (mL)') : tx('總液面高度 H2 (mm)', 'Upper Surface H2 (mm)')}</th>
-                <th className="px-3 py-2.5">{isMl ? tx('漿體面 Vg (mL)', 'Grout Surface Vg (mL)') : tx('漿體面高度 Hg (mm)', 'Grout Surface Hg (mm)')}</th>
-                <th className="px-3 py-2.5">{tx(`泌水量 (${unit})`, `Bleed (${unit})`)}</th>
-                <th className="px-3 py-2.5">{tx('泌水率 (%)', 'Bleeding (%)')}</th>
-                <th className="px-3 py-2.5">{tx('膨脹率 (%)', 'Expansion (%)')}</th>
+                <th className="px-3 py-2.5">Elapsed Time</th>
+                <th className="px-3 py-2.5">{isMl ? 'Upper Surface V2 (mL)' : 'Upper Surface H2 (mm)'}</th>
+                <th className="px-3 py-2.5">{isMl ? 'Grout Surface Vg (mL)' : 'Grout Surface Hg (mm)'}</th>
+                <th className="px-3 py-2.5">{`Bleed (${unit})`}</th>
+                <th className="px-3 py-2.5">Bleeding (%)</th>
+                <th className="px-3 py-2.5">Expansion (%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -277,7 +278,9 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
           <div><label className="font-bold text-amber-900">Sample Identification No. (手打 / Manual)</label><input value={sampleId} onChange={(e) => setSampleId(e.target.value)} placeholder="Manual Sample ID (e.g. BL-01)" className="mt-0.5 w-full rounded-lg border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono font-bold" /></div>
         </div>
       </div>
+      </div>
 
+      <div className="xl:col-span-5 xl:sticky xl:top-20">
       <ToolGuideCard
         stpCode="BL"
         standardRef={isMl ? 'ASTM C940 · STP04-GTT-C940 (Volume mL)' : 'ASTM C940 / GS Height Method · STP04-GTT-C940 (Height mm)'}
@@ -340,6 +343,7 @@ export const BleedingCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ on
         copyText={copySummary}
         onViewAllSpecs={onViewAllSpecs}
       />
+      </div>
     </div>
   );
 };

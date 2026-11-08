@@ -32,6 +32,8 @@ import {
   FileSpreadsheet,
   Award,
   Hash,
+  Trash2,
+  ChevronDown,
 } from 'lucide-react';
 
 export interface GuideStep {
@@ -49,7 +51,7 @@ export const ToolGuideCard: React.FC<{
   structuredData?: StructuredCalcPayload;
   onViewAllSpecs?: () => void;
 }> = ({ stpCode, standardRef, formulaText, steps, pitfalls, copyText, structuredData, onViewAllSpecs }) => {
-  const { jobs, equipment, tests, calcRecords, saveCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
+  const { jobs, equipment, tests, calcRecords, saveCalcRecord, deleteCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
   const { lang, tx } = usePrefs();
   const govSpec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
   const templateMeta = getOfficialTemplateMeta(stpCode, tests);
@@ -64,6 +66,7 @@ export const ToolGuideCard: React.FC<{
   const [locationNote, setLocationNote] = useState<string>('');
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
   const [signOffExpanded, setSignOffExpanded] = useState<boolean>(false);
+  const [showGuide, setShowGuide] = useState<boolean>(false);
   const [signedBy, setSignedBy] = useState<string>('');
   const [signedRole, setSignedRole] = useState<string>('');
   const [signatureDataUrl, setSignatureDataUrl] = useState<string>('');
@@ -278,12 +281,12 @@ export const ToolGuideCard: React.FC<{
     <div className="rounded-3xl border border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
         <div className="flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand text-white"><BookOpen className="h-4 w-4" /></span>
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand text-white"><FileSpreadsheet className="h-4 w-4" /></span>
           <div>
             <h3 className="text-sm font-extrabold text-slate-900">
-              {tx('📖 操作指南及驗收要求 (Guide & Requirements)', '📖 Field Guide & Spec Requirements')}
+              {tx('📋 Step 2 · 派號及出表 (Job Ref. & Worksheet / Report)', '📋 Step 2 · Job Ref. & Worksheet / Report Generator')}
             </h3>
-            <p className="text-[11px] text-slate-500">{tx(`參考標準：${standardRef}`, `Reference Standard: ${standardRef}`)}</p>
+            <p className="text-[11px] text-slate-500">{tx(`測試標準：${standardRef}`, `Standard: ${standardRef}`)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -557,18 +560,29 @@ export const ToolGuideCard: React.FC<{
                       onClick={() => setPreviewState({ record: r, mode: 'worksheet' })}
                       className="font-extrabold text-brand-deep hover:underline cursor-pointer"
                     >
-                      {tx('📋 工作紙', '📋 Worksheet')}
+                      Worksheet
                     </button>
                     <button
                       type="button"
                       onClick={() => setPreviewState({ record: r, mode: 'formal_report' })}
                       className="font-extrabold text-amber-800 hover:underline cursor-pointer"
                     >
-                      {tx('📜 正式報告', '📜 Report')}
+                      Report
                     </button>
-                    <span className={`font-mono text-[10px] font-extrabold ${r.pass ? 'text-emerald-700' : 'text-rose-700'}`}>
-                      {r.pass ? '✓ PASS' : '⚠ REVIEW'}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteCalcRecord(r.id);
+                        pushToast(
+                          tx(`🗑️ 已刪除 ${r.jobRefNo || r.id}`, `🗑️ Deleted ${r.jobRefNo || r.id}`),
+                          `${r.jobNo} · ${r.stpCode}`
+                        );
+                      }}
+                      className="rounded p-1 text-rose-600 hover:bg-rose-50 cursor-pointer"
+                      title="Delete Record"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               );
@@ -585,59 +599,78 @@ export const ToolGuideCard: React.FC<{
         />
       )}
 
-      <div className="rounded-2xl border border-brand/20 bg-white px-3.5 py-2.5 font-mono text-xs font-bold text-brand-deep">
-        📐 {tx('計算公式：', 'Formula: ')}{formulaText}
-      </div>
+      {/* Collapsible Procedure, Formula & Gov Specs Drawer to keep UI clean */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowGuide(!showGuide)}
+          className="flex w-full items-center justify-between px-4 py-3 text-left font-extrabold text-slate-800 hover:bg-slate-50 cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-brand" />
+            {tx('📐 展開公式、測試步驟及部門驗收標準 (Formula, Procedure & Dept Specs)', '📐 Formula, Procedure & HK Dept Specs')}
+          </span>
+          <ChevronDown className={`h-4 w-4 text-slate-500 transition ${showGuide ? 'rotate-180' : ''}`} />
+        </button>
 
-      {govSpec && (
-        <div className="rounded-2xl border border-indigo-200/80 bg-white p-3.5 space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
-              <Landmark className="h-4 w-4 text-indigo-600" />
-              <span>{tx('各部門驗收要求 (CEDD · ASD · Housing · BD)', 'HK Dept Requirements (CEDD · ASD · Housing · BD)')}</span>
+        {showGuide && (
+          <div className="border-t border-slate-100 p-3.5 space-y-3 bg-slate-50/50">
+            <div className="rounded-xl border border-brand/20 bg-white px-3 py-2 font-mono text-xs font-bold text-brand-deep">
+              📐 Formula: {formulaText}
             </div>
-            {onViewAllSpecs && (
-              <button type="button" onClick={onViewAllSpecs} className="text-[11px] font-extrabold text-indigo-700 hover:underline cursor-pointer">
-                {tx('完整要求總表 →', 'All Specs Table →')}
-              </button>
-            )}
-          </div>
-          <div className="divide-y divide-slate-100 rounded-xl border border-slate-200/80 overflow-hidden">
-            {GOV_DEPTS.map((d) => {
-              const req = govSpec.depts[d.id];
-              const items = (lang === 'en' ? req.criteriaEn : req.criteriaZh).split('\n');
-              return (
-                <div key={d.id} className="flex items-start gap-2.5 bg-slate-50/50 px-2.5 py-2">
-                  <span className={`w-16 shrink-0 text-center rounded-md border px-1.5 py-0.5 text-[10px] font-extrabold ${d.badgeCls}`}>{d.short}</span>
-                  <div className="text-[11px] font-semibold text-slate-800 leading-snug">{items.join(' ； ')}</div>
+
+            {govSpec && (
+              <div className="rounded-xl border border-indigo-200/80 bg-white p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
+                    <Landmark className="h-4 w-4 text-indigo-600" />
+                    <span>{tx('各部門驗收要求 (CEDD · ASD · Housing · BD)', 'HK Dept Requirements (CEDD · ASD · Housing · BD)')}</span>
+                  </div>
+                  {onViewAllSpecs && (
+                    <button type="button" onClick={onViewAllSpecs} className="text-[11px] font-extrabold text-indigo-700 hover:underline cursor-pointer">
+                      {tx('完整要求總表 →', 'All Specs Table →')}
+                    </button>
+                  )}
                 </div>
-              );
-            })}
+                <div className="divide-y divide-slate-100 rounded-xl border border-slate-200/80 overflow-hidden">
+                  {GOV_DEPTS.map((d) => {
+                    const req = govSpec.depts[d.id];
+                    const items = (lang === 'en' ? req.criteriaEn : req.criteriaZh).split('\n');
+                    return (
+                      <div key={d.id} className="flex items-start gap-2.5 bg-slate-50/50 px-2.5 py-2">
+                        <span className={`w-16 shrink-0 text-center rounded-md border px-1.5 py-0.5 text-[10px] font-extrabold ${d.badgeCls}`}>{d.short}</span>
+                        <div className="text-[11px] font-semibold text-slate-800 leading-snug">{items.join(' ； ')}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-2.5">
+              <div className="rounded-xl bg-white p-3 border border-slate-200/75 space-y-2">
+                <div className="flex items-center gap-1.5 font-extrabold text-slate-900"><Lightbulb className="h-4 w-4 text-amber-500" /> {tx('標準測試步驟 (Test Procedure)', 'Test Procedure Steps')}</div>
+                <ol className="space-y-1.5">
+                  {steps.map((s, idx) => (
+                    <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-wash font-mono text-[11px] font-extrabold text-brand-deep">{idx + 1}</span>
+                      <div><span className="font-extrabold text-slate-900">{s.title}: </span><span className="text-slate-600">{s.detail}</span></div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className="rounded-xl bg-amber-50/70 p-3 border border-amber-200/80 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-extrabold text-amber-900"><AlertTriangle className="h-4 w-4 text-amber-600" /> {tx('HOKLAS 評審及操作重點', 'HOKLAS Audit & Precautions')}</div>
+                <ul className="space-y-1 text-amber-950/85 leading-relaxed">
+                  {pitfalls.map((p, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5"><span className="font-bold text-amber-600">•</span><span>{p}</span></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">
-        <div className="rounded-2xl bg-white p-3.5 border border-slate-200/75 space-y-2.5">
-          <div className="flex items-center gap-1.5 font-extrabold text-slate-900"><Lightbulb className="h-4 w-4 text-amber-500" /> {tx('標準操作步驟 (Procedure)', 'Field Procedure Steps')}</div>
-          <ol className="space-y-2">
-            {steps.map((s, idx) => (
-              <li key={idx} className="flex items-start gap-2 leading-relaxed">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-wash font-mono text-[11px] font-extrabold text-brand-deep">{idx + 1}</span>
-                <div><span className="font-extrabold text-slate-900">{s.title}: </span><span className="text-slate-600">{s.detail}</span></div>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="rounded-2xl bg-amber-50/70 p-3.5 border border-amber-200/80 space-y-2">
-          <div className="flex items-center gap-1.5 font-extrabold text-amber-900"><AlertTriangle className="h-4 w-4 text-amber-600" /> {tx('注意事項及 HOKLAS 評審重點', 'Key Precautions & HOKLAS Audit Notes')}</div>
-          <ul className="space-y-1.5 text-amber-950/85 leading-relaxed">
-            {pitfalls.map((p, idx) => (
-              <li key={idx} className="flex items-start gap-1.5"><span className="font-bold text-amber-600">•</span><span>{p}</span></li>
-            ))}
-          </ul>
-        </div>
+        )}
       </div>
     </div>
   );
