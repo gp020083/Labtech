@@ -397,28 +397,34 @@ export const FormalReportTemplatesTable: React.FC = () => {
     </div>
   );
 };
-export const QualityDocsVaultTable: React.FC = () => {
+export const QualityDocsVaultTable: React.FC<{
+  mode?: 'order_forms' | 'daily_records' | 'quality_forms';
+}> = ({ mode = 'order_forms' }) => {
   const { openPreviewDoc } = useApp();
   const { lang, tx } = usePrefs();
-  const [cat, setCat] = useState<'all' | ServerQualityDoc['category'] | 'fqs49'>('order_daily');
+  const [cat, setCat] = useState<'cal_qc' | 'mu' | 'hoklas_org' | 'fqs49' | 'all_quality'>('cal_qc');
   const [q, setQ] = useState('');
 
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase();
     return SERVER_QUALITY_DOCS.filter((d) => {
-      if (cat !== 'all' && cat !== 'fqs49' && d.category !== cat) return false;
+      if (mode === 'order_forms' && d.category !== 'order_form') return false;
+      if (mode === 'daily_records' && d.category !== 'daily_record') return false;
+      if (mode === 'quality_forms') {
+        if (d.category === 'order_form' || d.category === 'daily_record') return false;
+        if (cat !== 'all_quality' && cat !== 'fqs49' && d.category !== cat) return false;
+      }
       if (!kw) return true;
       return `${d.code} ${d.titleZh} ${d.titleEn} ${d.testCode || ''} ${d.format}`.toLowerCase().includes(kw);
     });
-  }, [cat, q]);
+  }, [mode, cat, q]);
 
-  const cats: [typeof cat, string][] = [
-    ['order_daily', tx('FQS08 測試委託單 & FQS09 現場紀錄', 'FQS08 Order Forms & FQS09 Records')],
-    ['cal_qc', tx('校準、月檢及借還表格', 'Cal, Monthly & Loan Forms')],
-    ['mu_ref', tx('MU 不確定度及工程實績', 'MU & Job References')],
-    ['hoklas', tx('HOKLAS 298 及組織架構', 'HOKLAS & Org Docs')],
-    ['all', tx(`全部表格 (${SERVER_QUALITY_DOCS.length})`, `All Forms (${SERVER_QUALITY_DOCS.length})`)],
-    ['fqs49', tx(`FQS49 授權簽署人名單 (${FQS49_MATRIX.length})`, `FQS49 Signatories (${FQS49_MATRIX.length})`)],
+  const qualityCats: [typeof cat, string][] = [
+    ['cal_qc', tx('1. 儀器校準、月檢及借還表格 (6)', '1. Cal, Monthly & Loan Forms (6)')],
+    ['mu', tx('2. MU 測量不確定度評估表 (4)', '2. MU Uncertainty Sheets (4)')],
+    ['hoklas_org', tx('3. HOKLAS 298、架構及工程實績 (7)', '3. HOKLAS 298, Org & Job Refs (7)')],
+    ['fqs49', tx(`4. FQS49 授權簽署人矩陣 (${FQS49_MATRIX.length})`, `4. FQS49 Signatories (${FQS49_MATRIX.length})`)],
+    ['all_quality', tx('全部體系表格 (17)', 'All Quality Docs (17)')],
   ];
 
   const handlePreviewRow = (d: ServerQualityDoc) => {
@@ -435,16 +441,44 @@ export const QualityDocsVaultTable: React.FC = () => {
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx('搜尋委託單或表格編號 (FQS08 / FQS09 / FCC01 / FQS50 / MU / HOKLAS)...', 'Search Order Form or document code...')} className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={
+              mode === 'order_forms'
+                ? tx('搜尋 FQS08 測試委託單編號或測試項目 (KD / SO / FC+BL / PO)...', 'Search FQS08 Test Order Form...')
+                : mode === 'daily_records'
+                ? tx('搜尋 FQS09 現場每日測試紀錄表編號或測試項目...', 'Search FQS09 Daily Site Record...')
+                : tx('搜尋校準時間表 (FQS38)、月檢 (FCC01)、借還表 (FQS50)、MU 或 HOKLAS 證書...', 'Search Cal, Monthly Check, MU or HOKLAS docs...')
+            }
+            className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
+          />
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {cats.map(([k, label]) => (
-            <button key={k} type="button" onClick={() => setCat(k)} className={`rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap transition cursor-pointer ${cat === k ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{label}</button>
-          ))}
-        </div>
+        {mode === 'quality_forms' ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {qualityCats.map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setCat(k)}
+                className={`rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                  cat === k ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-[11px] font-bold text-slate-500">
+            {mode === 'order_forms'
+              ? tx('💡 點擊任何一列即可直接預覽 FQS08 測試委託單範本', '💡 Click any row to preview the FQS08 Test Order Form Template')
+              : tx('💡 點擊任何一列即可直接預覽 FQS09 現場每日測試紀錄表範本', '💡 Click any row to preview the FQS09 Daily Site Record Template')}
+          </div>
+        )}
       </div>
 
-      {cat === 'fqs49' ? (
+      {mode === 'quality_forms' && cat === 'fqs49' ? (
         <PersonnelMatrixTable />
       ) : (
         <>
@@ -481,8 +515,14 @@ export const QualityDocsVaultTable: React.FC = () => {
             <table className="w-full min-w-[820px] text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
                 <tr className="whitespace-nowrap">
-                  <th className="w-40 px-4 py-3">{tx('文件編號', 'Code')}</th>
-                  <th className="px-3 py-3">{tx('委託單／表格名稱', 'Form / Document Title')}</th>
+                  <th className="w-44 px-4 py-3">{tx('文件編號', 'Code')}</th>
+                  <th className="px-3 py-3">
+                    {mode === 'order_forms'
+                      ? tx('測試委託單範本名稱 (FQS08 Test Order Form)', 'FQS08 Test Order Form Title')
+                      : mode === 'daily_records'
+                      ? tx('現場每日測試紀錄表名稱 (FQS09 Daily Site Record)', 'FQS09 Daily Site Record Title')
+                      : tx('品質體系／校準／MU 文件名稱', 'Quality / Calibration / MU Document Title')}
+                  </th>
                   <th className="w-24 px-3 py-3">{tx('關聯項目', 'Test')}</th>
                   <th className="w-28 px-3 py-3">{tx('修訂日期', 'Rev Date')}</th>
                   <th className="w-20 px-3 py-3">{tx('格式', 'Format')}</th>
@@ -501,16 +541,16 @@ export const QualityDocsVaultTable: React.FC = () => {
                     <td className="px-3 py-3 whitespace-nowrap">{d.testCode ? <span className="rounded bg-brand-wash px-2 py-0.5 font-mono text-[11px] font-extrabold text-brand-deep whitespace-nowrap">{d.testCode}</span> : <span className="text-slate-400">—</span>}</td>
                     <td className="px-3 py-3 font-mono text-slate-600 whitespace-nowrap">{d.revDate}</td>
                     <td className="px-3 py-3 whitespace-nowrap"><Badge tone={d.format === 'PDF' ? 'ok' : 'brand'}>{d.format}</Badge></td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5 flex-nowrap whitespace-nowrap">
+                    <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-grid grid-cols-[78px_78px] items-center justify-end gap-1.5">
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); handlePreviewRow(d); }}
-                          className="inline-flex items-center gap-1 rounded-xl bg-brand px-2.5 py-1.5 font-extrabold text-white hover:bg-brand-deep whitespace-nowrap shrink-0 cursor-pointer"
+                          onClick={() => handlePreviewRow(d)}
+                          className="inline-flex h-8 w-[78px] items-center justify-center gap-1 rounded-xl bg-brand font-extrabold text-white hover:bg-brand-deep cursor-pointer"
                         >
                           <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽', 'Preview')}
                         </button>
-                        <a onClick={(e) => e.stopPropagation()} href={resolveDocLink(d.url).downloadUrl || d.url} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0">
+                        <a href={resolveDocLink(d.url).downloadUrl || d.url} download target="_blank" rel="noopener noreferrer" className="inline-flex h-8 w-[78px] items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50">
                           <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載', 'Download')}
                         </a>
                       </div>

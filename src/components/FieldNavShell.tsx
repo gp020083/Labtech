@@ -3,11 +3,11 @@ import { useApp } from '../store';
 import { usePrefs, FontScale } from '../prefs';
 import { REF_TODAY, getEquipmentCalStatus } from '../utils';
 import { PWAInstallButton } from './PwaStatusWidgets';
-import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award } from 'lucide-react';
+import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, Smartphone, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award, ClipboardList, BookCheck } from 'lucide-react';
 
 export type FieldTabId = 'jobs' | 'equipment' | 'stp' | 'tools' | 'calendar';
 export type EquipmentSubSectionId = 'loans' | 'calibration';
-export type DocVaultSubSectionId = 'stp' | 'worksheets' | 'orders' | 'reports';
+export type DocVaultSubSectionId = 'stp' | 'worksheets' | 'order_forms' | 'daily_records' | 'reports' | 'quality_forms';
 
 export const FieldNavShell: React.FC<{
   activeTab: FieldTabId;
@@ -144,8 +144,10 @@ export const FieldNavShell: React.FC<{
                       {([
                         ['stp', tx('1. STP 標準測試程序', '1. STP Procedures'), FileText, 'text-slate-700'],
                         ['worksheets', tx('2. 測試工作紙範本', '2. Worksheet Templates'), FileSpreadsheet, 'text-brand'],
-                        ['orders', tx('3. 委託單及體系表格', '3. Order & Quality Forms'), FolderOpen, 'text-emerald-600'],
-                        ['reports', tx('4. 正式報告範本', '4. Formal Report Templates'), Award, 'text-amber-600'],
+                        ['order_forms', tx('3. 測試委託單範本', '3. Order Forms (FQS08)'), FolderOpen, 'text-emerald-600'],
+                        ['daily_records', tx('4. 每日測試紀錄表', '4. Daily Records (FQS09)'), ClipboardList, 'text-indigo-600'],
+                        ['reports', tx('5. 正式報告範本', '5. Formal Report Templates'), Award, 'text-amber-600'],
+                        ['quality_forms', tx('6. 品質體系及校準表格', '6. Quality & Cal Forms'), BookCheck, 'text-teal-600'],
                       ] as const).map(([subId, subLabel, SubIcon, iconCls]) => (
                         <button
                           key={subId}

@@ -25,6 +25,8 @@ import {
   FolderOpen,
   FileSpreadsheet,
   Award,
+  ClipboardList,
+  BookCheck,
 } from 'lucide-react';
 
 export const StpPage: React.FC<{
@@ -125,7 +127,7 @@ export const StpPage: React.FC<{
         <button
           type="button"
           onClick={() => handleSelectSection('stp')}
-          className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'stp' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -135,7 +137,7 @@ export const StpPage: React.FC<{
         <button
           type="button"
           onClick={() => handleSelectSection('worksheets')}
-          className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'worksheets' ? 'bg-brand text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -144,31 +146,64 @@ export const StpPage: React.FC<{
         </button>
         <button
           type="button"
-          onClick={() => handleSelectSection('orders')}
-          className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'orders' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          onClick={() => handleSelectSection('order_forms')}
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+            sectionTab === 'order_forms' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
           <FolderOpen className="h-4 w-4" />
-          {tx(`3. 委託單及體系表格 (${SERVER_QUALITY_DOCS.length})`, `3. Order & Quality Forms (${SERVER_QUALITY_DOCS.length})`)}
+          {tx(
+            `3. 測試委託單範本 (FQS08 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`,
+            `3. Test Order Forms (FQS08 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSelectSection('daily_records')}
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+            sectionTab === 'daily_records' ? 'bg-teal-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <ClipboardList className="h-4 w-4" />
+          {tx(
+            `4. 每日測試紀錄表 (FQS09 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`,
+            `4. Daily Site Records (FQS09 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`
+          )}
         </button>
         <button
           type="button"
           onClick={() => handleSelectSection('reports')}
-          className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'reports' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
           <Award className="h-4 w-4" />
-          {tx(`4. 正式報告範本 (${tests.length})`, `4. Formal Report Templates (${tests.length})`)}
+          {tx(`5. 正式報告範本 (${tests.length})`, `5. Formal Report Templates (${tests.length})`)}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSelectSection('quality_forms')}
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+            sectionTab === 'quality_forms' ? 'bg-indigo-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <BookCheck className="h-4 w-4" />
+          {tx(
+            `6. 品質體系及校準表格 (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`,
+            `6. Quality, Cal & MU Forms (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`
+          )}
         </button>
       </div>
       {sectionTab === 'worksheets' ? (
         <WorksheetTemplatesTable />
-      ) : sectionTab === 'orders' ? (
-        <QualityDocsVaultTable />
+      ) : sectionTab === 'order_forms' ? (
+        <QualityDocsVaultTable mode="order_forms" />
+      ) : sectionTab === 'daily_records' ? (
+        <QualityDocsVaultTable mode="daily_records" />
       ) : sectionTab === 'reports' ? (
         <FormalReportTemplatesTable />
+      ) : sectionTab === 'quality_forms' ? (
+        <QualityDocsVaultTable mode="quality_forms" />
       ) : (
         <>
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -283,25 +318,27 @@ export const StpPage: React.FC<{
                         {pdfCount > 0 && <div className="mt-1 inline-flex items-center gap-1 rounded bg-brand-wash px-1.5 py-0.5 text-[10px] font-bold text-brand-deep"><FileText className="h-3 w-3" /> {pdfCount} PDF</div>}
                       </td>
                       <td className="px-3 py-3.5 whitespace-nowrap"><Badge tone={t.acc ? 'ok' : 'warn'}>{t.acc ? 'HOKLAS' : 'Draft'}</Badge></td>
-                      <td className="px-4 py-3.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5 flex-nowrap whitespace-nowrap">
-                          {t.stpPdfUrl && (
+                      <td className="px-4 py-3.5 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="inline-grid grid-cols-[90px_70px_58px_34px] items-center justify-end gap-1.5 whitespace-nowrap">
+                          {t.stpPdfUrl ? (
                             <button
                               type="button"
                               onClick={() => openPreviewDoc({ title: `${t.stpDocCode} (${t.stpRev}) — ${t.name}`, url: t.stpPdfUrl!, fileName: `${t.stpDocCode}.pdf`, subtitle: t.std })}
                               title={tx('預覽受控 STP PDF', 'Preview Controlled STP PDF')}
-                              className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 font-extrabold text-emerald-800 hover:bg-emerald-100 whitespace-nowrap shrink-0 cursor-pointer"
+                              className="inline-flex w-full items-center justify-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-2 py-1.5 font-extrabold text-emerald-800 hover:bg-emerald-100 whitespace-nowrap cursor-pointer"
                             >
                               <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽 STP', 'Preview')}
                             </button>
+                          ) : (
+                            <span />
                           )}
-                          <button type="button" onClick={() => setStpPreviewCode(t.code)} className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white hover:bg-brand-deep whitespace-nowrap shrink-0 cursor-pointer">
+                          <button type="button" onClick={() => setStpPreviewCode(t.code)} className="inline-flex w-full items-center justify-center gap-1 rounded-xl bg-brand px-2 py-1.5 font-extrabold text-white hover:bg-brand-deep whitespace-nowrap cursor-pointer">
                             <BookOpen className="h-3.5 w-3.5 shrink-0" /> {tx('詳情', 'Details')}
                           </button>
-                          <button type="button" onClick={() => downloadBlankTemplate(t)} title={tx('下載空白 Worksheet', 'Download Blank Worksheet')} className="inline-flex items-center gap-1 rounded-xl border border-brand/40 bg-brand-wash/40 px-2.5 py-1.5 font-extrabold text-brand-deep hover:bg-brand-wash whitespace-nowrap shrink-0 cursor-pointer">
+                          <button type="button" onClick={() => downloadBlankTemplate(t)} title={tx('下載空白 Worksheet', 'Download Blank Worksheet')} className="inline-flex w-full items-center justify-center gap-1 rounded-xl border border-brand/40 bg-brand-wash/40 px-2 py-1.5 font-extrabold text-brand-deep hover:bg-brand-wash whitespace-nowrap cursor-pointer">
                             <Download className="h-3.5 w-3.5 shrink-0" /> WS
                           </button>
-                          <label title={tx('上傳 STP PDF', 'Upload STP PDF')} className="inline-flex items-center rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-brand shrink-0 cursor-pointer">
+                          <label title={tx('上傳 STP PDF', 'Upload STP PDF')} className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-brand cursor-pointer">
                             <UploadCloud className="h-3.5 w-3.5" />
                             <input type="file" multiple accept=".pdf,.doc,.docx" onChange={(ev) => handleQuickPdfUpload(t, ev)} className="hidden" />
                           </label>

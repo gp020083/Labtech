@@ -575,35 +575,35 @@ export const EquipmentPage: React.FC<{
                             {eq.certFile || (eq.certUrl ? 'Calibration_Cert.pdf' : tx('尚未上傳證書', 'No Cert Uploaded'))}
                           </td>
                           <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <div className="inline-flex items-center gap-1.5">
+                            <div className="inline-grid grid-cols-[92px_90px_78px] items-center justify-end gap-1.5">
                               {eq.certUrl ? (
                                 <button
                                   type="button"
                                   onClick={() => openPreviewDoc({ title: `${eq.code} — ${eq.certFile || 'Cal Cert'}`, url: eq.certUrl!, fileName: eq.certFile, subtitle: `${eq.name} (S/N: ${eq.serial}) · Due: ${eq.certDue || eq.due}` })}
-                                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-3 font-extrabold text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+                                  className="inline-flex h-8 w-[92px] items-center justify-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 font-extrabold text-emerald-800 hover:bg-emerald-100 cursor-pointer"
                                 >
-                                  <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽證書', 'Preview Cert')}
+                                  <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽證書', 'Preview')}
                                 </button>
                               ) : (
                                 <button
                                   type="button"
                                   disabled
-                                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-100 bg-slate-50 px-3 font-semibold text-slate-300 cursor-not-allowed"
+                                  className="inline-flex h-8 w-[92px] items-center justify-center gap-1 rounded-xl border border-slate-100 bg-slate-50 font-semibold text-slate-300 cursor-not-allowed"
                                 >
                                   <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('無證書', 'No Cert')}
                                 </button>
                               )}
-                              <label title={tx('上傳新校準證書 PDF (支援多選)', 'Upload Calibration Cert PDF')} className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
-                                <UploadCloud className="h-3.5 w-3.5" />
+                              <label title={tx('上傳新校準證書 PDF (支援多選)', 'Upload Calibration Cert PDF')} className="inline-flex h-8 w-[90px] items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
+                                <UploadCloud className="h-3.5 w-3.5 shrink-0" />
                                 <span>{tx('上傳證書', 'Upload')}</span>
                                 <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" onChange={(ev) => handleQuickCalUpload(eq, ev)} className="hidden" />
                               </label>
                               <button
                                 type="button"
                                 onClick={() => navigateToEquipmentCertPage(eq.code)}
-                                className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                className="inline-flex h-8 w-[78px] items-center justify-center gap-1 rounded-xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
                               >
-                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" /> {tx('認證頁', 'Cert Page')}
+                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" /> {tx('認證頁', 'Status')}
                               </button>
                             </div>
                           </td>

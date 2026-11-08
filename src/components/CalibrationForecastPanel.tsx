@@ -15,6 +15,8 @@ import {
   Send,
   Filter,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export const CalibrationForecastPanel: React.FC<{
@@ -28,6 +30,8 @@ export const CalibrationForecastPanel: React.FC<{
   const [bucketFilter, setBucketFilter] = useState<'all_90' | 'overdue' | 'due_30' | 'due_60' | 'due_90' | 'conflicts'>('all_90');
   const [onlyExternalCal, setOnlyExternalCal] = useState<boolean>(true);
   const [selectedClusterDate, setSelectedClusterDate] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<boolean>(compact);
+  const [listCollapsed, setListCollapsed] = useState<boolean>(false);
 
   const forecast = useMemo(() => buildCalibrationForecast(equipment, events), [equipment, events]);
 
@@ -87,8 +91,11 @@ export const CalibrationForecastPanel: React.FC<{
       className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-4 text-xs"
     >
       {/* Header Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-100 pb-3.5">
-        <div className="space-y-1">
+      <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 ${collapsed ? '' : 'border-b border-slate-100 pb-3.5'}`}>
+        <div
+          onClick={() => setCollapsed(!collapsed)}
+          className="space-y-1 cursor-pointer select-none"
+        >
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-800">
               <CalendarClock className="h-3.5 w-3.5 text-amber-600" />
@@ -96,64 +103,101 @@ export const CalibrationForecastPanel: React.FC<{
             </span>
             <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
               {tx(
-                '📊 校準到期時間軸與 30 / 60 / 90 日外校預警中心 (Calibration Forecast & Renewal Planner)',
+                '📊 校準到期時間軸與 30 / 60 / 90 日外校預警中心',
                 '📊 Calibration Forecast & 30 / 60 / 90-Day Renewal Planner'
               )}
             </h2>
-          </div>
-          <p className="text-[11px] text-slate-500">
-            {tx(
-              `基準日：${forecast.refToday} → 30日 (${forecast.horizon30Date}) · 60日 (${forecast.horizon60Date}) · 90日 (${forecast.horizon90Date}) ｜ 建議於到期前 14 日安排送外校`,
-              `Ref Date: ${forecast.refToday} → +30d (${forecast.horizon30Date}) · +60d (${forecast.horizon60Date}) · +90d (${forecast.horizon90Date}) ｜ Recommended external send-out: 14 days prior to Cal Due`
+            {collapsed && (
+              <div className="flex flex-wrap items-center gap-1.5 ml-1">
+                <span className="rounded-lg bg-rose-50 border border-rose-200 px-2 py-0.5 font-mono text-[11px] font-extrabold text-rose-700">
+                  {tx(`已過期 ${scopedCounts.overdue}`, `Overdue ${scopedCounts.overdue}`)}
+                </span>
+                <span className="rounded-lg bg-amber-50 border border-amber-200 px-2 py-0.5 font-mono text-[11px] font-extrabold text-amber-800">
+                  {tx(`31–60日 ${scopedCounts.due60}`, `31–60d ${scopedCounts.due60}`)}
+                </span>
+                <span className="rounded-lg bg-sky-50 border border-sky-200 px-2 py-0.5 font-mono text-[11px] font-extrabold text-sky-800">
+                  {tx(`61–90日 ${scopedCounts.due90}`, `61–90d ${scopedCounts.due90}`)}
+                </span>
+              </div>
             )}
-          </p>
+          </div>
+          {!collapsed && (
+            <p className="text-[11px] text-slate-500">
+              {tx(
+                `基準日：${forecast.refToday} → 30日 (${forecast.horizon30Date}) · 60日 (${forecast.horizon60Date}) · 90日 (${forecast.horizon90Date}) ｜ 建議於到期前 14 日安排送外校`,
+                `Ref Date: ${forecast.refToday} → +30d (${forecast.horizon30Date}) · +60d (${forecast.horizon60Date}) · +90d (${forecast.horizon90Date}) ｜ Recommended external send-out: 14 days prior to Cal Due`
+              )}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {/* Scope Filter: External Cal Only vs All */}
-          <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-extrabold">
-            <button
-              type="button"
-              onClick={() => setOnlyExternalCal(true)}
-              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition cursor-pointer whitespace-nowrap ${
-                onlyExternalCal ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Filter className="h-3 w-3" />
-              {tx('外校儀器 External Cal', 'External Cal (E)')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setOnlyExternalCal(false)}
-              className={`rounded-lg px-2.5 py-1.5 transition cursor-pointer whitespace-nowrap ${
-                !onlyExternalCal ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {tx('全部儀器 All', 'All Active')}
-            </button>
-          </div>
+          {!collapsed && (
+            <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-extrabold">
+              <button
+                type="button"
+                onClick={() => setOnlyExternalCal(true)}
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition cursor-pointer whitespace-nowrap ${
+                  onlyExternalCal ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Filter className="h-3 w-3" />
+                {tx('外校儀器 External Cal', 'External Cal (E)')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOnlyExternalCal(false)}
+                className={`rounded-lg px-2.5 py-1.5 transition cursor-pointer whitespace-nowrap ${
+                  !onlyExternalCal ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tx('全部儀器 All', 'All Active')}
+              </button>
+            </div>
+          )}
 
           <button
             type="button"
             onClick={handleExportRenewalCsv}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-4 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer whitespace-nowrap"
           >
-            <Download className="h-4 w-4" />
-            {tx('📥 匯出待送外校儀器清單 CSV', '📥 Export Calibration Renewal CSV')}
+            <Download className="h-3.5 w-3.5" />
+            {tx('匯出外校清單 CSV', 'Export Renewal CSV')}
           </button>
 
-          {compact && onExpandFullPlanner && (
+          {compact && onExpandFullPlanner && !collapsed && (
             <button
               type="button"
               onClick={onExpandFullPlanner}
               className="inline-flex items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-100 cursor-pointer whitespace-nowrap"
             >
-              {tx('展開完整排程看板', 'Full Planner View')}
+              {tx('完整排程看板', 'Full View')}
               <ChevronRight className="h-4 w-4" />
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-900 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-slate-800 cursor-pointer whitespace-nowrap"
+          >
+            {collapsed ? (
+              <>
+                <span>{tx(`展開預警看板 (${scopedCounts.totalWithin90})`, `Expand Planner (${scopedCounts.totalWithin90})`)}</span>
+                <ChevronDown className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                <span>{tx('收摺預警看板', 'Collapse Planner')}</span>
+                <ChevronUp className="h-4 w-4" />
+              </>
+            )}
+          </button>
         </div>
       </div>
+
+      {!collapsed && (
+        <>
 
       {/* Visual 30 / 60 / 90-Day Timeline & Milestone Map */}
       <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 sm:p-4 space-y-3">
@@ -324,20 +368,39 @@ export const CalibrationForecastPanel: React.FC<{
         })}
       </div>
 
-      {/* Timeline & Conflict List */}
-      {displayList.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center space-y-1">
-          <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-600" />
-          <div className="text-sm font-extrabold text-slate-900">
-            {tx('此區間內暫無即將到期或撞期之儀器', 'No instruments expiring or conflicting in this bucket')}
-          </div>
-          <div className="text-[11px] text-slate-500">
-            {tx('可切換上方 30 / 60 / 90 日篩選器或點擊時間軸日期節點檢視其他批次', 'Select another 30 / 60 / 90-day filter or timeline milestone above')}
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden divide-y divide-slate-100">
-          {displayList.map((it) => {
+      {/* Timeline & Conflict List with Collapsible Toggle */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setListCollapsed(!listCollapsed)}
+          className="flex w-full items-center justify-between bg-slate-50/80 px-4 py-2.5 text-left font-extrabold text-slate-800 hover:bg-slate-100/80 cursor-pointer border-b border-slate-100"
+        >
+          <span>
+            {tx(
+              `📋 待送外校及排程撞期儀器明細 (${filteredItems.length} 件)`,
+              `📋 Instruments Due for Calibration & Conflict Details (${filteredItems.length})`
+            )}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-deep">
+            {listCollapsed ? tx('展開明細', 'Expand List') : tx('收摺明細', 'Collapse List')}
+            {listCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </span>
+        </button>
+
+        {!listCollapsed && (
+          displayList.length === 0 ? (
+            <div className="p-6 text-center space-y-1">
+              <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-600" />
+              <div className="text-sm font-extrabold text-slate-900">
+                {tx('此區間內暫無即將到期或撞期之儀器', 'No instruments expiring or conflicting in this bucket')}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {tx('可切換上方 30 / 60 / 90 日篩選器或點擊時間軸日期節點檢視其他批次', 'Select another 30 / 60 / 90-day filter or timeline milestone above')}
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {displayList.map((it) => {
             const eq = it.equipment;
             const pct = Math.max(4, Math.min(100, Math.round((Math.max(0, it.daysLeft) / 90) * 100)));
             const barColor =
@@ -470,23 +533,27 @@ export const CalibrationForecastPanel: React.FC<{
                 )}
               </div>
             );
-          })}
+              })}
 
-          {compact && filteredItems.length > displayList.length && (
-            <div className="bg-slate-50 px-4 py-2.5 text-center">
-              <button
-                type="button"
-                onClick={onExpandFullPlanner}
-                className="inline-flex items-center gap-1 font-extrabold text-brand hover:underline cursor-pointer"
-              >
-                {tx(
-                  `檢視全部 ${filteredItems.length} 件待送外校儀器及完整排程撞期分析 ›`,
-                  `View all ${filteredItems.length} instruments due for calibration & conflict details ›`
-                )}
-              </button>
+              {compact && filteredItems.length > displayList.length && (
+                <div className="bg-slate-50 px-4 py-2.5 text-center">
+                  <button
+                    type="button"
+                    onClick={onExpandFullPlanner}
+                    className="inline-flex items-center gap-1 font-extrabold text-brand hover:underline cursor-pointer"
+                  >
+                    {tx(
+                      `檢視全部 ${filteredItems.length} 件待送外校儀器及完整排程撞期分析 ›`,
+                      `View all ${filteredItems.length} instruments due for calibration & conflict details ›`
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          )
+        )}
+      </div>
+        </>
       )}
     </section>
   );
