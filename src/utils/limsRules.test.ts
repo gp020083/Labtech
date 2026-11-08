@@ -836,8 +836,8 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   assert.equal(kdMaps['xl/worksheets/sheet1.xml']?.H10, '2026-11-08');
   assert.equal(kdMaps['xl/worksheets/sheet4.xml']?.W27, 0);
 
-  const sampleXml = '<sheetData><row r="7"><c r="H7" s="12"><f>Sheet1!H9</f><v>0</v></c><c r="C9" s="10"/></row></sheetData>';
-  const injectedXml = injectCellsIntoSheetXml(sampleXml, { H7: 'LT0001', C9: 'CEDD' });
+  const sampleXml = '<sheetData><row r="7"><c r="C7" s="10"/><c r="H7" s="12"><f>Sheet1!H9</f><v>0</v></c></row></sheetData>';
+  const injectedXml = injectCellsIntoSheetXml(sampleXml, { H7: 'LT0001', C7: 'CEDD' });
   assert.ok(injectedXml.includes('<f>Sheet1!H9</f><v>LT0001</v>'));
   assert.ok(injectedXml.includes('<is><t>CEDD</t></is>'));
 });
