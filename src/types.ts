@@ -201,6 +201,8 @@ export interface FieldCalcRecord {
   signedRole?: string;
   signedAt?: string;
   sitePhotos?: FieldCalcPhoto[];
+  worksOrderAttachment?: SharedDocAttachment;
+  worksheetAttachment?: SharedDocAttachment;
   structuredData?: import('./utils/completedWorksheetGenerator').StructuredCalcPayload;
   driveFolderId?: string;
   driveManifestPath?: string;

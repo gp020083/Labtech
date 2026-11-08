@@ -137,8 +137,11 @@ export interface AppContextType {
     signedRole?: string;
     signedAt?: string;
     sitePhotos?: FieldCalcRecord['sitePhotos'];
+    worksOrderAttachment?: SharedDocAttachment;
+    worksheetAttachment?: SharedDocAttachment;
     structuredData?: FieldCalcRecord['structuredData'];
   }) => FieldCalcRecord;
+  updateCalcRecord: (id: string, patch: Partial<FieldCalcRecord>) => void;
   deleteCalcRecord: (id: string) => void;
 
   driveFiles: DriveVaultFile[];
@@ -773,7 +776,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const saveCalcRecord: AppContextType['saveCalcRecord'] = ({
     jobNo, jobRefNo, worksOrderNo, clientName, batchNo, sampleId, projectTitle, stpCode, title, locationNote, summary, pass,
-    signatureDataUrl, signedBy, signedRole, signedAt, sitePhotos, structuredData,
+    signatureDataUrl, signedBy, signedRole, signedAt, sitePhotos, worksOrderAttachment, worksheetAttachment, structuredData,
   }) => {
     const ts = nowTimestamp();
     const actor = user?.name || 'Operator';
@@ -827,6 +830,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       signedRole: signedRole?.trim() || undefined,
       signedAt: signatureDataUrl ? (signedAt || ts) : undefined,
       sitePhotos: normalizedPhotos,
+      worksOrderAttachment: worksOrderAttachment || existingByRef?.worksOrderAttachment,
+      worksheetAttachment: worksheetAttachment || existingByRef?.worksheetAttachment,
       structuredData: structuredData || undefined,
       driveFolderId: TARGET_DRIVE_UPLOADS_FOLDER_ID,
       driveSyncStatus: 'uploading',
@@ -932,6 +937,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       pass ? 'ok' : 'warn'
     );
     return rec;
+  };
+
+  const updateCalcRecord: AppContextType['updateCalcRecord'] = (id, patch) => {
+    const ts = nowTimestamp();
+    setState((prev) => ({
+      ...prev,
+      calcRecords: (prev.calcRecords || []).map((c) => (c.id === id ? { ...c, ...patch, updatedAt: ts } : c)),
+    }));
   };
 
   const deleteCalcRecord = (id: string) => {
@@ -1207,7 +1220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncEquipmentCertToDue, toggleEquipmentTag, uploadEquipmentCalCert, uploadStpCalCert,
         tests: localizedTests, pinnedStps: state.pinnedStps || ['KD', 'SO', 'FC'], togglePinStp, addStpItem, uploadStpDocFile,
         events: localizedEvents, saveEvent, deleteEvent, uploadEventAttachment,
-        calcRecords, saveCalcRecord, deleteCalcRecord,
+        calcRecords, saveCalcRecord, updateCalcRecord, deleteCalcRecord,
         driveFiles, batchUploadToDrive,
         canUndoLastBatch: Boolean(lastBatchSnapshot),
         lastBatchSummary,

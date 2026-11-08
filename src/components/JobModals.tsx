@@ -6,7 +6,8 @@ import { REF_TODAY, downloadCalcRecordCsv } from '../utils';
 import { Badge } from './Badge';
 import { SiteMapBox, buildPinnedGoogleMapsUrl } from './SiteMapBox';
 import { HoklasReportPreview } from './HoklasReportPreview';
-import { X, Copy, ExternalLink, Edit3, Wrench, Calculator, Download, Trash2, Printer } from 'lucide-react';
+import { TestRecordDetailModal } from './TestRecordDetailModal';
+import { X, Copy, ExternalLink, Edit3, Wrench, Calculator, Trash2, Printer, FolderOpen, Hash } from 'lucide-react';
 
 export const JobDetailDrawer: React.FC<{
   job: JobItem | null;
@@ -17,6 +18,7 @@ export const JobDetailDrawer: React.FC<{
   const { equipment, calcRecords, deleteCalcRecord, pushToast } = useApp();
   const { tx } = usePrefs();
   const [worksheetRec, setWorksheetRec] = useState<FieldCalcRecord | null>(null);
+  const [detailRec, setDetailRec] = useState<FieldCalcRecord | null>(null);
   if (!job) return null;
 
   const siteEq = equipment.filter((e) => e.currentLoan?.jobNo === job.no);
@@ -25,15 +27,15 @@ export const JobDetailDrawer: React.FC<{
   const copySiteInfo = () => {
     const text = `${job.no} | ${job.companyProjNo} | ${job.shortName}\nLocation: ${job.mapAddress || job.site}\nGoogle Maps: ${buildPinnedGoogleMapsUrl(job)}`;
     navigator.clipboard?.writeText(text);
-    pushToast(tx('已 Copy Site ID 及 Google Maps 連結', 'Site ID & Google Maps link copied'), `${job.companyProjNo} · ${job.shortName}`);
+    pushToast(tx('已複製地盤編號及 Google Maps 連結', 'Site ID & Google Maps link copied'), `${job.companyProjNo} · ${job.shortName}`);
   };
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/45 sm:items-stretch sm:justify-end"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="flex max-h-[90vh] sm:max-h-none sm:h-full w-full max-w-lg flex-col rounded-t-3xl sm:rounded-none bg-white shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-3xl border border-slate-200/80 bg-white shadow-2xl overflow-hidden">
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -122,110 +124,109 @@ export const JobDetailDrawer: React.FC<{
             )}
           </div>
 
-          {/* Field Calculation Logs linked to this Site Job */}
-          <div className="rounded-2xl border border-brand/25 bg-brand-wash/25 p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
+          {/* Field Calculation Logs & Job Ref. No. Dossier linked to this Site Job */}
+          <div className="rounded-2xl border border-brand/25 bg-brand-wash/20 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 font-extrabold text-slate-900">
                 <Calculator className="h-4 w-4 text-brand" />
-                {tx(`現場測試計算紀錄 (${siteCalcs.length})`, `Field Calculation Logs (${siteCalcs.length})`)}
+                {tx(`本工程 Job Ref. No. 及現場測試計算紀錄 (${siteCalcs.length})`, `Site Job Ref. No. & Field Test Records (${siteCalcs.length})`)}
               </span>
-              <span className="text-[11px] font-semibold text-slate-500">HOKLAS 298</span>
+              <span className="text-[11px] font-semibold text-brand-deep">
+                {tx('點擊任何紀錄列即可彈出完整結果及夾附文件視窗', 'Click any record row to open full result & bundled files')}
+              </span>
             </div>
             {siteCalcs.length === 0 ? (
-              <div className="text-slate-400">
-                {tx('暫無已儲存之現場計算紀錄（可於 TOOL 計算機點擊「儲存至地盤」新增）', 'No saved field calculations yet (Save from TOOL calculators)')}
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white/80 py-5 text-center text-slate-400">
+                {tx('暫無已儲存之現場測試計算紀錄（於「現場計算與工作紙」完成計算並派發 Job Ref. No. 後將自動歸檔至此地盤）', 'No field test records yet. Records saved with this site Job No. will appear here.')}
               </div>
             ) : (
-              <div className="space-y-2">
-                {siteCalcs.map((rec) => (
-                  <div key={rec.id} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2 shadow-2xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-md bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-white">{rec.stpCode}</span>
-                        <span className="font-mono font-extrabold text-brand-deep">{rec.id}</span>
-                        {rec.locationNote && <span className="rounded bg-slate-100 px-1.5 py-0.5 font-bold text-slate-700">{rec.locationNote}</span>}
-                        {rec.signatureDataUrl && <span className="rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">✍️ {rec.signedBy || tx('已簽署', 'Signed')}</span>}
+              <div className="space-y-2.5">
+                {siteCalcs.map((rec) => {
+                  const refNo = rec.jobRefNo || rec.id;
+                  return (
+                    <div
+                      key={rec.id}
+                      onClick={() => setDetailRec(rec)}
+                      className="group rounded-2xl border border-slate-200 bg-white p-3.5 space-y-2.5 shadow-2xs transition-all hover:border-brand/50 hover:shadow-md cursor-pointer"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-extrabold text-white">
+                            <Hash className="h-3 w-3 text-amber-300" /> {refNo}
+                          </span>
+                          <span className="rounded-lg bg-brand-wash px-2 py-0.5 font-mono text-[11px] font-extrabold text-brand-deep">
+                            {rec.stpCode}
+                          </span>
+                          {rec.worksOrderNo && (
+                            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-700">
+                              WO: {rec.worksOrderNo}
+                            </span>
+                          )}
+                          {rec.locationNote && (
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-bold text-slate-700">
+                              {rec.locationNote}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Badge tone={rec.pass ? 'ok' : 'warn'}>{rec.pass ? 'PASS 合規' : 'REVIEW'}</Badge>
+                        </div>
                       </div>
-                      <Badge tone={rec.pass ? 'ok' : 'warn'}>{rec.pass ? 'PASS 合規' : 'REVIEW'}</Badge>
-                    </div>
-                    <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 p-2 font-mono text-[11px] text-slate-800 leading-relaxed overflow-x-auto">
-                      {rec.summary}
-                    </pre>
-                    {rec.sitePhotos && rec.sitePhotos.length > 0 && (
-                      <div className="space-y-1.5 pt-0.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
-                          <span>📷 {tx(`附加現場相片 (${rec.sitePhotos.length}/2)`, `Attached Site Photos (${rec.sitePhotos.length}/2)`)}</span>
-                          <span className="text-emerald-700 font-bold">
-                            ✓ Google Drive (05_User_Uploads)
+
+                      <div className="line-clamp-2 rounded-xl bg-slate-50/90 px-3 py-2 font-mono text-[11px] text-slate-700">
+                        {rec.summary}
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px]">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                            📋 {tx('官方英文 Worksheet', 'Official Worksheet')}
+                          </span>
+                          <span className="rounded-md bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-bold text-indigo-800">
+                            📄 {rec.worksOrderAttachment ? tx('已上載 Works Order', 'Works Order Attached') : 'FQS08 Works Order'}
+                          </span>
+                          <span className="rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                            📷 {tx(`相片 (${rec.sitePhotos?.length || 0})`, `Photos (${rec.sitePhotos?.length || 0})`)}
+                          </span>
+                          <span className="text-slate-400 ml-1">
+                            {rec.operatorName} · {rec.testedAt}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {rec.sitePhotos.map((ph, pIdx) => (
-                            <div key={ph.id} className="rounded-lg border border-slate-200 bg-slate-50 p-1.5 space-y-1">
-                              <div className="relative">
-                                <img
-                                  src={ph.dataUrl}
-                                  alt={ph.caption || ph.fileName}
-                                  referrerPolicy="no-referrer"
-                                  className="h-20 w-full rounded-md object-cover bg-slate-900"
-                                />
-                                <span className="absolute top-1 left-1 rounded bg-slate-900/80 px-1 py-0.5 font-mono text-[9px] font-bold text-white">
-                                  #{pIdx + 1} · {ph.compressedSizeBytes ? `${Math.max(1, Math.round(ph.compressedSizeBytes / 1024))} KB` : 'JPEG'}
-                                </span>
-                              </div>
-                              <div className="truncate text-[10px] font-semibold text-slate-700" title={ph.caption || ph.fileName}>
-                                {ph.caption || ph.fileName}
-                              </div>
-                            </div>
-                          ))}
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setDetailRec(rec)}
+                            className="inline-flex items-center gap-1 rounded-xl bg-brand px-2.5 py-1 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
+                          >
+                            <FolderOpen className="h-3 w-3" /> {tx('檢視結果及附件', 'Open Dossier')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWorksheetRec(rec)}
+                            className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-2.5 py-1 font-extrabold text-white hover:bg-slate-800 cursor-pointer"
+                          >
+                            <Printer className="h-3 w-3" /> Worksheet
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteCalcRecord(rec.id)}
+                            title={tx('刪除此紀錄', 'Delete record')}
+                            className="rounded-xl border border-slate-200 p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </div>
                       </div>
-                    )}
-                    <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-100 text-[11px] text-slate-500">
-                      <span>👤 {rec.operatorName} · {rec.testedAt}</span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setWorksheetRec(rec)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1 font-extrabold text-white hover:bg-slate-800 cursor-pointer"
-                        >
-                          <Printer className="h-3 w-3" /> {tx('HOKLAS 報告', 'Worksheet')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard?.writeText(rec.summary);
-                            pushToast(tx('已複製計算紀錄', 'Copied calculation record'), rec.id);
-                          }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                        >
-                          <Copy className="h-3 w-3" /> Copy
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => downloadCalcRecordCsv(rec, job)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-brand/30 bg-brand-wash/60 px-2 py-1 font-extrabold text-brand-deep hover:bg-brand-wash cursor-pointer"
-                        >
-                          <Download className="h-3 w-3" /> CSV
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteCalcRecord(rec.id)}
-                          title={tx('刪除此紀錄', 'Delete record')}
-                          className="rounded-lg border border-slate-200 p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       </div>
       <HoklasReportPreview record={worksheetRec} job={job} onClose={() => setWorksheetRec(null)} />
+      <TestRecordDetailModal record={detailRec} job={job} onClose={() => setDetailRec(null)} />
     </div>
   );
 };

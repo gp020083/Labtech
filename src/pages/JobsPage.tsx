@@ -54,20 +54,20 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-slate-200/80 bg-white px-6 py-5 shadow-xs">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-wash px-3 py-1 text-[11px] font-extrabold text-brand-deep">
-            <MapPin className="h-3.5 w-3.5" /> SITE ID &amp; LOCATION DIRECTORY
+            <MapPin className="h-3.5 w-3.5" /> {tx('工程及地盤總覽 · 支援整列點擊開啟詳情與測試紀錄', 'PROJECTS & SITES · FULL-ROW CLICK ENABLED')}
           </div>
           <h1 className="mt-2 text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-            {tx('工程及地盤 Site ID & Location', 'Projects & Site Locations')}
+            {tx('工程及地盤目錄', 'Projects & Site Locations')}
           </h1>
           <p className="mt-0.5 text-xs text-slate-500">
-            {tx('集中查閱工程 Project No.、地盤地址、互動街道地圖及 Google Maps 定位導航。', 'Check Project No., site address, zoomable street map, and Google Maps Pin navigation.')}
+            {tx('點擊任何工程列即可檢視地盤定位、在場儀器及所屬 Job Ref. No. 現場測試紀錄與夾附文件夾。', 'Click any project row to inspect site map, on-site equipment, and bundled Job Ref. No. test records.')}
           </p>
         </div>
         <button type="button" onClick={() => setEditingJob('new')} className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-4 py-3 text-xs font-extrabold text-white shadow-sm hover:bg-brand-deep cursor-pointer shrink-0">
-          <Plus className="h-4 w-4" /> {tx('新增 Site 地盤', 'Add New Site')}
+          <Plus className="h-4 w-4" /> {tx('新增工程地盤', 'Add New Site')}
         </button>
       </div>
 
