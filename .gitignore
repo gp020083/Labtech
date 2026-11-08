@@ -1,0 +1,9 @@
+node_modules
+dist
+.vercel
+.netlify
+*.local
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

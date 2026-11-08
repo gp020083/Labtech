@@ -1,0 +1,126 @@
+import React, { useEffect, useMemo } from 'react';
+import { usePrefs } from '../prefs';
+import { resolveDocLink, dataUrlToBlobUrl } from '../driveDocs';
+import { X, ExternalLink, Download, FileText, Cloud } from 'lucide-react';
+
+export interface PreviewDocRequest {
+  title: string;
+  url: string;
+  fileName?: string;
+  subtitle?: string;
+}
+
+export const DocumentPreviewModal: React.FC<{
+  doc: PreviewDocRequest | null;
+  onClose: () => void;
+}> = ({ doc, onClose }) => {
+  const { isMobileApp, tx } = usePrefs();
+
+  useEffect(() => {
+    if (!doc) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [doc, onClose]);
+
+  const safeUrl = useMemo(() => {
+    if (!doc?.url) return '';
+    if (doc.url.startsWith('data:')) return dataUrlToBlobUrl(doc.url);
+    return doc.url;
+  }, [doc?.url]);
+
+  useEffect(() => {
+    return () => {
+      if (safeUrl.startsWith('blob:') && doc?.url.startsWith('data:')) {
+        URL.revokeObjectURL(safeUrl);
+      }
+    };
+  }, [safeUrl, doc?.url]);
+
+  if (!doc) return null;
+  const resolved = resolveDocLink(doc.url.startsWith('data:') ? safeUrl : doc.url, doc.fileName || doc.title);
+  const openHref = resolved.kind === 'drive' ? resolved.openTabUrl : safeUrl;
+  const dlHref = resolved.kind === 'drive' ? resolved.downloadUrl : safeUrl;
+  const isBlobPdf = resolved.kind === 'pdf' && safeUrl.startsWith('blob:');
+
+  let embedSrc = resolved.kind === 'drive' ? resolved.embedUrl : safeUrl;
+  if (isMobileApp && resolved.kind === 'pdf' && !isBlobPdf && typeof window !== 'undefined') {
+    const absUrl = safeUrl.startsWith('http') ? safeUrl : `${window.location.origin}${safeUrl.startsWith('/') ? '' : '/'}${safeUrl}`;
+    if (!absUrl.includes('localhost') && !absUrl.includes('127.0.0.1')) {
+      embedSrc = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absUrl)}`;
+    }
+  }
+
+  return (
+    <div
+      className={`fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/70 ${isMobileApp ? 'p-0' : 'p-2 sm:p-5'}`}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className={`flex flex-col overflow-hidden bg-white shadow-2xl ${isMobileApp ? 'h-[100dvh] w-full max-w-full rounded-none' : 'h-[92vh] w-full max-w-6xl rounded-2xl'}`}>
+        <div className="border-b border-slate-200 bg-slate-50 px-3.5 py-2.5 sm:px-4 sm:py-3 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1 flex items-start gap-2">
+              <FileText className="mt-0.5 h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-brand" />
+              <div className="min-w-0 flex-1">
+                <div className="line-clamp-2 break-all text-xs sm:text-sm font-extrabold text-slate-900">{doc.title}</div>
+                {doc.subtitle && <div className="truncate text-[11px] text-slate-500">{doc.subtitle}</div>}
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="shrink-0 rounded-xl bg-slate-200/70 p-2 text-slate-700 hover:bg-slate-300 cursor-pointer" title="Close">
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {resolved.kind === 'drive' && (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-800 shrink-0">
+                <Cloud className="h-3 w-3" /> Drive
+              </span>
+            )}
+            {openHref && (
+              <a href={openHref} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-100">
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {tx('開啟原檔', 'Open File')}
+              </a>
+            )}
+            {dlHref && (
+              <a href={dlHref} download={doc.fileName || true} target={resolved.kind === 'drive' ? '_blank' : undefined} rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep">
+                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載檔案', 'Download')}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 bg-slate-100 relative overflow-auto">
+          {(resolved.kind === 'drive' || (resolved.kind === 'pdf' && !(isMobileApp && isBlobPdf))) ? (
+            <iframe src={embedSrc} title={doc.title} className="h-full w-full border-0 bg-white" allow="autoplay" />
+          ) : resolved.kind === 'image' ? (
+            <div className="flex h-full w-full items-center justify-center p-3">
+              <img src={embedSrc} alt={doc.title} className="max-h-full max-w-full rounded-lg object-contain shadow-md" />
+            </div>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-xs text-slate-600">
+              <FileText className="h-12 w-12 text-brand" />
+              <div className="text-sm font-extrabold text-slate-900">
+                {isBlobPdf
+                  ? tx('請點擊下方按鈕以手機內建 PDF 閱讀器開啟檢視', 'Tap below to open PDF in native mobile viewer')
+                  : tx('請點擊上方或下方按鈕開啟／下載檔案檢視', 'Tap below to open or download this document')}
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {openHref && (
+                  <a href={openHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 font-extrabold text-white">
+                    <ExternalLink className="h-4 w-4" /> {tx('全螢幕開啟檔案', 'Open Full Screen')}
+                  </a>
+                )}
+                {dlHref && (
+                  <a href={dlHref} download={doc.fileName || true} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-extrabold text-slate-800">
+                    <Download className="h-4 w-4" /> {tx('下載至手機', 'Download')}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

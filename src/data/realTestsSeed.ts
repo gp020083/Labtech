@@ -1,0 +1,235 @@
+import { TestMethodItem } from '../types';
+
+const S = '/server-docs/stp/';
+const W = '/server-docs/worksheets/';
+const F = '/server-docs/forms/';
+const C = '/server-docs/calcerts/';
+
+export const REAL_TESTS_PART1: TestMethodItem[] = [
+  {
+    code: 'KD',
+    name: 'Ultrasonic Echo Sounder Test (Koden)',
+    short: 'Koden',
+    std: 'HKCI TM3 Issue 2 (2024)',
+    stp: 'STP02-FDT-TM3',
+    stpDocCode: 'STP02-FDT-TM3',
+    stpRev: 'rev 7',
+    stpEffectiveDate: '2026-02-06',
+    worksheetCode: 'FST02-FDT-TM3-6-260612 Worksheet_template.xlsx',
+    stpPdfUrl: `${S}STP02-FDT-TM3_rev7_260206.pdf`,
+    worksheetUrl: `${W}FST02-FDT-TM3-6-260612_Worksheet_template.xlsx`,
+    worksheetPdfUrl: `${W}FST02-FDT-TM3-6-260612_Worksheet_blank.pdf`,
+    orderFormUrl: `${F}FQS08-FDT-TM3_Test_Order_Form_260417.doc`,
+    dailyRecordUrl: `${F}FQS09-FDT-TM3_Daily_Record_260417.doc`,
+    muTemplateUrl: `${F}FC03-TM3-MU_Koden_Uncertainty_template.xlsx`,
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Chu Lap Man, Raymond (RC)', 'Tang Man Fu (MFT)'],
+    qualifiedOperators: ['Lin Chung Kit (CKL)', 'Shih Chak Lung, Ben (BS)', 'Li Chun Yin, Brian (BL)', 'Cheung Dickson (DC)'],
+    acc: true,
+    cost: null,
+    keyParams: [
+      '按 HKCI TM3 Issue 2 (2024) 於 X-X 及 Y-Y 兩個正交方向量度孔壁垂直度及孔徑剖面',
+      '測試前確認鑽孔靜置時間、鑽井液液位及比重符合標準要求',
+      '感應器置中校準（零位檢查）及以經校準之游標卡尺（LT-DC-01/03）讀取剖面紀錄紙',
+      '採用比例因子 S 換算孔徑 L\' = r × S 並按 FC03-TM3-MU 評估擴展不確定度 U95',
+    ],
+    equipmentTypes: ['Koden DM-604RR (LT-KM-04)', '100m Measuring Tape (LT-MT-06)', 'Digital Caliper (LT-DC-01/03)', 'Dipmeter (LT-DM-01)', 'Spirit Level (LT-LV-01)'],
+    versions: [
+      { ver: 'STP02-FDT-TM3 rev 7', date: '2026-02-06', status: 'current', note: '配合 HKCI TM3 Issue 2 (2024) 生效之現行受控版' },
+      { ver: 'STP02-FDT-TM3 rev 6', date: '2025-03-04', status: 'obsolete', note: '已封存作廢 — 嚴禁用於現場測試或評審' },
+      { ver: 'STP02-FDT-TM3 rev 5', date: '2023-04-17', status: 'obsolete', note: '已作廢' },
+    ],
+    stpFiles: [
+      { id: 'doc-kd-stp', fileName: 'STP02-FDT-TM3_rev 7_260206.pdf', fileSize: '1,053 KB', docType: '受控 STP PDF', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-02-06', serverPath: '01 Quality Document\\Standard Test Procedure\\STP02-FDT-TM3_rev 7_260206.pdf', dataUrl: `${S}STP02-FDT-TM3_rev7_260206.pdf` },
+      { id: 'doc-kd-wspdf', fileName: 'FST02-FDT-TM3-6-260612 Worksheet_blank.pdf', fileSize: '318 KB', docType: '空白 Worksheet PDF', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-06-12', serverPath: '01 Quality Document\\Worksheet\\FST02-FDT-TM3-6-260612 Worksheet_blank.pdf', dataUrl: `${W}FST02-FDT-TM3-6-260612_Worksheet_blank.pdf` },
+      { id: 'doc-kd-wsxls', fileName: 'FST02-FDT-TM3-6-260612 Worksheet_template.xlsx', fileSize: '403 KB', docType: '空白 Worksheet XLSX', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-06-12', serverPath: '01 Quality Document\\Worksheet\\FST02-FDT-TM3-6-260612 Worksheet_template.xlsx', dataUrl: `${W}FST02-FDT-TM3-6-260612_Worksheet_template.xlsx` },
+      { id: 'doc-kd-f08', fileName: 'FQS08-FDT-TM3 Test Order Form_260417.doc', fileSize: 'DOC', docType: 'FQS08 委託單', uploadedBy: 'Quality Team', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Form\\FQS08-FDT-TM3', dataUrl: `${F}FQS08-FDT-TM3_Test_Order_Form_260417.doc` },
+      { id: 'doc-kd-f09', fileName: 'FQS09-FDT-TM3 Daily Record_260417.doc', fileSize: 'DOC', docType: 'FQS09 每日紀錄', uploadedBy: 'Quality Team', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Form\\FQS09-FDT-TM3', dataUrl: `${F}FQS09-FDT-TM3_Daily_Record_260417.doc` },
+    ],
+    calCerts: [
+      { id: 'sc-kd-1', fileName: 'Calibration Certificate - Koden Ultrasonic Echo Sounder_LT-KM-04_270513.pdf', fileSize: '168 KB', eqCode: 'LT-KM-04', dueDate: '2027-05-13', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-05-19', serverPath: '10.1 Calibration Certificate\\LT-KM-04', dataUrl: `${C}CalCert_Koden_Ultrasonic_Echo_Sounder_LT-KM-04_270513.pdf` },
+      { id: 'sc-kd-2', fileName: 'Calibration Certificate - Digital Caliper_LT-DC-01_261221.pdf', fileSize: '1,546 KB', eqCode: 'LT-DC-01', dueDate: '2026-12-21', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-01-15', serverPath: '10.1 Calibration Certificate\\LT-DC-01', dataUrl: `${C}CalCert_Digital_Caliper_LT-DC-01_261221.pdf` },
+    ],
+  },
+  {
+    code: 'SO', name: 'Crosshole Sonic Logging Test', short: 'Sonic', std: 'ASTM D6760-16', stp: 'STP03-FDT-D6760',
+    stpDocCode: 'STP03-FDT-D6760', stpRev: 'rev 2', stpEffectiveDate: '2026-04-17',
+    worksheetCode: 'FST03-FDT-D6760-2-260417 Worksheet_template.xlsx',
+    stpPdfUrl: `${S}STP03-FDT-D6760_rev2_260417.pdf`,
+    worksheetUrl: `${W}FST03-FDT-D6760-2-260417_Worksheet_template.xlsx`,
+    worksheetPdfUrl: `${W}FST03-FDT-D6760-2-260417_Worksheet_template.pdf`,
+    orderFormUrl: `${F}FQS08-FDT-D6760_Test_Order_Form_260417.pdf`,
+    dailyRecordUrl: `${F}FQS09-FDT-D6760_Daily_Record_260502.pdf`,
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Yue Wai Chun (WCY)', 'Tang Man Fu (MFT)'],
+    qualifiedOperators: ['Shih Chak Lung, Ben (BS)', 'Li Chun Yin, Brian (BL)', 'Cheung Dickson (DC)'],
+    acc: true, cost: null,
+    keyParams: [
+      '聲測管注滿清水且無氣泡阻隔，測試前以 Dipmeter / 卷尺核對管深及管中心距',
+      '各剖面組合（AB, BC, CD, AC, BD, AD）同步提升發射與接收探頭，提升速率 ≤ 0.5 m/s',
+      '記錄首波到達時間（First Arrival Time, FAT）及相對能量衰減曲線（Energy / Waterfall）',
+      '確認 PDI CHAMP-Q 主機（LT-CA-01）及深度編碼器（LT-DE-01~04）處於有效校驗狀態',
+    ],
+    equipmentTypes: ['PDI CHAMP-Q (LT-CA-01)', 'Depth Encoder (LT-DE-01~04)', '100m Tape (LT-MT-06)', 'Dipmeter (LT-DM-01)'],
+    versions: [
+      { ver: 'STP03-FDT-D6760 rev 2', date: '2026-04-17', status: 'current', note: 'HOKLAS 298 認可生效受控版' },
+      { ver: 'STP03-FDT-D6760 rev 1', date: '2024-11-10', status: 'obsolete', note: '已作廢' },
+    ],
+    stpFiles: [
+      { id: 'doc-so-stp', fileName: 'STP03-FDT-D6760_rev 2_260417.pdf', fileSize: '1,233 KB', docType: '受控 STP PDF', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Standard Test Procedure\\STP03-FDT-D6760_rev 2_260417.pdf', dataUrl: `${S}STP03-FDT-D6760_rev2_260417.pdf` },
+      { id: 'doc-so-wspdf', fileName: 'FST03-FDT-D6760-2-260417 Worksheet_template.pdf', fileSize: '100 KB', docType: '空白 Worksheet PDF', uploadedBy: 'Quality Team', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Worksheet\\FST03', dataUrl: `${W}FST03-FDT-D6760-2-260417_Worksheet_template.pdf` },
+      { id: 'doc-so-wsxls', fileName: 'FST03-FDT-D6760-2-260417 Worksheet_template.xlsx', fileSize: '68 KB', docType: '空白 Worksheet XLSX', uploadedBy: 'Quality Team', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Worksheet\\FST03', dataUrl: `${W}FST03-FDT-D6760-2-260417_Worksheet_template.xlsx` },
+      { id: 'doc-so-f08', fileName: 'FQS08-FDT-D6760 Test Order Form_260417.pdf', fileSize: 'PDF', docType: 'FQS08 委託單', uploadedBy: 'Quality Team', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Form\\FQS08', dataUrl: `${F}FQS08-FDT-D6760_Test_Order_Form_260417.pdf` },
+      { id: 'doc-so-f09', fileName: 'FQS09-FDT-D6760 Daily Record_260502.pdf', fileSize: 'PDF', docType: 'FQS09 每日紀錄', uploadedBy: 'Quality Team', uploadedAt: '2026-05-02', serverPath: '01 Quality Document\\Form\\FQS09', dataUrl: `${F}FQS09-FDT-D6760_Daily_Record_260502.pdf` },
+    ],
+    calCerts: [
+      { id: 'sc-so-1', fileName: 'Calibration Certificate - Cross-hole Analyzer_LT-CA-01_270920.pdf', fileSize: '7,400 KB', eqCode: 'LT-CA-01', dueDate: '2027-09-20', calLab: 'Pile Dynamics / HOKLAS', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-09-30', serverPath: '01 Quality Document\\Calibration Certificate\\LT-CA-01', dataUrl: `${C}CalCert_Cross-hole_Analyzer_LT-CA-01_270920.pdf` },
+    ],
+  },
+  {
+    code: 'FC', name: 'Flow of Grout by Flow Cone', short: 'Flow Cone', std: 'ASTM C939/C939M-22', stp: 'STP05-GTT-C939',
+    stpDocCode: 'STP05-GTT-C939', stpRev: 'rev 2', stpEffectiveDate: '2026-04-17',
+    worksheetCode: 'FST05-GTT-C939-2-260417 Worksheet_template.xlsx',
+    stpPdfUrl: `${S}STP05-GTT-C939_rev2_260417.pdf`,
+    worksheetUrl: `${W}FST05-GTT-C939-2-260417_Worksheet_template.xlsx`,
+    orderFormUrl: `${F}FQS08-GTT-C939_940_Test_Order_Form_260417.doc`,
+    dailyRecordUrl: `${F}FQS09-GTT-C939_Daily_Record_261001.doc`,
+    muTemplateUrl: `${F}MU-GTT-C939_FlowCone_Uncertainty_260421.xlsx`,
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Tang Man Fu (MFT)'],
+    qualifiedOperators: ['Shih Chak Lung, Ben (BS)', 'Li Chun Yin, Brian (BL)', 'Cheung Dickson (DC)'],
+    acc: true, cost: null,
+    keyParams: [
+      '測試前先以 1725 ± 5 mL 清水校核標準流出時間，讀數須為 8.0 ± 0.2 秒',
+      '以經校準之溫度計（LT-TM-01/02）記錄環境溫度及水泥漿試樣溫度',
+      '取樣後 1 分鐘內進行測試，連續兩次流出時間差須 ≤ 1.8 秒（ASTM C939 重複性要求），取平均值至 0.1 s',
+    ],
+    equipmentTypes: ['Flow Cone (LT-FC-01/02)', 'Stop Watch (LT-TD-01)', 'Digital Thermometer (LT-TM-01/02)', 'Spirit Level (LT-LV-01)'],
+    versions: [
+      { ver: 'STP05-GTT-C939 rev 2', date: '2026-04-17', status: 'current', note: 'HOKLAS 298 現行受控版' },
+      { ver: 'STP05-GTT-C939 rev 1', date: '2024-10-15', status: 'obsolete', note: '已作廢' },
+    ],
+    stpFiles: [
+      { id: 'doc-fc-stp', fileName: 'STP05-GTT-C939_rev 2_260417.pdf', fileSize: '807 KB', docType: '受控 STP PDF', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Standard Test Procedure\\STP05', dataUrl: `${S}STP05-GTT-C939_rev2_260417.pdf` },
+      { id: 'doc-fc-ws', fileName: 'FST05-GTT-C939-2-260417 Worksheet_template.xlsx', fileSize: '28 KB', docType: '空白 Worksheet XLSX', uploadedBy: 'Quality Team', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Worksheet\\FST05', dataUrl: `${W}FST05-GTT-C939-2-260417_Worksheet_template.xlsx` },
+      { id: 'doc-fc-f09', fileName: 'FQS09-GTT-C939 Daily Record_261001.doc', fileSize: 'DOC', docType: 'FQS09 每日紀錄', uploadedBy: 'Quality Team', uploadedAt: '2026-10-01', serverPath: '01 Quality Document\\Form\\FQS09', dataUrl: `${F}FQS09-GTT-C939_Daily_Record_261001.doc` },
+    ],
+    calCerts: [
+      { id: 'sc-fc-1', fileName: 'Calibration Certificate - Flow Cone_LT-FC-02_270722.pdf', fileSize: '612 KB', eqCode: 'LT-FC-02', dueDate: '2027-07-22', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-10-02', serverPath: '01 Quality Document\\Calibration Certificate\\LT-FC-02', dataUrl: `${C}CalCert_Flow_Cone_LT-FC-02_270722.pdf` },
+      { id: 'sc-fc-2', fileName: 'Calibration Certificate - Flow Cone_LT-FC-01_270511.pdf', fileSize: '1,929 KB', eqCode: 'LT-FC-01', dueDate: '2027-05-11', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-06-23', serverPath: '10.1 Calibration Certificate\\LT-FC-01', dataUrl: `${C}CalCert_Flow_Cone_LT-FC-01_270511.pdf` },
+    ],
+  },
+  {
+    code: 'BL', name: 'Bleeding and Free Expansion of Grout', short: 'Bleeding', std: 'ASTM C940-22', stp: 'STP04-GTT-C940',
+    stpDocCode: 'STP04-GTT-C940', stpRev: 'rev 2', stpEffectiveDate: '2026-04-17',
+    worksheetCode: 'FST04-GTT-C940-3-261001 Worksheet_template.xlsx',
+    stpPdfUrl: `${S}STP04-GTT-C940_rev2_260417.pdf`,
+    worksheetUrl: `${W}FST04-GTT-C940-3-261001_Worksheet_template.xlsx`,
+    orderFormUrl: `${F}FQS08-GTT-C939_940_Test_Order_Form_260417.doc`,
+    dailyRecordUrl: `${F}FQS09-GTT-C940_Daily_Record_261001.doc`,
+    muTemplateUrl: `${F}MU-GTT-C940_Bleeding_Uncertainty_260421.xlsx`,
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Tang Man Fu (MFT)'],
+    qualifiedOperators: ['Shih Chak Lung, Ben (BS)', 'Li Chun Yin, Brian (BL)', 'Cheung Dickson (DC)'],
+    acc: true, cost: null,
+    keyParams: [
+      '於 1000 mL 校準量筒（LT-GMC / LT-PMC）注入 800 ± 10 mL 新鮮水泥漿，加蓋防蒸發並置於無震動水平面',
+      '首小時每 15 分鐘及之後每小時記錄總體積 V2 及滲水層讀數，直至滿 3 小時或讀數穩定',
+      '計算 Free Expansion (%)、Bleeding (%) 及傾析最終泌水率 Final Bleeding (%)',
+    ],
+    equipmentTypes: ['Measuring Cylinder 1000mL (LT-GMC / LT-PMC)', 'Digital Thermometer (LT-TM)', 'Spirit Level (LT-LV-01)', 'Steel Ruler (LT-SR-12/13)'],
+    versions: [
+      { ver: 'STP04-GTT-C940 rev 2', date: '2026-04-17', status: 'current', note: 'HOKLAS 298 現行受控版（配合 FST04 rev 3 工作紙）' },
+      { ver: 'STP04-GTT-C940 rev 1', date: '2024-10-15', status: 'obsolete', note: '已作廢' },
+    ],
+    stpFiles: [
+      { id: 'doc-bl-stp', fileName: 'STP04-GTT-C940_rev 2_260417.pdf', fileSize: '812 KB', docType: '受控 STP PDF', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Standard Test Procedure\\STP04', dataUrl: `${S}STP04-GTT-C940_rev2_260417.pdf` },
+      { id: 'doc-bl-ws', fileName: 'FST04-GTT-C940-3-261001 Worksheet_template.xlsx', fileSize: '30 KB', docType: '空白 Worksheet XLSX', uploadedBy: 'Quality Team', uploadedAt: '2026-10-01', serverPath: '01 Quality Document\\Worksheet\\FST04', dataUrl: `${W}FST04-GTT-C940-3-261001_Worksheet_template.xlsx` },
+      { id: 'doc-bl-f09', fileName: 'FQS09-GTT-C940 Daily Record_261001.doc', fileSize: 'DOC', docType: 'FQS09 每日紀錄', uploadedBy: 'Quality Team', uploadedAt: '2026-10-01', serverPath: '01 Quality Document\\Form\\FQS09', dataUrl: `${F}FQS09-GTT-C940_Daily_Record_261001.doc` },
+    ],
+    calCerts: [
+      { id: 'sc-bl-1', fileName: 'Calibration Certificate - Plastic Measuring Cylinder_LT-PMC-01 to 12_270907.pdf', fileSize: '15,009 KB', eqCode: 'LT-PMC-01', dueDate: '2027-09-07', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-10-12', serverPath: '10.1 Calibration Certificate\\LT-PMC-01 to 12', dataUrl: `${C}CalCert_Plastic_Measuring_Cylinder_LT-PMC-01_to_12_270907.pdf` },
+      { id: 'sc-bl-2', fileName: 'Calibration Certificate - Glass Measuring Cylinder_LT-GMC-01_270322.pdf', fileSize: '801 KB', eqCode: 'LT-GMC-01', dueDate: '2027-03-22', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-12', serverPath: '10.1 Calibration Certificate\\LT-GMC-01', dataUrl: `${C}CalCert_Glass_Measuring_Cylinder_LT-GMC-01_270322.pdf` },
+    ],
+  },
+  {
+    code: 'PO', name: 'Point Load Strength Index of Rock', short: 'Point Load', std: 'ASTM D5731-16', stp: 'STP06-RKT-D5731',
+    stpDocCode: 'STP06-RKT-D5731', stpRev: 'rev 2', stpEffectiveDate: '2026-04-17',
+    worksheetCode: 'FST06-RKT-D5731-2-260421 Worksheet_template.xls',
+    stpPdfUrl: `${S}STP06-RKT-D5731_rev2_260417.pdf`,
+    worksheetUrl: `${W}FST06-RKT-D5731-2-260421_Worksheet_template.xls`,
+    orderFormUrl: `${F}FQS08-RKT-D5731_Test_Order_Form_240715.pdf`,
+    dailyRecordUrl: `${F}FQS09-RKT-D5731_Daily_Record_260417.doc`,
+    muTemplateUrl: `${F}MU-RKT-D5731_PointLoad_Uncertainty_260421.xlsx`,
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Chu Kar Wai, Peter (PC)'],
+    qualifiedOperators: ['Chu Kar Wai, Peter (PC)', 'Yam Tsz Kin, Kim (KY)'],
+    acc: true, cost: null,
+    keyParams: [
+      '量度岩芯試件尺寸 D、W 及 L（LT-DC-01/03），確認長徑比符合 Diametral / Axial / Block 幾何規定',
+      '測試前核查 60° 圓錐壓頭（LT-PL-01~04）磨損及同軸度（Coaxial Check ≤ ±0.2 mm）',
+      '以穩定速率加載使破壞於 10–60 秒內發生，剔除僅局部崩角之無效破壞模式，計算尺寸修正指數 Is(50)',
+    ],
+    equipmentTypes: ['Point Load Tester (LT-PO-02)', 'Load Cell (LT-LC-01)', 'Conical Platens (LT-PL-01~04)', 'Digital Caliper (LT-DC-01/03)'],
+    versions: [
+      { ver: 'STP06-RKT-D5731 rev 2', date: '2026-04-17', status: 'current', note: 'HOKLAS 298 現行受控版' },
+      { ver: 'STP06-RKT-D5731 rev 1', date: '2024-06-20', status: 'obsolete', note: '已作廢' },
+    ],
+    stpFiles: [
+      { id: 'doc-po-stp', fileName: 'STP06-RKT-D5731_rev 2_260417.pdf', fileSize: '1,212 KB', docType: '受控 STP PDF', uploadedBy: 'Chu Kar Wai, Peter', uploadedAt: '2026-04-17', serverPath: '01 Quality Document\\Standard Test Procedure\\STP06', dataUrl: `${S}STP06-RKT-D5731_rev2_260417.pdf` },
+      { id: 'doc-po-ws', fileName: 'FST06-RKT-D5731-2-260421 Worksheet_template.xls', fileSize: '644 KB', docType: '空白 Worksheet XLS', uploadedBy: 'Chu Kar Wai, Peter', uploadedAt: '2026-04-21', serverPath: '01 Quality Document\\Worksheet\\FST06', dataUrl: `${W}FST06-RKT-D5731-2-260421_Worksheet_template.xls` },
+      { id: 'doc-po-coax', fileName: 'FSTxx-RKT-D5731-0-260720 Coaxial check.xls', fileSize: 'XLS', docType: '同軸度核查表', uploadedBy: 'Chu Kar Wai, Peter', uploadedAt: '2026-07-20', serverPath: '01 Quality Document\\Equipment Verification Record', dataUrl: `${W}FSTxx-RKT-D5731-0-260720_Coaxial_check.xls` },
+      { id: 'doc-po-f08', fileName: 'FQS08-RKT-D5731 Test Order Form_240715.pdf', fileSize: '272 KB', docType: 'FQS08 委託單', uploadedBy: 'Quality Team', uploadedAt: '2026-10-21', serverPath: '01 Quality Document\\Form\\FQS08', dataUrl: `${F}FQS08-RKT-D5731_Test_Order_Form_240715.pdf` },
+    ],
+    calCerts: [
+      { id: 'sc-po-1', fileName: 'Calibration Certificate - Point Load Tester_LT-PO-02_270205.pdf', fileSize: '84 KB', eqCode: 'LT-PO-02', dueDate: '2027-02-05', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-02-26', serverPath: '10.1 Calibration Certificate\\LT-PO-02', dataUrl: `${C}CalCert_Point_Load_Tester_LT-PO-02_270205.pdf` },
+      { id: 'sc-po-2', fileName: 'Calibration Certificate - Load Cell_LT-LC-01_270128.pdf', fileSize: '1,082 KB', eqCode: 'LT-LC-01', dueDate: '2027-01-28', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-12', serverPath: '10.1 Calibration Certificate\\LT-LC-01', dataUrl: `${C}CalCert_Load_Cell_LT-LC-01_270128.pdf` },
+    ],
+  },
+  {
+    code: 'PLT', name: 'Plate Load Test (Soil & Foundation Bearing)', short: 'Plate Load', std: 'BS 1377-9:1990 Cl. 4.1 / BD CoP Cl. 8.2 / HA EXC.T910.1', stp: 'STP07-PLT',
+    stpDocCode: 'STP07-PLT-DRAFT', stpRev: 'Issue 0 (Draft)', stpEffectiveDate: '2026-10-27',
+    worksheetCode: 'PLT-AppendixC-Worksheet.pdf',
+    stpPdfUrl: `${S}STP07-PLT_Draft_rev0_261027.pdf`,
+    worksheetUrl: `${S}STP07-PLT_Draft_rev0_261027.pdf`,
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Tang Man Fu (MFT)'],
+    qualifiedOperators: ['Shih Chak Lung, Ben (BS) [培訓中]', 'Chan Yuet Man, Moon [培訓中]'],
+    acc: false, cost: null,
+    keyParams: [
+      '反力系統（750 kPa Kentledge 配重塊 5 件 2250×750×750 及 UC 305×305×97 鋼樑）、千斤頂及 Load Cell 垂直置中架設',
+      '獨立基準樑（支點距承載板邊緣 ≥ 2.5B）對稱安裝 4 隻 Dial Gauge（0.01 mm 解析度）並架設遮陽防風棚',
+      '按 3-Cycle（1.0W → 2.0W → 3.0W）每級 0.5W 加卸載，每級維持 ≥ 10 min 且沉降變化 < 0.05 mm / 10 min；3.0W 峰值荷載維持 ≥ 72 小時',
+      '按 BD Cl. 8.2(2) 驗算最大沉降 Smax ≤ 0.15B 及土壤彈性模量 Es',
+    ],
+    equipmentTypes: ['Load Cell (LT-LC-01)', 'Dial Gauges × 4 (LT-DG-01)', 'Circular / Square Rigid Steel Plate', 'Spirit Level (LT-LV-01)'],
+    versions: [
+      { ver: 'STP07-PLT Issue 0 (Draft)', date: '2026-10-27', status: 'current', note: '含 Appendix A 架設圖、Appendix B 三循環加載表及 750 kPa 結構驗算（目標 2027 Q2 申請 HOKLAS）' },
+    ],
+    stpFiles: [
+      { id: 'doc-plt-stp', fileName: 'LabTech - Standard Test Procedure - Plate Load Test.pdf', fileSize: '1,604 KB', docType: 'Draft STP PDF (25p)', uploadedBy: 'Shih Chak Lung, Ben', uploadedAt: '2026-10-27', serverPath: '03.5.6 Plate Load Test\\LabTech - Standard Test Procedure - Plate Load Test.pdf', dataUrl: `${S}STP07-PLT_Draft_rev0_261027.pdf` },
+      { id: 'doc-plt-chk', fileName: '20261021 Plate Load Test Setup Checking (Max 750 kPa).pdf', fileSize: '1,385 KB', docType: '750 kPa 反力架結構驗算', uploadedBy: 'Engineering Team', uploadedAt: '2026-10-27', serverPath: '03.5.6 Plate Load Test\\20261021 Plate Load Test Setup Checking.pdf', dataUrl: `${S}PLT_Setup_Checking_750kPa_261021.pdf` },
+    ],
+    calCerts: [
+      { id: 'sc-plt-1', fileName: 'Calibration Certificate - Load Cell_LT-LC-01_270128.pdf', fileSize: '1,082 KB', eqCode: 'LT-LC-01', dueDate: '2027-01-28', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-12', serverPath: '10.1 Calibration Certificate\\LT-LC-01', dataUrl: `${C}CalCert_Load_Cell_LT-LC-01_270128.pdf` },
+      { id: 'sc-plt-2', fileName: 'Calibration Certificate - Dial Gauge_LT-DG-01_270201.pdf', fileSize: '861 KB', eqCode: 'LT-DG-01', dueDate: '2027-02-01', calLab: 'HOKLAS Cal Lab', uploadedBy: 'Chu Lap Man, Raymond', uploadedAt: '2026-04-12', serverPath: '10.1 Calibration Certificate\\LT-DG-01', dataUrl: `${C}CalCert_Dial_Gauge_LT-DG-01_270201.pdf` },
+    ],
+  },
+  {
+    code: 'VC', name: 'Verticality Check Test (Biaxial Inclinometer)', short: 'Verticality', std: 'BD CoP Foundations / Geospec 3 (PeeWee / Inclinometer)', stp: 'STP08-INC',
+    stpDocCode: 'STP08-INC-DRAFT', stpRev: '籌備中', stpEffectiveDate: '2026-10-21',
+    worksheetCode: 'FST08-INC-Draft.xlsx',
+    approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Chu Kar Wai, Peter (PC)'],
+    qualifiedOperators: ['Chu Kar Wai, Peter (PC) [籌備中]', 'Yam Tsz Kin, Kim (KY) [籌備中]'],
+    acc: false, cost: null,
+    keyParams: [
+      '沿測斜管導槽由孔底逐段（每 0.5 m）向上提升雙軸測斜儀探頭，先測 A0 / B0 方向再旋轉 180° 複測 A180 / B180',
+      '核查正反讀數和（Checksum = A0 + A180 及 B0 + B180）穩定性以消除探頭零點漂移（Zero Bias）',
+      '計算累積水平位移 ΔX、ΔY、合成偏移量 R = √(ΔX² + ΔY²) 及鑽孔／樁身垂直度 1:N（驗收要求一般 ≤ 1:75 或 ≤ 1:100）',
+    ],
+    equipmentTypes: ['Biaxial Inclinometer / PeeWee Probe & Cable', '100m Measuring Tape (LT-MT-06)'],
+    versions: [
+      { ver: 'STP08-INC 籌備版', date: '2026-10-21', status: 'current', note: '正在編製標準測試程序書（目標 2027 Q2 申請 HOKLAS 認可）' },
+    ],
+    stpFiles: [],
+    calCerts: [],
+  },
+];
+
+export function buildRealTests(): TestMethodItem[] {
+  return REAL_TESTS_PART1;
+}
