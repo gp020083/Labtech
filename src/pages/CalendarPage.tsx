@@ -6,7 +6,8 @@ import { CalendarEvent } from '../types';
 import { REF_TODAY, daysBetween } from '../utils';
 import { CalendarEventModal } from '../components/CalendarEventModal';
 import { DailyDispatchModal } from '../components/DailyDispatchModal';
-import { ChevronLeft, ChevronRight, Plus, CalendarDays, BookOpen, MapPin, Users, Clock, Edit3, MessageSquareShare } from 'lucide-react';
+import { SERVER_MASTER_SCHEDULES } from '../data/serverScheduleEvents';
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, BookOpen, MapPin, Users, Clock, Edit3, MessageSquareShare, FileText, FolderOpen } from 'lucide-react';
 
 const WEEKDAYS_ZH = ['日', '一', '二', '三', '四', '五', '六'];
 const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -37,7 +38,7 @@ function buildMonthGrid(year: number, month: number) {
 }
 
 export const CalendarPage: React.FC = () => {
-  const { events, user, setStpPreviewCode } = useApp();
+  const { events, user, setStpPreviewCode, openPreviewDoc } = useApp();
   const { lang, tx } = usePrefs();
   const [initY, initM] = useMemo(() => REF_TODAY.split('-').map(Number), []);
   const [year, setYear] = useState(initY || 2026);
@@ -102,6 +103,44 @@ export const CalendarPage: React.FC = () => {
           <button type="button" onClick={() => setModalState({ date: selectedDate })} className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-4 py-3 text-xs font-extrabold text-white shadow-sm hover:bg-brand-deep cursor-pointer whitespace-nowrap">
             <Plus className="h-4 w-4" /> {tx('新增排程項目', 'Add Schedule Event')}
           </button>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200/85 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+            <FolderOpen className="h-4 w-4 text-violet-600" />
+            {tx('伺服器排程總表及會議紀錄 (Server Schedules & Programme)', 'Server Master Schedules & Programme Docs')}
+          </div>
+          <span className="text-[11px] font-semibold text-slate-500">
+            {tx('已同步 LTData\\New Structure 最新排程、進度及校準時間表', 'Synced with LTData\\New Structure schedules, progress & calibration tables')}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {SERVER_MASTER_SCHEDULES.map((doc) => (
+            <button
+              key={doc.id}
+              type="button"
+              onClick={() =>
+                openPreviewDoc({
+                  title: lang === 'en' ? doc.titleEn : doc.titleZh,
+                  url: doc.url,
+                  fileName: doc.fileName,
+                  subtitle: `${lang === 'en' ? doc.subtitleEn : doc.subtitleZh} · ${doc.fileSize}`,
+                })
+              }
+              className="flex items-start justify-between gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3 text-left hover:border-violet-400 hover:bg-violet-50/40 transition cursor-pointer"
+            >
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-violet-600 shrink-0" />
+                  <span className="truncate text-xs font-extrabold text-slate-900">{lang === 'en' ? doc.titleEn : doc.titleZh}</span>
+                </div>
+                <div className="truncate text-[11px] text-slate-500">{lang === 'en' ? doc.subtitleEn : doc.subtitleZh}</div>
+              </div>
+              <span className="shrink-0 rounded-lg bg-violet-100 px-2 py-0.5 text-[10px] font-extrabold text-violet-800">{doc.badge}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -236,6 +275,28 @@ export const CalendarPage: React.FC = () => {
                     <div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-brand shrink-0" /><span>{ev.site}</span></div>
                     <div className="flex items-start gap-1.5"><Users className="h-3.5 w-3.5 text-violet-600 shrink-0 mt-0.5" /><span>{ev.operators.join(', ') || 'TBD'}</span></div>
                     {ev.notes && <div className="rounded-xl bg-white/80 px-2.5 py-1.5 text-[11px] text-slate-700">{ev.notes}</div>}
+                    {ev.attachments && ev.attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {ev.attachments.map((att) => (
+                          <button
+                            key={att.id}
+                            type="button"
+                            onClick={() =>
+                              openPreviewDoc({
+                                title: att.fileName,
+                                url: att.dataUrl || '',
+                                fileName: att.fileName,
+                                subtitle: `${att.serverPath} · ${att.fileSize}`,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-700 hover:border-brand hover:text-brand-deep cursor-pointer"
+                          >
+                            <FileText className="h-3 w-3 text-brand shrink-0" />
+                            <span className="truncate max-w-[180px]">{att.fileName}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/70">
                     <button type="button" onClick={() => setStpPreviewCode(stpCode)} className="inline-flex items-center gap-1 rounded-lg bg-white border border-violet-200 px-2.5 py-1 font-extrabold text-violet-700 hover:bg-violet-100 cursor-pointer"><BookOpen className="h-3 w-3" /> {tx(`檢視 ${stpCode} STP`, `Open ${stpCode} STP`)}</button>

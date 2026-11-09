@@ -137,8 +137,9 @@ export function mergeUnsyncedLocalIntoRemote(
     } else {
       const attMerge = mergeById<SharedDocAttachment>(rEv.attachments, lEv.attachments);
       if (attMerge.added) hasLocalAdditions = true;
-      const base = isNewer(lEv.updatedAt, rEv.updatedAt) ? { ...rEv, ...lEv } : rEv;
-      if (isNewer(lEv.updatedAt, rEv.updatedAt)) hasLocalAdditions = true;
+      const preferLocalSeed = lEv.id.startsWith('ev-') && !rEv.updatedAt && (lEv.status !== rEv.status || lEv.title !== rEv.title || lEv.notes !== rEv.notes);
+      const base = isNewer(lEv.updatedAt, rEv.updatedAt) || preferLocalSeed ? { ...rEv, ...lEv } : rEv;
+      if (isNewer(lEv.updatedAt, rEv.updatedAt) || preferLocalSeed) hasLocalAdditions = true;
       evMap.set(lEv.id, {
         ...base,
         attachments: attMerge.list.length > 0 ? attMerge.list : base.attachments,

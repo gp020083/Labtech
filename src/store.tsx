@@ -328,7 +328,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const existingCalcs: FieldCalcRecord[] = Array.isArray(parsed.calcRecords) ? parsed.calcRecords : [];
           const calcIds = new Set(existingCalcs.map((c) => c.id));
           const mergedCalcs = [...existingCalcs, ...seedCalcs.filter((s) => !calcIds.has(s.id))];
-          return { ...parsed, loans: mergedLoans, calcRecords: mergedCalcs } as ReturnType<typeof createFreshState>;
+          const seedEvents = buildInitialEvents();
+          const existingEvents: CalendarEvent[] = Array.isArray(parsed.events) ? parsed.events : [];
+          const evIds = new Set(existingEvents.map((e) => e.id));
+          const mergedEvents = [
+            ...existingEvents.map((e) => {
+              const seedEv = seedEvents.find((s) => s.id === e.id);
+              if (!seedEv) return e;
+              const existingAttIds = new Set((e.attachments || []).map((a) => a.id));
+              const mergedAtts = [...(e.attachments || []), ...(seedEv.attachments || []).filter((a) => !existingAttIds.has(a.id))];
+              return e.updatedAt ? { ...seedEv, ...e, attachments: mergedAtts } : { ...e, ...seedEv, attachments: mergedAtts };
+            }),
+            ...seedEvents.filter((s) => !evIds.has(s.id)),
+          ].sort((a, b) => a.date.localeCompare(b.date));
+          return { ...parsed, loans: mergedLoans, calcRecords: mergedCalcs, events: mergedEvents } as ReturnType<typeof createFreshState>;
         }
       }
     } catch {}
