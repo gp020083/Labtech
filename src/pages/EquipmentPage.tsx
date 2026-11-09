@@ -399,64 +399,45 @@ export const EquipmentPage: React.FC<{
         </>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {([
-              ['all', tx('全部受控儀器', 'Total Controlled'), counts.total, 'text-slate-900'],
-              ['valid', tx('校準有效', 'Calibrated / Valid'), counts.validCal, 'text-emerald-700'],
-              ['alert', tx('校準到期預警', 'Cal Due / Alert'), counts.alert, 'text-amber-700'],
-              ['monthly', tx('FCC01 每月內檢', 'FCC01 Monthly Check'), counts.monthly, 'text-indigo-700'],
-            ] as const).map(([k, label, num, color]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => { setCalView('registry'); setCalFilter(k); }}
-                className={`rounded-2xl border p-3.5 text-left transition cursor-pointer ${
-                  calView === 'registry' && calFilter === k ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-500/20' : 'border-slate-200/85 bg-white hover:bg-slate-50'
-                }`}
-              >
-                <div className="text-[11px] font-bold text-slate-500 leading-snug">{label}</div>
-                <div className={`mt-1 font-mono text-2xl font-extrabold ${color}`}>{num}</div>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-            <button
-              type="button"
-              onClick={() => setCalView('registry')}
-              className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-extrabold transition cursor-pointer ${
-                calView === 'registry' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <ShieldCheck className="h-4 w-4" />
-              {tx(`校準及證書總表 (${counts.total})`, `Calibration & Cert Registry (${counts.total})`)}
-            </button>
-            <button
-              type="button"
-              onClick={() => setCalView('forecast')}
-              className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
-                calView === 'forecast' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-50'
-              }`}
-            >
-              <CalendarClock className="h-4 w-4" />
-              {tx(`📅 校準到期預警 (30/60/90日 · ${calForecast.counts.totalWithin90})`, `📅 Cal Forecast (30/60/90d · ${calForecast.counts.totalWithin90})`)}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setCalView('registry'); setCalFilter(calFilter === 'monthly' ? 'all' : 'monthly'); }}
-              className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
-                calView === 'registry' && calFilter === 'monthly' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <CheckSquare className="h-4 w-4" />
-              {tx(`FCC01 每月內檢清單 (${counts.monthly})`, `FCC01 Monthly Check (${counts.monthly})`)}
-            </button>
-            <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-1.5 text-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 border-b border-slate-200 pb-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1">
+              {([
+                ['all', tx('校準及證書總表', 'Cert Registry (All)'), counts.total, 'text-slate-900', false],
+                ['valid', tx('校準有效儀器', 'Valid Calibrated'), counts.validCal, 'text-emerald-700', false],
+                ['monthly', tx('FCC01 每月內檢', 'FCC01 Monthly'), counts.monthly, 'text-indigo-700', false],
+                ['forecast', tx('📅 30/60/90日外校預警', '📅 30/60/90d Forecast'), calForecast.counts.totalWithin90, 'text-amber-700', true],
+              ] as const).map(([k, label, num, color, isForecast]) => {
+                const active = isForecast ? calView === 'forecast' : calView === 'registry' && calFilter === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => {
+                      if (isForecast) {
+                        setCalView('forecast');
+                      } else {
+                        setCalView('registry');
+                        setCalFilter(k);
+                      }
+                    }}
+                    className={`flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-2.5 text-left transition cursor-pointer ${
+                      active
+                        ? 'border-brand bg-brand-wash/70 ring-2 ring-brand/20 shadow-2xs'
+                        : 'border-slate-200/85 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="text-xs font-extrabold text-slate-700 truncate">{label}</span>
+                    <span className={`font-mono text-lg font-extrabold tabular-nums ${color}`}>{num}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs shrink-0">
               <button type="button" onClick={() => openPreviewDoc({ title: tx('FQS38 年度校準及內檢時間表', 'FQS38 Calibration & Verification Schedule'), url: '/server-docs/forms/FQS38_Calibration_Verification_Schedule_260520.pdf', fileName: 'FQS38_Calibration_Verification_Schedule_260520.pdf' })} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
-                <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FQS38 年度校準時間表', 'FQS38 Schedule')}</span>
+                <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FQS38 時間表', 'FQS38')}</span>
               </button>
               <button type="button" onClick={() => openPreviewDoc({ title: tx('FCC01 (2026) 每月內檢紀錄', 'FCC01 (2026) Monthly Verification Check Record'), url: '/server-docs/forms/FCC01_Monthly_Check_Record_2026.pdf', fileName: 'FCC01_Monthly_Check_Record_2026.pdf' })} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
-                <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FCC01 每月內檢紀錄', 'FCC01 Monthly')}</span>
+                <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FCC01 內檢紀錄', 'FCC01')}</span>
               </button>
               {onOpenDriveBatch && (
                 <button
@@ -464,7 +445,7 @@ export const EquipmentPage: React.FC<{
                   onClick={onOpenDriveBatch}
                   className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 font-extrabold text-emerald-900 hover:bg-emerald-100 cursor-pointer"
                 >
-                  <UploadCloud className="h-3.5 w-3.5" /> {tx('批次上傳校準證書至 Drive', 'Batch Upload Certs')}
+                  <UploadCloud className="h-3.5 w-3.5" /> {tx('批次上傳證書', 'Batch Upload')}
                 </button>
               )}
             </div>
