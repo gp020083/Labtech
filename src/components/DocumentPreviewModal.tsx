@@ -39,13 +39,13 @@ export const DocumentPreviewModal: React.FC<{
 
   if (!doc) return null;
   const resolved = resolveDocLink(doc.url.startsWith('data:') ? safeUrl : doc.url, doc.fileName || doc.title);
-  const openHref = resolved.kind === 'drive' ? resolved.openTabUrl : safeUrl;
-  const dlHref = resolved.kind === 'drive' ? resolved.downloadUrl : safeUrl;
+  const openHref = resolved.openTabUrl || safeUrl;
+  const dlHref = resolved.downloadUrl || safeUrl;
   const isBlobPdf = resolved.kind === 'pdf' && safeUrl.startsWith('blob:');
 
-  let embedSrc = resolved.kind === 'drive' ? resolved.embedUrl : safeUrl;
-  if (isMobileApp && resolved.kind === 'pdf' && !isBlobPdf && typeof window !== 'undefined') {
-    const absUrl = safeUrl.startsWith('http') ? safeUrl : `${window.location.origin}${safeUrl.startsWith('/') ? '' : '/'}${safeUrl}`;
+  let embedSrc = resolved.embedUrl || safeUrl;
+  if (isMobileApp && resolved.kind === 'pdf' && !isBlobPdf && typeof window !== 'undefined' && embedSrc) {
+    const absUrl = embedSrc.startsWith('http') ? embedSrc : `${window.location.origin}${embedSrc.startsWith('/') ? '' : '/'}${embedSrc}`;
     if (!absUrl.includes('localhost') && !absUrl.includes('127.0.0.1')) {
       embedSrc = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absUrl)}`;
     }
@@ -71,7 +71,7 @@ export const DocumentPreviewModal: React.FC<{
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {resolved.kind === 'drive' && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-800 shrink-0">
                 <Cloud className="h-3 w-3" /> Drive
@@ -79,12 +79,17 @@ export const DocumentPreviewModal: React.FC<{
             )}
             {openHref && (
               <a href={openHref} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-100">
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {tx('開啟原檔', 'Open File')}
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {resolved.pdfCompanionUrl ? tx('全螢幕開啟 PDF', 'Open PDF') : tx('開啟原檔', 'Open File')}
+              </a>
+            )}
+            {resolved.pdfCompanionUrl && (
+              <a href={resolved.pdfCompanionUrl} download className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100">
+                <Download className="h-3.5 w-3.5 shrink-0 text-emerald-700" /> {tx('下載 PDF', 'Download PDF')}
               </a>
             )}
             {dlHref && (
               <a href={dlHref} download={doc.fileName || true} target={resolved.kind === 'drive' ? '_blank' : undefined} rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep">
-                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載檔案', 'Download')}
+                <Download className="h-3.5 w-3.5 shrink-0" /> {resolved.pdfCompanionUrl ? tx('下載原檔 (.xlsx/.doc)', 'Download Original') : tx('下載檔案', 'Download')}
               </a>
             )}
           </div>

@@ -356,6 +356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               return {
                 ...t,
                 worksheetCode: seedT.worksheetCode || t.worksheetCode,
+                worksheetPdfUrl: seedT.worksheetPdfUrl || t.worksheetPdfUrl,
                 worksheetUrl: seedT.worksheetUrl || t.worksheetUrl,
                 orderFormUrl: seedT.orderFormUrl || t.orderFormUrl,
                 stpFiles: mergedDocs,

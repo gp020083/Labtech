@@ -5,7 +5,31 @@ export interface ResolvedDocLink {
   embedUrl?: string;
   openTabUrl?: string;
   downloadUrl?: string;
+  pdfCompanionUrl?: string;
   kind: 'drive' | 'pdf' | 'image' | 'office_local' | 'other';
+}
+
+const LOCAL_COMPANION_PDF_OVERRIDES: Record<string, string> = {
+  '/server-docs/worksheets/FST02-FDT-TM3-6-260612_Worksheet_template.xlsx':
+    '/server-docs/worksheets/FST02-FDT-TM3-6-260612_Worksheet_blank.pdf',
+  '/templates/STP07-PLT_Worksheet_template.xlsx':
+    '/server-docs/worksheets/FST07-FDT-PLT-1-261028_Worksheet_template.pdf',
+};
+
+export function getCompanionPdfUrl(rawUrl?: string): string | undefined {
+  if (!rawUrl) return undefined;
+  const clean = rawUrl.split('?')[0];
+  if (LOCAL_COMPANION_PDF_OVERRIDES[clean]) {
+    return LOCAL_COMPANION_PDF_OVERRIDES[clean];
+  }
+  if (/^\/templates\/.+\.xlsx?$/i.test(clean)) {
+    const base = clean.replace(/^\/templates\//i, '/server-docs/worksheets/').replace(/\.xlsx?$/i, '.pdf');
+    return base;
+  }
+  if (/^\/server-docs\/.+\.(xlsx?|docx?)$/i.test(clean)) {
+    return clean.replace(/\.(xlsx?|docx?)$/i, '.pdf');
+  }
+  return undefined;
 }
 
 export function extractDriveId(raw?: string): string | undefined {
@@ -37,7 +61,18 @@ export function dataUrlToBlobUrl(dataUrl: string): string {
 }
 
 export function resolveDocLink(rawUrl?: string, fileName = ''): ResolvedDocLink {
+  const companionPdf = getCompanionPdfUrl(rawUrl);
   const driveId = extractDriveId(rawUrl);
+  if (companionPdf) {
+    return {
+      driveId,
+      embedUrl: companionPdf,
+      openTabUrl: companionPdf,
+      downloadUrl: rawUrl,
+      pdfCompanionUrl: companionPdf,
+      kind: 'pdf',
+    };
+  }
   if (driveId) {
     return {
       driveId,
