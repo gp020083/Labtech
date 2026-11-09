@@ -341,3 +341,24 @@ html[data-shell="mobile"] .lt-floating-bottom {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Sortable Table Headers (First Row Click-to-Sort) ---------- */
+th[data-sortable-th="true"] {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+th[data-sortable-th="true"]:hover {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+th[data-sortable-th="true"][data-sort-dir] {
+  background-color: rgba(37, 99, 235, 0.11);
+  color: #1d4ed8;
+}
+:root.dark th[data-sortable-th="true"]:hover {
+  background-color: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+:root.dark th[data-sortable-th="true"][data-sort-dir] {
+  background-color: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}

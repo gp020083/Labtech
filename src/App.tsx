@@ -12,6 +12,7 @@ import { EquipmentCertStatusPage } from './components/EquipmentCertStatusPage';
 import { ToastHost } from './components/ToastHost';
 import { OfflineIndicator } from './components/PwaStatusWidgets';
 import { GlobalModalDragController } from './components/GlobalModalDragController';
+import { GlobalTableSortController } from './components/GlobalTableSortController';
 import {
   parseEquipmentCodeFromUrl,
   EQUIPMENT_ROUTE_EVENT,
@@ -165,6 +166,7 @@ export const App: React.FC = () => (
   <PrefsProvider>
     <AppProvider>
       <GlobalModalDragController />
+      <GlobalTableSortController />
       <FieldShellContent />
     </AppProvider>
   </PrefsProvider>
