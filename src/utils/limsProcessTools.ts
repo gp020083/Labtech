@@ -346,30 +346,34 @@ export function buildCalibrationForecast(
 
       if (validIso && daysLeft <= 90) {
         for (const ev of futureEvents) {
+          // Skip calibration batch reminders themselves — they are the solution, not a test conflict
+          if (ev.id.includes('-cal') || (ev.title && /外送校準|Calibration/i.test(ev.title))) {
+            continue;
+          }
           const evStpCodes = (ev.tests || []).map((t) => mapRawTestToStpCode(t));
           const tagOverlap = evStpCodes.filter((code) => tags.includes(code));
-          const sameJobLoan = Boolean(eq.currentLoan?.jobNo && ev.jobNo && eq.currentLoan.jobNo === ev.jobNo);
 
-          if (tagOverlap.length === 0 && !sameJobLoan) continue;
+          if (tagOverlap.length === 0) continue;
 
           // Conflict if event is on/after instrument due date OR within 14 days prior to due date when sent for external cal
           const daysBeforeDue = diffDaysIso(ev.date, validIso);
           if (ev.date >= validIso || (daysBeforeDue >= 0 && daysBeforeDue <= 14)) {
+            const cleanTitle = (ev.title || ev.site).replace(/\s*\([A-Z/+]+\)\s*$/, '');
             conflicts.push({
               eventId: ev.id,
               eventDate: ev.date,
-              eventTitle: ev.title || ev.site,
+              eventTitle: cleanTitle,
               site: ev.site,
               jobNo: ev.jobNo,
-              stpCodes: tagOverlap.length > 0 ? tagOverlap : evStpCodes,
+              stpCodes: tagOverlap,
               reasonZh:
                 ev.date >= validIso
-                  ? `排程日 (${ev.date}) 器材校準已屆滿 (${validIso})`
-                  : `排程日 (${ev.date}) 距離到期日 (${validIso}) 僅 ${daysBeforeDue} 日（送外校撞期風險）`,
+                  ? `排程當日已過期`
+                  : `距到期僅 ${daysBeforeDue} 日（送檢撞期）`,
               reasonEn:
                 ev.date >= validIso
-                  ? `Cal expired (${validIso}) on scheduled test date (${ev.date})`
-                  : `Scheduled test (${ev.date}) is within ${daysBeforeDue}d of Cal Due (${validIso})`,
+                  ? `Expired on event date`
+                  : `Within ${daysBeforeDue}d of Cal Due`,
             });
           }
         }
