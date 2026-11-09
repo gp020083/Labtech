@@ -55,7 +55,6 @@
 :root.dark .bg-slate-200\/70:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-4) 70%, transparent)}
 :root.dark .bg-slate-200\/80:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-4) 80%, transparent)}
 :root.dark .bg-slate-300:not(.light-island, .light-island *){background-color:var(--d-surface-5)}
-:root.dark .bg-slate-400:not(.light-island, .light-island *){background-color:#4b5871}
 :root.dark .bg-slate-50:not(.light-island, .light-island *){background-color:var(--d-surface-2)}
 :root.dark .bg-slate-50\/50:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-2) 50%, transparent)}
 :root.dark .bg-slate-50\/60:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-2) 60%, transparent)}
@@ -88,7 +87,6 @@
 :root.dark .bg-violet-50\/50:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 50%, transparent)}
 :root.dark .bg-violet-50\/55:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 55%, transparent)}
 :root.dark .bg-violet-50\/60:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 60%, transparent)}
-:root.dark .bg-violet-50\/75:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 75%, transparent)}
 :root.dark .bg-violet-50\/80:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 80%, transparent)}
 :root.dark .bg-white:not(.light-island, .light-island *){background-color:var(--d-surface)}
 :root.dark .bg-white\/10:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface) 10%, transparent)}
@@ -135,7 +133,6 @@
 :root.dark .border-violet-200:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-violet-500) 30%, transparent)}
 :root.dark .border-violet-200\/70:not(.light-island, .light-island *){border-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 30%, transparent) 70%, transparent)}
 :root.dark .border-violet-200\/90:not(.light-island, .light-island *){border-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 30%, transparent) 90%, transparent)}
-:root.dark .border-violet-300:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-violet-500) 42%, transparent)}
 :root.dark .border-white:not(.light-island, .light-island *){border-color:var(--d-line)}
 :root.dark .border-white\/15:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--d-line) 15%, transparent)}
 :root.dark .divide-amber-200\/70 > :not(:last-child):not(.light-island, .light-island *){border-color:color-mix(in oklab, color-mix(in oklab, var(--color-amber-500) 30%, transparent) 70%, transparent)}
@@ -150,7 +147,6 @@
 :root.dark .group:hover .group-hover\:text-brand:not(.light-island, .light-island *){color:#7ea4ff}
 :root.dark .hover\:bg-amber-100:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-amber-500) 18%, var(--d-surface))}
 :root.dark .hover\:bg-amber-200:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-amber-500) 26%, var(--d-surface))}
-:root.dark .hover\:bg-amber-50:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-amber-500) 12%, var(--d-surface))}
 :root.dark .hover\:bg-amber-50\/40:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-amber-500) 12%, var(--d-surface)) 40%, transparent)}
 :root.dark .hover\:bg-brand-wash:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-brand) 20%, var(--d-surface))}
 :root.dark .hover\:bg-brand-wash\/25:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-brand) 20%, var(--d-surface)) 25%, transparent)}
@@ -168,7 +164,6 @@
 :root.dark .hover\:bg-rose-100:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-rose-500) 18%, var(--d-surface))}
 :root.dark .hover\:bg-rose-50:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-rose-500) 12%, var(--d-surface))}
 :root.dark .hover\:bg-slate-100:hover:not(.light-island, .light-island *){background-color:var(--d-surface-3)}
-:root.dark .hover\:bg-slate-100\/80:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-3) 80%, transparent)}
 :root.dark .hover\:bg-slate-200:hover:not(.light-island, .light-island *){background-color:var(--d-surface-4)}
 :root.dark .hover\:bg-slate-200\/60:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-4) 60%, transparent)}
 :root.dark .hover\:bg-slate-200\/70:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--d-surface-4) 70%, transparent)}
@@ -187,7 +182,6 @@
 :root.dark .hover\:bg-white:hover:not(.light-island, .light-island *){background-color:var(--d-surface)}
 :root.dark .hover\:border-indigo-300:hover:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-indigo-500) 42%, transparent)}
 :root.dark .hover\:border-rose-200:hover:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-rose-500) 30%, transparent)}
-:root.dark .hover\:border-slate-200:hover:not(.light-island, .light-island *){border-color:var(--d-line)}
 :root.dark .hover\:text-brand:hover:not(.light-island, .light-island *){color:#7ea4ff}
 :root.dark .hover\:text-brand-deep:hover:not(.light-island, .light-island *){color:#9bb8ff}
 :root.dark .hover\:text-ink:hover:not(.light-island, .light-island *){color:var(--d-text)}
@@ -223,7 +217,6 @@
 :root.dark .text-ink-faint:not(.light-island, .light-island *){color:var(--d-text-4)}
 :root.dark .text-ink-soft:not(.light-island, .light-island *){color:var(--d-text-3)}
 :root.dark .text-orange-600:not(.light-island, .light-island *){color:var(--color-orange-400)}
-:root.dark .text-orange-700:not(.light-island, .light-island *){color:var(--color-orange-300)}
 :root.dark .text-orange-800:not(.light-island, .light-island *){color:var(--color-orange-200)}
 :root.dark .text-orange-900:not(.light-island, .light-island *){color:var(--color-orange-200)}
 :root.dark .text-rose-600:not(.light-island, .light-island *){color:var(--color-rose-400)}
