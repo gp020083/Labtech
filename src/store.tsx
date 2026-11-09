@@ -341,7 +341,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }),
             ...seedEvents.filter((s) => !evIds.has(s.id)),
           ].sort((a, b) => a.date.localeCompare(b.date));
-          return { ...parsed, loans: mergedLoans, calcRecords: mergedCalcs, events: mergedEvents } as ReturnType<typeof createFreshState>;
+          const seedTests = buildInitialTests();
+          const existingTests: TestMethodItem[] = Array.isArray(parsed.tests) ? parsed.tests : [];
+          const testCodes = new Set(existingTests.map((t) => t.code));
+          const mergedTests = [
+            ...existingTests.map((t) => {
+              const seedT = seedTests.find((s) => s.code === t.code);
+              if (!seedT) return t;
+              const existingDocIds = new Set((t.stpFiles || []).map((f) => f.id));
+              const mergedDocs = [
+                ...(t.stpFiles || []).map((f) => seedT.stpFiles?.find((sf) => sf.id === f.id) || f),
+                ...(seedT.stpFiles || []).filter((sf) => !existingDocIds.has(sf.id)),
+              ];
+              return {
+                ...t,
+                worksheetCode: seedT.worksheetCode || t.worksheetCode,
+                worksheetUrl: seedT.worksheetUrl || t.worksheetUrl,
+                orderFormUrl: seedT.orderFormUrl || t.orderFormUrl,
+                stpFiles: mergedDocs,
+              };
+            }),
+            ...seedTests.filter((s) => !testCodes.has(s.code)),
+          ];
+          return { ...parsed, tests: mergedTests, loans: mergedLoans, calcRecords: mergedCalcs, events: mergedEvents } as ReturnType<typeof createFreshState>;
         }
       }
     } catch {}

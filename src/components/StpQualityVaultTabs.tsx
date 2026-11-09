@@ -245,7 +245,7 @@ export const WorksheetTemplatesTable: React.FC = () => {
   );
 };
 export const FormalReportTemplatesTable: React.FC = () => {
-  const { tests, jobs, equipment } = useApp();
+  const { tests, jobs, equipment, openPreviewDoc } = useApp();
   const { tx } = usePrefs();
   const [q, setQ] = useState('');
   const [previewStpCode, setPreviewStpCode] = useState<string | null>(null);
@@ -262,8 +262,17 @@ export const FormalReportTemplatesTable: React.FC = () => {
       });
   }, [tests, q]);
 
-  const handleDownloadXlsx = (e: React.MouseEvent, t: TestMethodItem) => {
+  const handleDownloadXlsx = (e: React.MouseEvent, t: TestMethodItem, reportUrl?: string, reportCode?: string) => {
     e.stopPropagation();
+    if (reportUrl) {
+      const a = document.createElement('a');
+      a.href = reportUrl;
+      a.download = `${reportCode || t.code}_Report_template.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
     downloadTemplateXlsx(t, jobs, equipment, tests);
   };
 
@@ -275,7 +284,7 @@ export const FormalReportTemplatesTable: React.FC = () => {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={tx('搜尋正式報告範本編號 (FDT-TM3-RT / GTT-C939-RT / GTT-C940-RT / RKT-D5731-RT)...', 'Search Formal Report template code or title...')}
+            placeholder={tx('搜尋正式報告範本編號 (FDT-TM3-RT / FDT-PLT-RT / GTT-C939-RT / GTT-C940-RT / RKT-D5731-RT)...', 'Search Formal Report template code or title...')}
             className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
           />
         </div>
@@ -300,7 +309,7 @@ export const FormalReportTemplatesTable: React.FC = () => {
             </div>
             <div className="font-extrabold text-slate-900">{meta.formalReportTitleEn}</div>
             <div className="text-[11px] text-slate-500">{meta.formalReportTitleZh}</div>
-            <div className="flex items-center gap-1.5 pt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setPreviewStpCode(test.code); }}
@@ -308,9 +317,25 @@ export const FormalReportTemplatesTable: React.FC = () => {
               >
                 <Award className="h-3.5 w-3.5" /> {tx('預覽正式報告', 'Preview Report')}
               </button>
+              {meta.formalReportFileUrl && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openPreviewDoc({
+                      title: `${test.code} — ${meta.formalReportFormCode}`,
+                      url: meta.formalReportFileUrl!,
+                      fileName: `${meta.formalReportFormCode}_Report_template.xlsx`,
+                    });
+                  }}
+                  className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer"
+                >
+                  <Eye className="h-3.5 w-3.5" /> {tx('預覽 Excel 報告底板', 'Preview Excel')}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={(e) => handleDownloadXlsx(e, test)}
+                onClick={(e) => handleDownloadXlsx(e, test, meta.formalReportFileUrl, meta.formalReportFormCode)}
                 className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 font-extrabold text-white cursor-pointer"
               >
                 <FileSpreadsheet className="h-3.5 w-3.5" /> .xlsx
@@ -362,9 +387,25 @@ export const FormalReportTemplatesTable: React.FC = () => {
                     >
                       <Award className="h-3.5 w-3.5 text-amber-700" /> {tx('預覽 A4 正式報告', 'Preview Formal Report')}
                     </button>
+                    {meta.formalReportFileUrl && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPreviewDoc({
+                            title: `${test.code} — ${meta.formalReportFormCode}`,
+                            url: meta.formalReportFileUrl!,
+                            fileName: `${meta.formalReportFormCode}_Report_template.xlsx`,
+                          });
+                        }}
+                        className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5" /> {tx('預覽 Excel 報告底板', 'Preview Excel')}
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={(e) => handleDownloadXlsx(e, test)}
+                      onClick={(e) => handleDownloadXlsx(e, test, meta.formalReportFileUrl, meta.formalReportFormCode)}
                       className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 font-extrabold text-white hover:bg-emerald-700 cursor-pointer"
                     >
                       <FileSpreadsheet className="h-3.5 w-3.5" /> {tx('匯出 .xlsx', 'Export .xlsx')}

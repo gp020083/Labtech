@@ -147,6 +147,7 @@
 :root.dark .group:hover .group-hover\:text-brand:not(.light-island, .light-island *){color:#7ea4ff}
 :root.dark .hover\:bg-amber-100:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-amber-500) 18%, var(--d-surface))}
 :root.dark .hover\:bg-amber-200:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-amber-500) 26%, var(--d-surface))}
+:root.dark .hover\:bg-amber-50:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-amber-500) 12%, var(--d-surface))}
 :root.dark .hover\:bg-amber-50\/40:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-amber-500) 12%, var(--d-surface)) 40%, transparent)}
 :root.dark .hover\:bg-brand-wash:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-brand) 20%, var(--d-surface))}
 :root.dark .hover\:bg-brand-wash\/25:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-brand) 20%, var(--d-surface)) 25%, transparent)}

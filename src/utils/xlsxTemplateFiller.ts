@@ -657,7 +657,7 @@ export function getTemplatePublicPath(stpCode: string): string {
       return '/templates/FST06-RKT-D5731-2-260421_Worksheet_template.xlsx';
     case 'PLT':
     case 'VC':
-      return '/templates/STP07-PLT_Worksheet_template.xlsx';
+      return '/templates/FST07-FDT-PLT-1-261028_Worksheet_template.xlsx';
     case 'KD':
     default:
       return '/templates/FST02-FDT-TM3-6-260612_Worksheet_template.xlsx';

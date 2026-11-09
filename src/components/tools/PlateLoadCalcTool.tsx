@@ -173,11 +173,20 @@ Stage Stability Δs = ${rate15m.toFixed(2)} mm (${rateStable ? 'STABLE ≤0.05mm
               <Sparkles className="h-3.5 w-3.5" /> {tx(`套用 3-Cycle (3W=${((parseFloat(workingKpa) || 250) * 3).toFixed(0)}kPa)`, 'Generate 3-Cycle')}
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <label className="inline-flex items-center gap-1 font-mono font-bold text-slate-700">
               ν
               <input type="number" min="0.1" max="0.49" step="0.05" value={poissonNu} onChange={(e) => setPoissonNu(e.target.value)} className="w-14 rounded-lg border border-slate-300 bg-white px-1.5 py-1 text-xs font-extrabold" />
             </label>
+            <button type="button" onClick={() => openPreviewDoc({ title: 'FQS08-FDT-PLT-1 — Plate Load Test Order Form', url: '/server-docs/forms/FQS08-FDT-PLT_Test_Order_Form_261028.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 font-bold text-emerald-900 hover:bg-emerald-50 cursor-pointer">
+              <Eye className="h-3 w-3" /> {tx('FQS08 委託單', 'FQS08 Order Form')}
+            </button>
+            <button type="button" onClick={() => openPreviewDoc({ title: 'FST07-FDT-PLT-1-261028 — Plate Load Test Worksheet', url: '/server-docs/worksheets/FST07-FDT-PLT-1-261028_Worksheet_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-brand/40 bg-white px-2.5 py-1 font-bold text-brand-deep hover:bg-brand-wash/40 cursor-pointer">
+              <Eye className="h-3 w-3" /> {tx('FST07 工作紙 XLSX', 'FST07 Worksheet')}
+            </button>
+            <button type="button" onClick={() => openPreviewDoc({ title: 'FDT-PLT-RT-1-261028 — Plate Load Test Report Master Template (23 Sheets)', url: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-amber-400 bg-white px-2.5 py-1 font-bold text-amber-900 hover:bg-amber-50 cursor-pointer">
+              <Eye className="h-3 w-3" /> {tx('23頁報告範本 XLSX', 'Report Master XLSX')}
+            </button>
             <button type="button" onClick={() => openPreviewDoc({ title: 'STP07-PLT — Plate Load Test Draft STP', url: '/server-docs/stp/STP07-PLT_Draft_rev0_261027.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 bg-white px-2.5 py-1 font-bold text-indigo-900 hover:bg-indigo-50 cursor-pointer">
               <Eye className="h-3 w-3" /> STP07-PLT PDF
             </button>

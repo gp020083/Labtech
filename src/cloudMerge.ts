@@ -159,8 +159,13 @@ export function mergeUnsyncedLocalIntoRemote(
     } else {
       const filesMerge = mergeById<SharedDocAttachment>(rT.stpFiles, lT.stpFiles);
       const certsMerge = mergeById<CalCertAttachment>(rT.calCerts, lT.calCerts);
-      if (filesMerge.added || certsMerge.added) hasLocalAdditions = true;
-      const base = isNewer(lT.updatedAt, rT.updatedAt) ? { ...rT, ...lT } : rT;
+      const preferLocalTestMeta =
+        !rT.updatedAt &&
+        (lT.worksheetCode !== rT.worksheetCode ||
+          lT.worksheetUrl !== rT.worksheetUrl ||
+          lT.orderFormUrl !== rT.orderFormUrl);
+      if (filesMerge.added || certsMerge.added || preferLocalTestMeta) hasLocalAdditions = true;
+      const base = isNewer(lT.updatedAt, rT.updatedAt) || preferLocalTestMeta ? { ...rT, ...lT } : rT;
       if (isNewer(lT.updatedAt, rT.updatedAt)) hasLocalAdditions = true;
       testMap.set(lT.code, {
         ...base,
