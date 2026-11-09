@@ -54,15 +54,15 @@ export const MobileToolsView: React.FC<{
         </div>
       ) : mode === 'calc' ? (
         <>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             {tools.map((t) => {
               const active = activeTool === t.id;
               const ToolIcon = t.Icon;
               return (
                 <button key={t.id} type="button" onClick={() => setActiveTool(t.id)} className={`rounded-2xl border p-2.5 text-left transition cursor-pointer ${active ? 'border-brand bg-brand-wash ring-2 ring-brand/25' : 'border-slate-200 bg-white'}`}>
                   <div className="flex items-center justify-between"><ToolIcon className={`h-4 w-4 ${active ? 'text-brand' : 'text-slate-500'}`} /><span className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-extrabold ${active ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}>{t.code}</span></div>
-                  <div className="mt-1.5 font-extrabold text-slate-900 truncate">{t.title}</div>
-                  <div className="text-[10px] text-slate-500 truncate">{t.sub}</div>
+                  <div className="mt-1.5 font-extrabold text-slate-900 leading-snug">{t.title}</div>
+                  <div className="text-[11px] text-slate-500 leading-snug">{t.sub}</div>
                 </button>
               );
             })}

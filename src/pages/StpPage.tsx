@@ -123,75 +123,75 @@ export const StpPage: React.FC<{
         </div>
       </div>
 
-      <div className="lt-scroll-tabs -mx-3 px-3 sm:mx-0 sm:px-0 flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-200 pb-3">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3">
         <button
           type="button"
           onClick={() => handleSelectSection('stp')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'stp' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <FileText className="h-4 w-4" />
-          {tx(`1. STP 標準測試程序 (${tests.length})`, `1. STP Procedures (${tests.length})`)}
+          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="leading-tight">{tx(`1. STP 程序 (${tests.length})`, `1. STP (${tests.length})`)}</span>
         </button>
         <button
           type="button"
           onClick={() => handleSelectSection('worksheets')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'worksheets' ? 'bg-brand text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <FileSpreadsheet className="h-4 w-4" />
-          {tx(`2. 測試工作紙範本 (${tests.length})`, `2. Worksheet Templates (${tests.length})`)}
+          <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="leading-tight">{tx(`2. 工作紙範本 (${tests.length})`, `2. Worksheets (${tests.length})`)}</span>
         </button>
         <button
           type="button"
           onClick={() => handleSelectSection('order_forms')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'order_forms' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <FolderOpen className="h-4 w-4" />
-          {tx(
-            `3. 測試委託單範本 (FQS08 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`,
-            `3. Test Order Forms (FQS08 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`
-          )}
+          <FolderOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="leading-tight">{tx(
+            `3. 測試委託單 (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`,
+            `3. Order Forms (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`
+          )}</span>
         </button>
         <button
           type="button"
           onClick={() => handleSelectSection('daily_records')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'daily_records' ? 'bg-teal-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <ClipboardList className="h-4 w-4" />
-          {tx(
-            `4. 每日測試紀錄表 (FQS09 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`,
-            `4. Daily Site Records (FQS09 · ${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`
-          )}
+          <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="leading-tight">{tx(
+            `4. 每日紀錄表 (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`,
+            `4. Daily Records (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`
+          )}</span>
         </button>
         <button
           type="button"
           onClick={() => handleSelectSection('reports')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'reports' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <Award className="h-4 w-4" />
-          {tx(`5. 正式報告範本 (${tests.length})`, `5. Formal Report Templates (${tests.length})`)}
+          <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="leading-tight">{tx(`5. 正式報告範本 (${tests.length})`, `5. Reports (${tests.length})`)}</span>
         </button>
         <button
           type="button"
           onClick={() => handleSelectSection('quality_forms')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
             sectionTab === 'quality_forms' ? 'bg-indigo-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <BookCheck className="h-4 w-4" />
-          {tx(
-            `6. 品質體系及校準表格 (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`,
-            `6. Quality, Cal & MU Forms (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`
-          )}
+          <BookCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="leading-tight">{tx(
+            `6. 品質及校準表 (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`,
+            `6. Quality Forms (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`
+          )}</span>
         </button>
       </div>
       {sectionTab === 'worksheets' ? (

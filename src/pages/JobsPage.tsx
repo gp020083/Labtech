@@ -77,23 +77,25 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={tx('搜尋 LT0001 / CMP-26-011 / 旺角 / PolyU / 地盤地址...', 'Search LT0001 / CMP-26-011 / Site Name / Address...')}
+            placeholder={tx('搜尋 LT0001 / 工程編號 / 地盤名稱...', 'Search Site ID / Project No. / Name...')}
             className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {([
-            ['active', tx(`進行中 (${activeCount})`, `Active (${activeCount})`)],
-            ['with_eq', tx(`在場有儀器 (${withEqCount})`, `With Gear (${withEqCount})`)],
-            ['all', tx(`全部 (${jobs.length})`, `All (${jobs.length})`)],
-          ] as const).map(([k, label]) => (
-            <button key={k} type="button" onClick={() => setFilter(k)} className={`rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap transition cursor-pointer ${filter === k ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-              {label}
-            </button>
-          ))}
-          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 ml-auto sm:ml-1 shrink-0">
-            <button type="button" onClick={() => setViewMode('table')} className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold cursor-pointer ${viewMode === 'table' ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-900'}`}><List className="h-3.5 w-3.5" /> {tx('列表', 'List')}</button>
-            <button type="button" onClick={() => setViewMode('cards')} className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold cursor-pointer ${viewMode === 'cards' ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-900'}`}><LayoutGrid className="h-3.5 w-3.5" /> {tx('地圖', 'Maps')}</button>
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5">
+          <div className="flex items-center gap-1">
+            {([
+              ['active', tx(`進行中 (${activeCount})`, `Active (${activeCount})`)],
+              ['with_eq', tx(`有儀器 (${withEqCount})`, `With Gear (${withEqCount})`)],
+              ['all', tx(`全部 (${jobs.length})`, `All (${jobs.length})`)],
+            ] as const).map(([k, label]) => (
+              <button key={k} type="button" onClick={() => setFilter(k)} className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold whitespace-nowrap transition cursor-pointer ${filter === k ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 shrink-0">
+            <button type="button" onClick={() => setViewMode('table')} className={`inline-flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs font-bold cursor-pointer ${viewMode === 'table' ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-900'}`}><List className="h-3.5 w-3.5" /> {tx('列表', 'List')}</button>
+            <button type="button" onClick={() => setViewMode('cards')} className={`inline-flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs font-bold cursor-pointer ${viewMode === 'cards' ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-900'}`}><LayoutGrid className="h-3.5 w-3.5" /> {tx('地圖', 'Maps')}</button>
           </div>
         </div>
       </div>
@@ -108,22 +110,22 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
                 <div
                   key={j.no}
                   onClick={() => setSelectedJob(j)}
-                  className="p-4 space-y-2.5 cursor-pointer hover:bg-brand-wash/30 transition"
+                  className="p-3.5 space-y-2 cursor-pointer hover:bg-brand-wash/30 transition"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                       <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-extrabold text-white whitespace-nowrap">{j.no}</span>
                       <span className="rounded-lg bg-brand-wash px-2 py-0.5 font-mono text-[11px] font-extrabold text-brand-deep whitespace-nowrap">{j.companyProjNo}</span>
-                      {j.scope && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">{j.scope}</span>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {eqCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2 py-0.5 font-bold text-amber-800"><Wrench className="h-3 w-3" /> {eqCount}</span>}
-                      {calcCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-brand-wash border border-brand/25 px-2 py-0.5 font-bold text-brand-deep"><Calculator className="h-3 w-3" /> {calcCount}</span>}
+                      {eqCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2 py-0.5 font-bold text-amber-800 whitespace-nowrap"><Wrench className="h-3 w-3 shrink-0" /> {eqCount}</span>}
+                      {calcCount > 0 && <span className="inline-flex items-center gap-1 rounded-lg bg-brand-wash border border-brand/25 px-2 py-0.5 font-bold text-brand-deep whitespace-nowrap"><Calculator className="h-3 w-3 shrink-0" /> {calcCount}</span>}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-extrabold text-slate-900">{j.shortName}</div>
-                    <div className="text-[11px] text-slate-500">{j.mapAddress || j.site}</div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-extrabold text-slate-900 leading-snug break-words">{j.shortName}</div>
+                    <div className="text-[11px] text-slate-500 leading-snug break-words">{j.mapAddress || j.site}</div>
+                    {j.scope && <div className="rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 leading-snug break-words">Scope: {j.scope}</div>}
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
                     <a href={buildPinnedGoogleMapsUrl(j)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl bg-brand/10 px-3 py-1.5 font-bold text-brand-deep">Google Maps <ExternalLink className="h-3 w-3" /></a>

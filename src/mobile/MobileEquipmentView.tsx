@@ -105,15 +105,15 @@ export const MobileEquipmentView: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-slate-100 p-1 text-xs font-extrabold">
-          <button type="button" onClick={() => setSubTab('list')} className={`rounded-lg py-2 cursor-pointer ${subTab === 'list' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>
-            {tx(`1. 儀器借還 (${counts.total})`, `1. Loan List (${counts.total})`)}
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 text-[11px] font-extrabold">
+          <button type="button" onClick={() => setSubTab('list')} className={`rounded-lg py-2 px-1 whitespace-nowrap cursor-pointer ${subTab === 'list' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}>
+            {tx(`借還 (${counts.total})`, `Loans (${counts.total})`)}
           </button>
-          <button type="button" onClick={() => setSubTab('history')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${subTab === 'history' ? 'bg-brand text-white shadow-xs' : 'text-slate-600'}`}>
-            <History className="h-3.5 w-3.5" /> {tx(`借還紀錄 (${loans.length})`, `History (${loans.length})`)}
+          <button type="button" onClick={() => setSubTab('history')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 px-1 whitespace-nowrap cursor-pointer ${subTab === 'history' ? 'bg-brand text-white shadow-xs' : 'text-slate-600'}`}>
+            <History className="h-3 w-3 shrink-0" /> {tx(`紀錄 (${loans.length})`, `Logs (${loans.length})`)}
           </button>
-          <button type="button" onClick={() => setSubTab('forecast')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${subTab === 'forecast' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-800'}`}>
-            <CalendarClock className="h-3.5 w-3.5" /> {tx(`2. 校準管理 (${calForecast.counts.totalWithin90})`, `2. Calibration (${calForecast.counts.totalWithin90})`)}
+          <button type="button" onClick={() => setSubTab('forecast')} className={`inline-flex items-center justify-center gap-1 rounded-lg py-2 px-1 whitespace-nowrap cursor-pointer ${subTab === 'forecast' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-800'}`}>
+            <CalendarClock className="h-3 w-3 shrink-0" /> {tx(`校準 (${calForecast.counts.totalWithin90})`, `Cal (${calForecast.counts.totalWithin90})`)}
           </button>
         </div>
 

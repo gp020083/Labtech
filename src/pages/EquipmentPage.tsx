@@ -194,10 +194,10 @@ export const EquipmentPage: React.FC<{
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {([
-              ['all', tx('全部在用儀器 (All Active)', 'All In-Use'), counts.total, 'text-slate-900'],
-              ['available', tx('在庫可借用 (Available)', 'Available in Lab'), counts.available, 'text-emerald-700'],
-              ['loaned', tx('借出中儀器 (On Loan)', 'On Site (Loaned)'), counts.loaned, 'text-brand-deep'],
-              ['overdue', tx('逾期未還儀器 (Overdue)', 'Overdue Loans'), counts.overdue, 'text-rose-600'],
+              ['all', tx('全部在用儀器', 'All In-Use'), counts.total, 'text-slate-900'],
+              ['available', tx('在庫可借用', 'Available in Lab'), counts.available, 'text-emerald-700'],
+              ['loaned', tx('借出中儀器', 'On Site (Loaned)'), counts.loaned, 'text-brand-deep'],
+              ['overdue', tx('逾期未還儀器', 'Overdue Loans'), counts.overdue, 'text-rose-600'],
             ] as const).map(([k, label, num, color]) => (
               <button
                 key={k}
@@ -207,7 +207,7 @@ export const EquipmentPage: React.FC<{
                   loanView === 'list' && loanFilter === k ? 'border-brand bg-brand-wash/60 ring-2 ring-brand/20' : 'border-slate-200/85 bg-white hover:bg-slate-50'
                 }`}
               >
-                <div className="text-[11px] font-bold text-slate-500 truncate whitespace-nowrap">{label}</div>
+                <div className="text-[11px] font-bold text-slate-500 leading-snug">{label}</div>
                 <div className={`mt-1 font-mono text-2xl font-extrabold ${color}`}>{num}</div>
               </button>
             ))}
@@ -401,10 +401,10 @@ export const EquipmentPage: React.FC<{
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {([
-              ['all', tx('全部受控儀器 (Total Controlled)', 'Total Controlled'), counts.total, 'text-slate-900'],
-              ['valid', tx('校準有效 (Calibrated Valid)', 'Calibrated / Valid'), counts.validCal, 'text-emerald-700'],
-              ['alert', tx('校準到期／異常預警 (Cal Alert)', 'Cal Due / Alert'), counts.alert, 'text-amber-700'],
-              ['monthly', tx('FCC01 每月內檢儀器', 'FCC01 Monthly Check'), counts.monthly, 'text-indigo-700'],
+              ['all', tx('全部受控儀器', 'Total Controlled'), counts.total, 'text-slate-900'],
+              ['valid', tx('校準有效', 'Calibrated / Valid'), counts.validCal, 'text-emerald-700'],
+              ['alert', tx('校準到期預警', 'Cal Due / Alert'), counts.alert, 'text-amber-700'],
+              ['monthly', tx('FCC01 每月內檢', 'FCC01 Monthly Check'), counts.monthly, 'text-indigo-700'],
             ] as const).map(([k, label, num, color]) => (
               <button
                 key={k}
@@ -414,7 +414,7 @@ export const EquipmentPage: React.FC<{
                   calView === 'registry' && calFilter === k ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-500/20' : 'border-slate-200/85 bg-white hover:bg-slate-50'
                 }`}
               >
-                <div className="text-[11px] font-bold text-slate-500 truncate whitespace-nowrap">{label}</div>
+                <div className="text-[11px] font-bold text-slate-500 leading-snug">{label}</div>
                 <div className={`mt-1 font-mono text-2xl font-extrabold ${color}`}>{num}</div>
               </button>
             ))}
