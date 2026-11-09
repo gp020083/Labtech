@@ -329,7 +329,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const calcIds = new Set(existingCalcs.map((c) => c.id));
           const mergedCalcs = [...existingCalcs, ...seedCalcs.filter((s) => !calcIds.has(s.id))];
           const seedEvents = buildInitialEvents();
-          const existingEvents: CalendarEvent[] = Array.isArray(parsed.events) ? parsed.events : [];
+          const seedEvIds = new Set(seedEvents.map((s) => s.id));
+          const existingEvents: CalendarEvent[] = (Array.isArray(parsed.events) ? parsed.events : []).filter(
+            (e: CalendarEvent) => !e.id.startsWith('ev-') || seedEvIds.has(e.id) || !!e.updatedAt
+          );
           const evIds = new Set(existingEvents.map((e) => e.id));
           const mergedEvents = [
             ...existingEvents.map((e) => {

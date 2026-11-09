@@ -126,9 +126,16 @@ export function mergeUnsyncedLocalIntoRemote(
   }
   const jobs = [...extraJobs, ...Array.from(jobMap.values())];
 
-  // 4. Merge Events by ID, respecting updatedAt and unioning attachments
+  // 4. Merge Events by ID, respecting updatedAt, pruning removed server seed events, and unioning attachments
+  const localSeedIds = new Set((local.events || []).filter((e) => e.id.startsWith('ev-')).map((e) => e.id));
   const evMap = new Map<string, CalendarEvent>();
-  for (const rEv of remote.events || []) evMap.set(rEv.id, rEv);
+  for (const rEv of remote.events || []) {
+    if (rEv.id.startsWith('ev-') && !rEv.updatedAt && !localSeedIds.has(rEv.id)) {
+      hasLocalAdditions = true;
+      continue;
+    }
+    evMap.set(rEv.id, rEv);
+  }
   for (const lEv of local.events || []) {
     const rEv = evMap.get(lEv.id);
     if (!rEv) {
@@ -137,7 +144,17 @@ export function mergeUnsyncedLocalIntoRemote(
     } else {
       const attMerge = mergeById<SharedDocAttachment>(rEv.attachments, lEv.attachments);
       if (attMerge.added) hasLocalAdditions = true;
-      const preferLocalSeed = lEv.id.startsWith('ev-') && !rEv.updatedAt && (lEv.status !== rEv.status || lEv.title !== rEv.title || lEv.notes !== rEv.notes);
+      const preferLocalSeed =
+        lEv.id.startsWith('ev-') &&
+        !rEv.updatedAt &&
+        (lEv.status !== rEv.status ||
+          lEv.title !== rEv.title ||
+          lEv.notes !== rEv.notes ||
+          lEv.site !== rEv.site ||
+          lEv.type !== rEv.type ||
+          lEv.dateTentative !== rEv.dateTentative ||
+          JSON.stringify(lEv.operators) !== JSON.stringify(rEv.operators) ||
+          JSON.stringify(lEv.helpers) !== JSON.stringify(rEv.helpers));
       const base = isNewer(lEv.updatedAt, rEv.updatedAt) || preferLocalSeed ? { ...rEv, ...lEv } : rEv;
       if (isNewer(lEv.updatedAt, rEv.updatedAt) || preferLocalSeed) hasLocalAdditions = true;
       evMap.set(lEv.id, {
