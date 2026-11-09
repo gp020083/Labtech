@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { usePrefs } from '../prefs';
 import { resolveDocLink, dataUrlToBlobUrl } from '../driveDocs';
-import { X, ExternalLink, Download, FileText, Cloud } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, FileSpreadsheet, Cloud } from 'lucide-react';
 
 export interface PreviewDocRequest {
   title: string;
@@ -40,7 +40,13 @@ export const DocumentPreviewModal: React.FC<{
   if (!doc) return null;
   const resolved = resolveDocLink(doc.url.startsWith('data:') ? safeUrl : doc.url, doc.fileName || doc.title);
   const openHref = resolved.openTabUrl || safeUrl;
-  const dlHref = resolved.downloadUrl || safeUrl;
+  const pdfDlHref = resolved.pdfCompanionUrl || (resolved.kind === 'pdf' ? safeUrl : undefined);
+  const officeDlHref = resolved.officeCompanionUrl;
+  const officeExt = resolved.officeExt;
+  const isExcel = officeExt === 'XLSX' || officeExt === 'XLS';
+  const officeLabel = isExcel
+    ? tx(`下載 Excel (.${officeExt?.toLowerCase()})`, `Download Excel (.${officeExt?.toLowerCase()})`)
+    : tx(`下載 Word (.${(officeExt || 'doc').toLowerCase()})`, `Download Word (.${(officeExt || 'doc').toLowerCase()})`);
   const isBlobPdf = resolved.kind === 'pdf' && safeUrl.startsWith('blob:');
 
   let embedSrc = resolved.embedUrl || safeUrl;
@@ -77,19 +83,29 @@ export const DocumentPreviewModal: React.FC<{
                 <Cloud className="h-3 w-3" /> Drive
               </span>
             )}
+            {officeDlHref && (
+              <span className="inline-flex items-center rounded-lg bg-brand-wash px-2 py-1 text-[10px] font-extrabold text-brand-deep shrink-0">
+                {tx(`選擇下載格式：PDF 或 ${officeExt}`, `Choose Download: PDF or ${officeExt}`)}
+              </span>
+            )}
+            {officeDlHref && (
+              <a href={officeDlHref} download className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-emerald-700 shadow-xs">
+                <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" /> {officeLabel}
+              </a>
+            )}
+            {pdfDlHref && (
+              <a href={pdfDlHref} download className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep shadow-xs">
+                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載 PDF (.pdf)', 'Download PDF (.pdf)')}
+              </a>
+            )}
+            {!pdfDlHref && resolved.downloadUrl && (
+              <a href={resolved.downloadUrl} download={doc.fileName || true} target={resolved.kind === 'drive' ? '_blank' : undefined} rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep">
+                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載檔案 (.pdf)', 'Download PDF')}
+              </a>
+            )}
             {openHref && (
               <a href={openHref} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-100">
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {resolved.pdfCompanionUrl ? tx('全螢幕開啟 PDF', 'Open PDF') : tx('開啟原檔', 'Open File')}
-              </a>
-            )}
-            {resolved.pdfCompanionUrl && (
-              <a href={resolved.pdfCompanionUrl} download className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100">
-                <Download className="h-3.5 w-3.5 shrink-0 text-emerald-700" /> {tx('下載 PDF', 'Download PDF')}
-              </a>
-            )}
-            {dlHref && (
-              <a href={dlHref} download={doc.fileName || true} target={resolved.kind === 'drive' ? '_blank' : undefined} rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep">
-                <Download className="h-3.5 w-3.5 shrink-0" /> {resolved.pdfCompanionUrl ? tx('下載原檔 (.xlsx/.doc)', 'Download Original') : tx('下載檔案', 'Download')}
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {tx('全螢幕開啟 PDF', 'Open PDF in New Tab')}
               </a>
             )}
           </div>
@@ -116,9 +132,14 @@ export const DocumentPreviewModal: React.FC<{
                     <ExternalLink className="h-4 w-4" /> {tx('全螢幕開啟檔案', 'Open Full Screen')}
                   </a>
                 )}
-                {dlHref && (
-                  <a href={dlHref} download={doc.fileName || true} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-extrabold text-slate-800">
-                    <Download className="h-4 w-4" /> {tx('下載至手機', 'Download')}
+                {officeDlHref && (
+                  <a href={officeDlHref} download className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 font-extrabold text-white">
+                    <FileSpreadsheet className="h-4 w-4" /> {officeLabel}
+                  </a>
+                )}
+                {pdfDlHref && (
+                  <a href={pdfDlHref} download className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-extrabold text-slate-800">
+                    <Download className="h-4 w-4" /> {tx('下載 PDF', 'Download PDF')}
                   </a>
                 )}
               </div>

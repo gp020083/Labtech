@@ -348,9 +348,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...existingTests.map((t) => {
               const seedT = seedTests.find((s) => s.code === t.code);
               if (!seedT) return t;
-              const existingDocIds = new Set((t.stpFiles || []).map((f) => f.id));
+              const seedDocIds = new Set((seedT.stpFiles || []).map((f) => f.id));
+              const cleanedExisting = (t.stpFiles || []).filter(
+                (f) => !f.id.startsWith('doc-') || seedDocIds.has(f.id)
+              );
+              const existingDocIds = new Set(cleanedExisting.map((f) => f.id));
               const mergedDocs = [
-                ...(t.stpFiles || []).map((f) => seedT.stpFiles?.find((sf) => sf.id === f.id) || f),
+                ...cleanedExisting.map((f) => seedT.stpFiles?.find((sf) => sf.id === f.id) || f),
                 ...(seedT.stpFiles || []).filter((sf) => !existingDocIds.has(sf.id)),
               ];
               return {

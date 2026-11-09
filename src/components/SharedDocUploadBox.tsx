@@ -2,8 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { SharedDocAttachment } from '../types';
-import { resolveDocLink } from '../driveDocs';
-import { UploadCloud, FileText, Eye, Download, FolderSync } from 'lucide-react';
+import { UploadCloud, FileText, Eye, FolderSync } from 'lucide-react';
 
 export const SharedDocUploadBox: React.FC<{
   title: string;
@@ -109,7 +108,11 @@ export const SharedDocUploadBox: React.FC<{
       {visibleDocs.length > 0 ? (
         <div className="divide-y divide-line rounded-lg border border-line bg-paper">
           {visibleDocs.map((d) => (
-            <div key={d.id} className="flex items-center justify-between gap-2 px-3 py-2">
+            <div
+              key={d.id}
+              onClick={() => d.dataUrl && openPreviewDoc({ title: d.fileName, url: d.dataUrl, fileName: d.fileName, subtitle: d.docType || d.serverPath })}
+              className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-brand-wash/30 transition cursor-pointer"
+            >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 font-semibold text-ink truncate">
                   <FileText className="h-3.5 w-3.5 shrink-0 text-brand" />
@@ -119,17 +122,14 @@ export const SharedDocUploadBox: React.FC<{
                 <div className="text-[10px] text-ink-faint truncate">{d.fileSize} · {d.uploadedBy} · {d.serverPath}</div>
               </div>
               {d.dataUrl ? (
-                <div className="shrink-0 flex items-center gap-2">
+                <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
                     onClick={() => openPreviewDoc({ title: d.fileName, url: d.dataUrl!, fileName: d.fileName, subtitle: d.docType || d.serverPath })}
-                    className="inline-flex items-center gap-1 rounded-md bg-brand-wash px-2.5 py-1 font-bold text-brand-deep hover:bg-brand hover:text-white transition cursor-pointer"
+                    className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 font-bold text-white hover:bg-brand-deep transition cursor-pointer"
                   >
-                    <Eye className="h-3 w-3" /> {tx('預覽', 'Preview')}
+                    <Eye className="h-3 w-3" /> {tx('預覽 / 選擇下載', 'Preview / Download')}
                   </button>
-                  <a href={resolveDocLink(d.dataUrl, d.fileName).downloadUrl || d.dataUrl} download={d.fileName} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-brand hover:underline">
-                    <Download className="h-3 w-3" /> {tx('下載', 'Download')}
-                  </a>
                 </div>
               ) : (
                 <button type="button" onClick={() => onPreviewToast?.(d.fileName)} className="shrink-0 font-bold text-brand hover:underline cursor-pointer">{tx('開啟', 'Open')}</button>
