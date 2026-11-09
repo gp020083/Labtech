@@ -4,7 +4,7 @@ import { usePrefs, FontScale } from '../prefs';
 import { REF_TODAY, getEquipmentCalStatus } from '../utils';
 import { PWAInstallButton } from './PwaStatusWidgets';
 import { ThemeQuickToggle, DisplaySettingsMenu, ThemeSegmented } from './ThemeToggle';
-import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award, ClipboardList, BookCheck, Activity, Smartphone } from 'lucide-react';
+import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award, ClipboardList, BookCheck, Activity, Smartphone, ChevronDown } from 'lucide-react';
 
 export type FieldTabId = 'jobs' | 'equipment' | 'stp' | 'tools' | 'calendar';
 export type EquipmentSubSectionId = 'loans' | 'calibration';
@@ -34,6 +34,15 @@ export const FieldNavShell: React.FC<{
   const { user, accounts, switchAccount, logout, resetAllDemoData, jobs, equipment, tests, events, driveSyncStatus } = useApp();
   const { lang, toggleLang, fontScale, setFontScale, setViewMode, tx } = usePrefs();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
+
+  const hasSubMenu = (id: FieldTabId) => id === 'equipment' || id === 'stp' || id === 'tools';
+  const handleMainTabClick = (id: FieldTabId) => {
+    if (hasSubMenu(id)) {
+      setExpandedMap((prev) => ({ ...prev, [id]: !prev[id] }));
+    }
+    onSelect(id);
+  };
 
   const tabs: { id: FieldTabId; label: string; mobileLabel: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'jobs', label: tx('工程項目管理 (Projects)', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
@@ -64,8 +73,8 @@ export const FieldNavShell: React.FC<{
     <>
       <aside className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col border-r border-slate-200/85 bg-white">
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
-          <img src="/labtech-logo.png" alt="LaBTECH" className="h-7 w-auto" />
-          <span className="rounded-full bg-brand-wash px-2 py-0.5 text-[10px] font-extrabold text-brand-deep ring-1 ring-brand/20">HOKLAS 298</span>
+          <img src="/labtech-logo.png" alt="LaBTECH" className="h-7 w-[108px] min-w-[108px] shrink-0 object-contain object-left" />
+          <span className="rounded-full bg-brand-wash px-2 py-0.5 text-[10px] font-extrabold text-brand-deep ring-1 ring-brand/20 shrink-0 whitespace-nowrap">HOKLAS 298</span>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
@@ -75,26 +84,33 @@ export const FieldNavShell: React.FC<{
               const Icon = tab.icon;
               const active = activeTab === tab.id;
               const badge = getBadge(tab.id);
+              const expandable = hasSubMenu(tab.id);
+              const isOpen = !!expandedMap[tab.id];
               return (
                 <React.Fragment key={tab.id}>
                   <button
                     type="button"
-                    onClick={() => onSelect(tab.id)}
-                    className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-xs font-extrabold transition cursor-pointer ${
+                    onClick={() => handleMainTabClick(tab.id)}
+                    className={`flex w-full items-center justify-between gap-1.5 rounded-2xl px-3 py-2.5 text-left text-xs font-extrabold transition cursor-pointer ${
                       active ? 'bg-brand text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    <span className="flex items-center gap-2.5">
-                      <Icon className={`h-4 w-4 ${active ? 'text-white' : tab.id === 'calendar' ? 'text-violet-600' : 'text-slate-400'}`} />
-                      <span>{tab.label}</span>
+                    <span className="flex items-center gap-2 min-w-0">
+                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : tab.id === 'calendar' ? 'text-violet-600' : 'text-slate-400'}`} />
+                      <span className="leading-snug">{tab.label}</span>
                     </span>
-                    {badge && (
-                      <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-extrabold ${active ? 'bg-white/20 text-white' : tab.id === 'calendar' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'}`}>
-                        {badge}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-1 shrink-0">
+                      {badge && (
+                        <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-extrabold whitespace-nowrap ${active ? 'bg-white/20 text-white' : tab.id === 'calendar' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'}`}>
+                          {badge}
+                        </span>
+                      )}
+                      {expandable && (
+                        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${active ? 'text-white/90' : 'text-slate-400'}`} />
+                      )}
+                    </span>
                   </button>
-                  {tab.id === 'equipment' && (
+                  {tab.id === 'equipment' && isOpen && (
                     <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
                       <button
                         type="button"
@@ -140,7 +156,7 @@ export const FieldNavShell: React.FC<{
                       </button>
                     </div>
                   )}
-                  {tab.id === 'stp' && (
+                  {tab.id === 'stp' && isOpen && (
                     <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
                       {([
                         ['stp', tx('1. STP 標準測試程序', '1. STP Procedures'), FileText, 'text-slate-700'],
@@ -171,15 +187,29 @@ export const FieldNavShell: React.FC<{
                       ))}
                     </div>
                   )}
-                  {tab.id === 'tools' && (
-                    <button
-                      type="button"
-                      onClick={onOpenGovSpecs}
-                      className="ml-4 flex w-[calc(100%-1rem)] items-center gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/60 px-3 py-2 text-[11px] font-extrabold text-indigo-800 hover:bg-indigo-100/70 cursor-pointer"
-                    >
-                      <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                      <span className="truncate">{tx('CEDD · ASD · Housing · BD Spec', 'HK Dept Test Specs')}</span>
-                    </button>
+                  {tab.id === 'tools' && isOpen && (
+                    <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => onSelect('tools')}
+                        className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-extrabold transition cursor-pointer ${
+                          activeTab === 'tools'
+                            ? 'bg-brand-wash text-brand-deep ring-1 ring-brand/30'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <Calculator className="h-3.5 w-3.5 text-brand shrink-0" />
+                        <span className="truncate">{tx('1. 測試計算及工作紙 (6)', '1. Calculators & Worksheets (6)')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenGovSpecs}
+                        className="flex w-full items-center gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/60 px-2.5 py-2 text-[11px] font-extrabold text-indigo-800 hover:bg-indigo-100/70 cursor-pointer"
+                      >
+                        <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                        <span className="truncate">{tx('2. CEDD · ASD · Housing · BD Spec', '2. HK Dept Test Specs')}</span>
+                      </button>
+                    </div>
                   )}
                 </React.Fragment>
               );
@@ -188,12 +218,12 @@ export const FieldNavShell: React.FC<{
 
           <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 space-y-2 text-[11px]">
             <div className="flex items-center gap-1.5 font-extrabold text-slate-700"><Activity className="h-3.5 w-3.5 text-emerald-600" /> {tx('即時狀態', 'Live Status')}</div>
-            <button type="button" onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); }} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-brand cursor-pointer">
+            <button type="button" onClick={() => { setExpandedMap((p) => ({ ...p, equipment: true })); onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); }} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-brand cursor-pointer">
               <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-brand" /> {tx('借出中儀器', 'On-Site Gear')}</span>
               <span className="font-mono font-extrabold text-brand-deep">{loanedCount}</span>
             </button>
             {calAlertCount > 0 && (
-              <button type="button" onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); }} className="flex w-full items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer">
+              <button type="button" onClick={() => { setExpandedMap((p) => ({ ...p, equipment: true })); onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); }} className="flex w-full items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer">
                 <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-600" /> {tx('校準到期提示', 'Cal Due Alert')}</span>
                 <span className="font-mono font-extrabold">{calAlertCount}</span>
               </button>
@@ -217,58 +247,59 @@ export const FieldNavShell: React.FC<{
         </div>
       </aside>
       <header className="sticky top-0 z-20 lg:pl-64 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2 px-3 py-2.5 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 lg:hidden">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2 px-2.5 py-2 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 shrink-0 lg:hidden">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle Section Menu"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2 text-slate-700 hover:border-brand cursor-pointer"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand cursor-pointer"
             >
               {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
-            <img src="/labtech-logo.png" alt="LaBTECH" className="h-6 w-auto hidden xs:block sm:block" />
+            <img src="/labtech-logo.png" alt="LaBTECH" className="block h-6 sm:h-7 w-[92px] sm:w-[108px] min-w-[92px] shrink-0 object-contain object-left" />
           </div>
 
           <button
             type="button"
             onClick={onOpenSearch}
-            className="flex flex-1 max-w-xl items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/90 px-3.5 py-2 text-left text-xs text-slate-500 hover:border-brand/50 hover:bg-white transition cursor-pointer"
+            className="flex flex-1 min-w-0 max-w-xl overflow-hidden items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/90 px-2.5 sm:px-3.5 py-2 text-left text-xs text-slate-500 hover:border-brand/50 hover:bg-white transition cursor-pointer"
           >
-            <span className="flex items-center gap-2 truncate">
+            <span className="flex items-center gap-1.5 min-w-0 w-full">
               <Search className="h-4 w-4 text-brand shrink-0" />
-              <span className="truncate">{tx('搜尋 Site ID、器材編號、STP、計算工具、CEDD / ASD / Housing / BD Spec...', 'Search Site ID, Equipment, STP, Calculator, HK Gov Spec...')}</span>
+              <span className="truncate">{tx('搜尋 Site ID、器材編號、STP、計算工具、部門標準...', 'Search Site ID, Equipment, STP, Calculator, Spec...')}</span>
             </span>
           </button>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <PWAInstallButton />
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="hidden md:block">
+              <PWAInstallButton />
+            </div>
 
             <button
               type="button"
               onClick={onOpenDriveSync}
               title={tx('Google Drive 批次上傳及雲端資料庫', 'Google Drive Batch Upload & Database')}
-              className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-[11px] font-extrabold cursor-pointer ${
+              className={`inline-flex items-center gap-1 rounded-xl border px-2 sm:px-2.5 py-1.5 text-[11px] font-extrabold cursor-pointer ${
                 driveSyncStatus === 'synced'
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                   : 'border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand'
               }`}
             >
-              <Cloud className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{tx('Drive / 批次上傳', 'Drive / Batch Upload')}</span>
+              <Cloud className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden xl:inline">{tx('Drive / 批次上傳', 'Drive / Batch Upload')}</span>
             </button>
 
-            <button type="button" onClick={toggleLang} className="inline-flex items-center gap-1 rounded-xl border border-brand/30 bg-brand-wash/70 px-2.5 py-1.5 text-[11px] font-extrabold text-brand-deep hover:bg-brand-wash cursor-pointer">
-              <Globe className="h-3.5 w-3.5" />
-              <span>{lang === 'zh' ? '中/EN' : 'EN'}</span>
+            <button type="button" onClick={toggleLang} className="inline-flex items-center gap-1 rounded-xl border border-brand/30 bg-brand-wash/70 px-2 sm:px-2.5 py-1.5 text-[11px] font-extrabold text-brand-deep hover:bg-brand-wash cursor-pointer">
+              <Globe className="h-3.5 w-3.5 shrink-0" />
+              <span>{lang === 'zh' ? 'EN' : '中'}</span>
             </button>
 
             <ThemeQuickToggle />
             <DisplaySettingsMenu onResetDemo={resetAllDemoData} />
-            <button type="button" title={tx('登出 Logout', 'Logout')} onClick={logout} className="lg:hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"><LogOut className="h-4 w-4" /></button>
           </div>
         </div>
-        <div className="lg:hidden border-t border-slate-100 bg-slate-50/95 px-2.5 py-1.5">
+        <div className="lg:hidden border-t border-slate-100 bg-slate-50/95 px-2 py-1.5">
           <div className="grid grid-cols-5 gap-1 sm:flex sm:items-center sm:gap-1.5">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -278,12 +309,12 @@ export const FieldNavShell: React.FC<{
                   key={tab.id}
                   type="button"
                   onClick={() => { onSelect(tab.id); setMobileMenuOpen(false); }}
-                  className={`inline-flex items-center justify-center gap-1 rounded-xl px-1.5 sm:px-3 py-2 text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 rounded-xl px-1 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
                     active ? 'bg-brand text-white shadow-xs' : 'bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{tab.mobileLabel}</span>
+                  <span className="leading-tight">{tab.mobileLabel}</span>
                 </button>
               );
             })}
@@ -296,19 +327,27 @@ export const FieldNavShell: React.FC<{
               const Icon = tab.icon;
               const active = activeTab === tab.id;
               const badge = getBadge(tab.id);
+              const expandable = hasSubMenu(tab.id);
+              const isOpen = !!expandedMap[tab.id];
               return (
                 <React.Fragment key={tab.id}>
                   <button
                     type="button"
-                    onClick={() => { onSelect(tab.id); setMobileMenuOpen(false); }}
+                    onClick={() => {
+                      handleMainTabClick(tab.id);
+                      if (!expandable) setMobileMenuOpen(false);
+                    }}
                     className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-extrabold cursor-pointer ${
                       active ? 'bg-brand text-white' : 'bg-slate-50 text-slate-800 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="flex items-center gap-2.5"><Icon className="h-4 w-4" />{tab.label}</span>
-                    {badge && <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{badge}</span>}
+                    <span className="flex items-center gap-2.5"><Icon className="h-4 w-4 shrink-0" />{tab.label}</span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      {badge && <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{badge}</span>}
+                      {expandable && <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+                    </span>
                   </button>
-                  {tab.id === 'equipment' && (
+                  {tab.id === 'equipment' && isOpen && (
                     <div className="ml-4 grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
@@ -336,17 +375,55 @@ export const FieldNavShell: React.FC<{
                       </button>
                     </div>
                   )}
+                  {tab.id === 'stp' && isOpen && (
+                    <div className="ml-4 grid grid-cols-2 gap-1.5">
+                      {([
+                        ['stp', tx('1. STP 程序', '1. STP'), FileText],
+                        ['worksheets', tx('2. 工作紙範本', '2. Worksheets'), FileSpreadsheet],
+                        ['order_forms', tx('3. 測試委託單', '3. Orders'), FolderOpen],
+                        ['daily_records', tx('4. 每日紀錄表', '4. Daily Log'), ClipboardList],
+                        ['reports', tx('5. 正式報告範本', '5. Reports'), Award],
+                        ['quality_forms', tx('6. 品質及校準表', '6. Quality'), BookCheck],
+                      ] as const).map(([subId, subLabel, SubIcon]) => (
+                        <button
+                          key={subId}
+                          type="button"
+                          onClick={() => { onSelect('stp'); onSelectDocVaultSubTab?.(subId); setMobileMenuOpen(false); }}
+                          className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-extrabold cursor-pointer ${
+                            activeTab === 'stp' && docVaultSubTab === subId
+                              ? 'border-brand bg-brand-wash text-brand-deep'
+                              : 'border-slate-200 bg-white text-slate-700'
+                          }`}
+                        >
+                          <SubIcon className="h-3.5 w-3.5 text-brand shrink-0" />
+                          <span className="truncate">{subLabel}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {tab.id === 'tools' && isOpen && (
+                    <div className="ml-4 grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { onSelect('tools'); setMobileMenuOpen(false); }}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-extrabold text-slate-700 cursor-pointer"
+                      >
+                        <Calculator className="h-3.5 w-3.5 text-brand shrink-0" />
+                        <span>{tx('1. 計算及工作紙', '1. Calculators')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onOpenGovSpecs(); setMobileMenuOpen(false); }}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[11px] font-extrabold text-indigo-800 cursor-pointer"
+                      >
+                        <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                        <span>{tx('2. 部門 Spec 標準', '2. Dept Specs')}</span>
+                      </button>
+                    </div>
+                  )}
                 </React.Fragment>
               );
             })}
-            <button
-              type="button"
-              onClick={() => { onOpenGovSpecs(); setMobileMenuOpen(false); }}
-              className="flex w-full items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2.5 text-xs font-extrabold text-indigo-800 cursor-pointer"
-            >
-              <Landmark className="h-4 w-4 text-indigo-600" />
-              <span>{tx('CEDD · ASD · Housing · BD Spec 要求', 'HK Dept Test Specs')}</span>
-            </button>
             <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
               <select aria-label="Switch Staff Account" value={user?.id || ''} onChange={(e) => switchAccount(e.target.value)} className="flex-1 truncate rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-800 outline-none">
                 {accounts.map((acc) => (
