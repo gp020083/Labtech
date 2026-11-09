@@ -183,10 +183,11 @@ export const REAL_TESTS_PART1: TestMethodItem[] = [
   },
   {
     code: 'PLT', name: 'Plate Load Test (Soil & Foundation Bearing)', short: 'Plate Load', std: 'BS 1377-9:1990 Cl. 4.1 / BD CoP Cl. 8.2 / HA EXC.T910.1', stp: 'STP07-PLT',
-    stpDocCode: 'STP07-PLT-DRAFT', stpRev: 'Issue 0 (Draft)', stpEffectiveDate: '2026-10-27',
-    worksheetCode: 'PLT-AppendixC-Worksheet.pdf',
+    stpDocCode: 'STP07-PLT-DRAFT', stpRev: 'Issue 0 (Draft)', stpEffectiveDate: '2026-10-28',
+    worksheetCode: 'FST07-FDT-PLT-1-261028 Worksheet_template.xlsx',
     stpPdfUrl: `${S}STP07-PLT_Draft_rev0_261027.pdf`,
-    worksheetUrl: `${S}STP07-PLT_Draft_rev0_261027.pdf`,
+    worksheetUrl: `${W}FST07-FDT-PLT-1-261028_Worksheet_template.xlsx`,
+    orderFormUrl: `${F}FQS08-FDT-PLT_Test_Order_Form_261028.pdf`,
     approvedSignatories: ['Lam Hoi Fan, James (JL)', 'Tang Man Fu (MFT)'],
     qualifiedOperators: ['Shih Chak Lung, Ben (BS) [培訓中]', 'Chan Yuet Man, Moon [培訓中]'],
     acc: false, cost: null,
@@ -198,10 +199,14 @@ export const REAL_TESTS_PART1: TestMethodItem[] = [
     ],
     equipmentTypes: ['Load Cell (LT-LC-01)', 'Dial Gauges × 4 (LT-DG-01)', 'Circular / Square Rigid Steel Plate', 'Spirit Level (LT-LV-01)'],
     versions: [
-      { ver: 'STP07-PLT Issue 0 (Draft)', date: '2026-10-27', status: 'current', note: '含 Appendix A 架設圖、Appendix B 三循環加載表及 750 kPa 結構驗算（目標 2027 Q2 申請 HOKLAS）' },
+      { ver: 'STP07-PLT Issue 0 (Draft)', date: '2026-10-28', status: 'current', note: '含 FQS08-FDT-PLT-1-261028 委託單、FST07 工作紙、23頁正式報告主範本及 750 kPa 結構驗算' },
     ],
     stpFiles: [
       { id: 'doc-plt-stp', fileName: 'LabTech - Standard Test Procedure - Plate Load Test.pdf', fileSize: '1,604 KB', docType: 'Draft STP PDF (25p)', uploadedBy: 'Shih Chak Lung, Ben', uploadedAt: '2026-10-27', serverPath: '03.5.6 Plate Load Test\\LabTech - Standard Test Procedure - Plate Load Test.pdf', dataUrl: `${S}STP07-PLT_Draft_rev0_261027.pdf` },
+      { id: 'doc-plt-ws', fileName: 'FST07-FDT-PLT-1-261028 Worksheet_template.xlsx', fileSize: '97 KB', docType: '空白 Worksheet XLSX', uploadedBy: 'Shih Chak Lung, Ben', uploadedAt: '2026-10-28', serverPath: '01 Quality Document\\Worksheet\\FST07 Worksheet for Plate Load Test\\Working File\\Template', dataUrl: `${W}FST07-FDT-PLT-1-261028_Worksheet_template.xlsx` },
+      { id: 'doc-plt-f08-pdf', fileName: 'FQS08-FDT-PLT Test Order Form_261028_template.pdf', fileSize: '347 KB', docType: 'FQS08 委託單 PDF', uploadedBy: 'Shih Chak Lung, Ben', uploadedAt: '2026-10-28', serverPath: '01 Quality Document\\Form\\FQS08 Test Order Form\\Plate Load Test\\Working File\\Template', dataUrl: `${F}FQS08-FDT-PLT_Test_Order_Form_261028.pdf` },
+      { id: 'doc-plt-f08-xlsx', fileName: 'FQS08-FDT-PLT Test Order Form_261028_template.xlsx', fileSize: '96 KB', docType: 'FQS08 委託單 XLSX', uploadedBy: 'Shih Chak Lung, Ben', uploadedAt: '2026-10-28', serverPath: '01 Quality Document\\Form\\FQS08 Test Order Form\\Plate Load Test\\Working File\\Template', dataUrl: `${F}FQS08-FDT-PLT_Test_Order_Form_261028.xlsx` },
+      { id: 'doc-plt-rt', fileName: 'FDT-PLT-RT-1-261028 Report_template.xlsx', fileSize: '291 KB', docType: '正式報告主範本 XLSX (23 Sheets)', uploadedBy: 'Shih Chak Lung, Ben', uploadedAt: '2026-10-28', serverPath: '01 Quality Document\\Test Record\\Plate Load Test\\Working File\\Template', dataUrl: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx' },
       { id: 'doc-plt-chk', fileName: '20261021 Plate Load Test Setup Checking (Max 750 kPa).pdf', fileSize: '1,385 KB', docType: '750 kPa 反力架結構驗算', uploadedBy: 'Engineering Team', uploadedAt: '2026-10-27', serverPath: '03.5.6 Plate Load Test\\20261021 Plate Load Test Setup Checking.pdf', dataUrl: `${S}PLT_Setup_Checking_750kPa_261021.pdf` },
     ],
     calCerts: [

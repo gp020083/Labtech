@@ -182,6 +182,7 @@ export interface OfficialTemplateMeta {
   stpCode: string;
   worksheetFormCode: string;
   formalReportFormCode: string;
+  formalReportFileUrl?: string;
   templateFileCode: string;
   templateTitleEn: string;
   templateTitleZh: string;
@@ -234,15 +235,16 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
     case 'PLT':
       return {
         stpCode: 'PLT',
-        worksheetFormCode: 'STP07-PLT (Appendix B & C)',
-        formalReportFormCode: 'PLT-RT',
-        templateFileCode: 'STP07-PLT_Worksheet_template.xlsx',
+        worksheetFormCode: 'FST07-FDT-PLT-1-261028',
+        formalReportFormCode: 'FDT-PLT-RT-1-261028',
+        formalReportFileUrl: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx',
+        templateFileCode: 'FST07-FDT-PLT-1-261028_Worksheet_template.xlsx',
         templateTitleEn:
           'WORKSHEET FOR DETERMINATION OF VERTICAL DEFORMATION AND STRENGTH CHARACTERISTICS OF SOIL BY PLATE LOADING TEST (INCREMENTAL LOADING METHOD)',
-        templateTitleZh: '平板載荷試驗（STP07-PLT 附錄 B 加載表及附錄 C 記錄表）完成工作紙',
+        templateTitleZh: '平板載荷試驗現場工作紙 (FST07-FDT-PLT-1-261028)',
         formalReportTitleEn:
           'TEST REPORT — DETERMINATION OF VERTICAL DEFORMATION AND STRENGTH CHARACTERISTICS OF SOIL BY PLATE LOADING TEST (INCREMENTAL LOADING METHOD)',
-        formalReportTitleZh: '平板載荷試驗（承載力、3循環沉降曲線及變形模量）正式測試報告 (PLT-RT)',
+        formalReportTitleZh: '平板載荷試驗 23 頁主控正式報告範本 (FDT-PLT-RT-1-261028 Report_template.xlsx)',
         testStandard: matched?.std || 'BS 1377: Part 9: 1990 Cl. 4.1 / Geoguide 7 / CoP Foundations',
         stpDocRef: `${matched?.stpDocCode || 'STP07-PLT'} (${matched?.stpRev || 'Issue 0'})`,
         muRefCode: 'PLT_Setup_Checking_750kPa (v20261021)',

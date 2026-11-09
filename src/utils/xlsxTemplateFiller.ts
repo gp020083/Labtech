@@ -402,55 +402,35 @@ export function buildOfficialTemplateSheetCellMaps(
     };
   }
 
-  // Default / PLT: STP07-PLT_Worksheet_template.xlsx
+  // Default / PLT: FST07-FDT-PLT-1-261028_Worksheet_template.xlsx (Sheet: Plate Loading Test Form)
   const plt = st?.kind === 'PLT' ? st : undefined;
-  const wkKpa = plt?.workingKpa ?? 250;
-  const areaM2 = plt?.areaM2 ?? 0.09;
-  const wkKn = Number((wkKpa * areaM2).toFixed(2));
-  const lcId = findEqCode(['lc', 'load'], 'LT-LC-01');
-  const dgId = findEqCode(['dg', 'dial'], 'LT-DG-01 ~ 04');
   const pltCells: Record<string, string | number> = {
-    F4: jobRefNo,
-    U4: locationNote,
-    AG4: dateOnly,
-    F5: clientName,
-    U5: contractNo,
-    AG5: worksOrderNo,
-    F6: projectTitle,
-    U6: siteLocation,
-    G9: wkKpa,
-    U9: wkKpa * 3,
-    AH9: plt ? `${plt.plateSizeMm / 1000} m (${plt.plateShape})` : '0.30 m',
-    G10: wkKn,
-    U10: Number((wkKn * 3).toFixed(2)),
-    AH10: Number(areaM2.toFixed(4)),
-    U11: lcId,
-    AH11: dgId,
-    E37: plt
+    A6: `Plate Load Test No. \t:\t ${jobRefNo} (${locationNote} · ${projectTitle})`,
+    D47: plt
       ? `Peak Pressure = ${plt.peakPressureKpa.toFixed(1)} kPa (${plt.peakLoadKn.toFixed(1)} kN); Max Settlement = ${plt.peakSettlementMm.toFixed(2)} mm; Es = ${plt.esMpa ? plt.esMpa.toFixed(2) : '—'} MPa.`
-      : 'Plate Load Test completed per STP07-PLT.',
-    E39: operatorName,
-    T39: approvedSignatory,
-    E40: dateOnly,
-    T40: dateOnly,
+      : `Plate Load Test (${contractNo}) completed per STP07-PLT.`,
+    D49: operatorName,
+    L49: approvedSignatory,
+    D51: dateOnly,
+    L51: dateOnly,
   };
 
   if (plt?.steps?.length) {
     plt.steps.forEach((step, idx) => {
-      const r = 15 + idx;
-      if (r <= 34) {
+      const r = 11 + idx;
+      if (r <= 45) {
         pltCells[`A${r}`] = dateOnly;
-        pltCells[`D${r}`] = step.stepName;
-        pltCells[`G${r}`] = parseFloat(params.ambientTemp) || 26.5;
-        pltCells[`J${r}`] = Number(step.pressureKpa.toFixed(1));
-        pltCells[`N${r}`] = Number(step.loadKn.toFixed(2));
-        pltCells[`R${r}`] = Number(step.loadKn.toFixed(2));
-        pltCells[`V${r}`] = Number(step.g1.toFixed(2));
-        pltCells[`Y${r}`] = Number(step.g2.toFixed(2));
-        pltCells[`AB${r}`] = Number(step.g3.toFixed(2));
-        pltCells[`AE${r}`] = Number(step.g4.toFixed(2));
-        pltCells[`AH${r}`] = Number(((step.g1 + step.g2 + step.g3 + step.g4) / 4).toFixed(2));
-        pltCells[`AK${r}`] = Number(step.meanMm.toFixed(2));
+        pltCells[`B${r}`] = step.stepName;
+        pltCells[`C${r}`] = parseFloat(params.ambientTemp) || 26.5;
+        pltCells[`E${r}`] = Number(step.pressureKpa.toFixed(1));
+        pltCells[`F${r}`] = Number(step.loadKn.toFixed(2));
+        pltCells[`G${r}`] = Number(step.loadKn.toFixed(2));
+        pltCells[`H${r}`] = Number(step.g1.toFixed(2));
+        pltCells[`I${r}`] = Number(step.g2.toFixed(2));
+        pltCells[`J${r}`] = Number(step.g3.toFixed(2));
+        pltCells[`L${r}`] = Number(step.g4.toFixed(2));
+        pltCells[`P${r}`] = Number(((step.g1 + step.g2 + step.g3 + step.g4) / 4).toFixed(2));
+        pltCells[`T${r}`] = Number(step.meanMm.toFixed(2));
       }
     });
   }
