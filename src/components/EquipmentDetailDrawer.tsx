@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { EquipmentItem } from '../types';
@@ -20,6 +21,7 @@ export const EquipmentDetailDrawer: React.FC<{
 }> = ({ item, onClose, onOpenCheckout, onOpenReturn }) => {
   const { loans, syncEquipmentCertToDue, toggleEquipmentTag, uploadEquipmentCalCert, openPreviewDoc, pushToast } = useApp();
   const { lang, tx } = usePrefs();
+  const perms = usePermissions();
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
   if (!item) return null;
 
@@ -158,7 +160,7 @@ export const EquipmentDetailDrawer: React.FC<{
             onToggle={(tag) => toggleEquipmentTag(item.code, tag)}
           />
 
-          <CalCertUploadBox
+          {perms.canManageEquipment && (<CalCertUploadBox
             title={tx('📄 工具 Cal Cert 上傳及紀錄', '📄 Calibration Certificates (Cal Cert)')}
             certs={item.calCerts || []}
             defaultDueDate={item.certDue || item.due}
@@ -173,7 +175,7 @@ export const EquipmentDetailDrawer: React.FC<{
               })
             }
             onPreviewToast={(fn) => pushToast(tx('已開啟 Cal Cert 預覽', 'Opened Cal Cert preview'), fn)}
-          />
+          />)}
 
           <div>
             <div className="mb-2 flex items-center justify-between">

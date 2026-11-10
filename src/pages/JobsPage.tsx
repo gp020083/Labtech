@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { JobItem } from '../types';
@@ -10,6 +11,7 @@ import { MapPin, Plus, Search, Copy, Edit3, Wrench, ExternalLink, LayoutGrid, Li
 export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNavigateEquipment }) => {
   const { jobs, equipment, calcRecords, pushToast } = useApp();
   const { tx } = usePrefs();
+  const canEditSites = usePermissions().canManageSites;
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'active' | 'with_eq' | 'all'>('active');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
@@ -87,13 +89,15 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setEditingJob('new')}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer shrink-0"
-            >
-              <Plus className="h-3.5 w-3.5" /> {tx('新增工程地盤', 'Add Site')}
-            </button>
+            {canEditSites && (
+              <button
+                type="button"
+                onClick={() => setEditingJob('new')}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" /> {tx('新增工程地盤', 'Add Site')}
+              </button>
+            )}
           </div>
         </div>
 
@@ -160,7 +164,7 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
                     <a href={buildPinnedGoogleMapsUrl(j)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl bg-brand/10 px-3 py-1.5 font-bold text-brand-deep">Google Maps <ExternalLink className="h-3 w-3" /></a>
                     <button type="button" onClick={() => handleCopy(j)} className="ml-auto rounded-xl border border-slate-200 p-1.5 text-slate-500 cursor-pointer" title="Copy"><Copy className="h-3.5 w-3.5" /></button>
-                    <button type="button" onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
+                    <button type="button" hidden={!canEditSites} onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
               );
@@ -211,7 +215,7 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
                         <div className="flex items-center justify-end gap-1.5 flex-nowrap whitespace-nowrap">
                           <a href={buildPinnedGoogleMapsUrl(j)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-xl bg-brand/10 px-3 py-1.5 font-bold text-brand-deep hover:bg-brand hover:text-white whitespace-nowrap shrink-0">Google Maps <ExternalLink className="h-3 w-3 shrink-0" /></a>
                           <button type="button" onClick={() => handleCopy(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-brand shrink-0 cursor-pointer" title="Copy"><Copy className="h-3.5 w-3.5" /></button>
-                          <button type="button" onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
+                          <button type="button" hidden={!canEditSites} onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-1.5 text-slate-500 hover:text-slate-900 shrink-0 cursor-pointer" title="Edit"><Edit3 className="h-3.5 w-3.5" /></button>
                         </div>
                       </td>
                     </tr>
@@ -262,7 +266,7 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
                   Google Maps <ExternalLink className="h-3 w-3" />
                 </a>
                 <button type="button" onClick={() => setSelectedJob(j)} className="rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">{tx('詳情 Info', 'Details')}</button>
-                <button type="button" onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900 cursor-pointer" title="Edit Site"><Edit3 className="h-3.5 w-3.5" /></button>
+                <button type="button" hidden={!canEditSites} onClick={() => setEditingJob(j)} className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900 cursor-pointer" title="Edit Site"><Edit3 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           );

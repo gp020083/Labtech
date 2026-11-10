@@ -469,7 +469,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
                 }`}
               >
                 <Award className="h-3.5 w-3.5" />
-                {tx('2. HOKLAS 正式測試報告 (A4 Certificate)', '2. Formal HOKLAS Test Report')}
+                {tx('2. HOKLAS 正式測試報告', '2. Formal HOKLAS Test Report')}
               </button>
             </div>
 
@@ -539,8 +539,8 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="font-bold text-amber-300">
                   {activeSignPadTarget === 'operator'
-                    ? tx('繪製技術員簽名 (Tested By):', 'Draw Operator Signature:')
-                    : tx('繪製核准簽署人簽名 (Checked By):', 'Draw Signatory Signature:')}
+                    ? tx('繪製技術員簽名:', 'Draw Operator Signature:')
+                    : tx('繪製核准簽署人簽名:', 'Draw Signatory Signature:')}
                 </span>
                 <button
                   type="button"

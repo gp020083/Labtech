@@ -1,14 +1,126 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../store';
-import { usePrefs, FontScale } from '../prefs';
-import { REF_TODAY, getEquipmentCalStatus } from '../utils';
-import { PWAInstallButton } from './PwaStatusWidgets';
-import { ThemeQuickToggle, DisplaySettingsMenu, ThemeSegmented } from './ThemeToggle';
-import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Landmark, AlertTriangle, Menu, X, Cloud, ArrowLeftRight, ShieldCheck, FileSpreadsheet, FolderOpen, Award, ClipboardList, BookCheck, Activity, Smartphone, ChevronDown } from 'lucide-react';
+import { usePrefs } from '../prefs';
+import { usePermissions } from '../permissions';
+import { getEquipmentCalStatus } from '../utils';
+import { usePWAInstall } from './PwaStatusWidgets';
+import { ThemeSegmented, FontScaleSegmented } from './ThemeToggle';
+import { MapPin, Wrench, FileText, Calculator, CalendarDays, RotateCcw, LogOut, Globe, Search, Cloud, Smartphone, Download, ChevronDown } from 'lucide-react';
 
 export type FieldTabId = 'jobs' | 'equipment' | 'stp' | 'tools' | 'calendar';
 export type EquipmentSubSectionId = 'loans' | 'calibration';
 export type DocVaultSubSectionId = 'stp' | 'worksheets' | 'order_forms' | 'daily_records' | 'reports' | 'quality_forms';
+
+const ROLE_LABEL: Record<string, string> = { operator: 'Operator', as: 'AS', quality: 'QM', admin: 'Admin' };
+
+/** Single account menu that replaces the row of header buttons. */
+export const AccountMenu: React.FC<{ onOpenDriveSync: () => void }> = ({ onOpenDriveSync }) => {
+  const { user, accounts, switchAccount, logout, resetAllDemoData } = useApp();
+  const { lang, toggleLang, isMobileApp, setViewMode, tx } = usePrefs();
+  const perms = usePermissions();
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const displayName = user ? (lang === 'en' ? user.name.split(',')[1]?.trim() || user.name : user.zh || user.name) : '';
+  const initial = (displayName || '?').trim().charAt(0).toUpperCase();
+  const itemCls = 'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer';
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-label={tx('帳戶及設定', 'Account & Settings')}
+        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white py-1 pl-1 pr-2 hover:border-slate-300 cursor-pointer"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-xs font-extrabold text-white">{initial}</span>
+        <span className="hidden sm:block max-w-28 truncate text-xs font-bold text-slate-800">{displayName}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl space-y-3">
+          <div className="flex items-center gap-2.5 px-1">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-sm font-extrabold text-white">{initial}</span>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-extrabold text-slate-900">{displayName}</div>
+              <div className="text-[11px] font-semibold text-slate-500">{ROLE_LABEL[perms.role] || perms.role}</div>
+            </div>
+          </div>
+
+          <select
+            aria-label="Switch account"
+            value={user?.id || ''}
+            onChange={(e) => switchAccount(e.target.value)}
+            className="w-full truncate rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-800 outline-none focus:border-brand cursor-pointer"
+          >
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {lang === 'en' ? acc.name.split(',')[1]?.trim() || acc.name : acc.zh || acc.name} · {ROLE_LABEL[acc.role] || acc.role}
+              </option>
+            ))}
+          </select>
+
+          <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
+            <button type="button" onClick={toggleLang} className={itemCls}>
+              <Globe className="h-4 w-4 text-slate-500" />
+              <span className="flex-1">{tx('語言', 'Language')}</span>
+              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-extrabold text-slate-700">{lang === 'zh' ? '中文' : 'English'}</span>
+            </button>
+            <ThemeSegmented />
+            <FontScaleSegmented />
+          </div>
+
+          <div className="space-y-0.5 border-t border-slate-100 pt-2">
+            {!isInstalled && isInstallable && (
+              <button type="button" onClick={() => { install(); setOpen(false); }} className={itemCls}>
+                <Download className="h-4 w-4 text-brand" /> {tx('安裝離線 App', 'Install Offline App')}
+              </button>
+            )}
+            {!isInstalled && !isInstallable && isIOS && (
+              <div className="px-2.5 py-1.5 text-[11px] text-slate-500">
+                {tx('iPhone 安裝方法：Safari 分享 › 加入主畫面', 'iPhone: Safari Share › Add to Home Screen')}
+              </div>
+            )}
+            {perms.canManageDocs && (
+              <button type="button" onClick={() => { onOpenDriveSync(); setOpen(false); }} className={itemCls}>
+                <Cloud className="h-4 w-4 text-emerald-600" /> {tx('Google Drive 同步及批次上傳', 'Google Drive Sync & Batch Upload')}
+              </button>
+            )}
+            <button type="button" onClick={() => { setViewMode(isMobileApp ? 'desktop' : 'mobile'); setOpen(false); }} className={itemCls}>
+              <Smartphone className="h-4 w-4 text-slate-500" />
+              {isMobileApp ? tx('切換至電腦版介面', 'Switch to Desktop Layout') : tx('切換至手機版介面', 'Switch to Mobile Layout')}
+            </button>
+            {perms.canResetDemo && (
+              <button type="button" onClick={() => { resetAllDemoData(); setOpen(false); }} className={itemCls}>
+                <RotateCcw className="h-4 w-4 text-slate-500" /> {tx('重設示範資料', 'Reset Demo Data')}
+              </button>
+            )}
+            <button type="button" onClick={logout} className={`${itemCls} hover:bg-rose-50 hover:text-rose-600`}>
+              <LogOut className="h-4 w-4" /> {tx('登出', 'Sign Out')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const FieldNavShell: React.FC<{
   activeTab: FieldTabId;
@@ -20,287 +132,85 @@ export const FieldNavShell: React.FC<{
   onOpenSearch: () => void;
   onOpenGovSpecs: () => void;
   onOpenDriveSync: () => void;
-}> = ({
-  activeTab,
-  onSelect,
-  equipmentSubTab = 'loans',
-  onSelectEquipmentSubTab,
-  docVaultSubTab = 'stp',
-  onSelectDocVaultSubTab,
-  onOpenSearch,
-  onOpenGovSpecs,
-  onOpenDriveSync,
-}) => {
-  const { user, accounts, switchAccount, logout, resetAllDemoData, jobs, equipment, tests, events, driveSyncStatus } = useApp();
-  const { lang, toggleLang, fontScale, setFontScale, setViewMode, tx } = usePrefs();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
-
-  const hasSubMenu = (id: FieldTabId) => id === 'equipment' || id === 'stp' || id === 'tools';
-  const handleMainTabClick = (id: FieldTabId) => {
-    if (hasSubMenu(id)) {
-      setExpandedMap((prev) => ({ ...prev, [id]: !prev[id] }));
-    }
-    onSelect(id);
-  };
+}> = ({ activeTab, onSelect, onSelectEquipmentSubTab, onOpenSearch, onOpenDriveSync }) => {
+  const { equipment } = useApp();
+  const { tx } = usePrefs();
 
   const tabs: { id: FieldTabId; label: string; mobileLabel: string; icon: React.FC<{ className?: string }> }[] = [
-    { id: 'jobs', label: tx('工程及地盤', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
-    { id: 'equipment', label: tx('儀器管理', 'Equipment'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
-    { id: 'stp', label: tx('受控文件庫', 'Controlled Docs'), mobileLabel: tx('文件庫', 'Docs'), icon: FileText },
-    { id: 'tools', label: tx('測試計算及報告', 'Test & Report'), mobileLabel: tx('測試報告', 'Test/Report'), icon: Calculator },
-    { id: 'calendar', label: tx('排程日曆', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
+    { id: 'stp', label: tx('文件', 'Documents'), mobileLabel: tx('文件', 'Docs'), icon: FileText },
+    { id: 'tools', label: tx('測試計算', 'Calculators'), mobileLabel: tx('計算', 'Calc'), icon: Calculator },
+    { id: 'equipment', label: tx('儀器', 'Equipment'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
+    { id: 'jobs', label: tx('工程及地盤', 'Sites'), mobileLabel: tx('地盤', 'Sites'), icon: MapPin },
+    { id: 'calendar', label: tx('排程日曆', 'Schedule'), mobileLabel: tx('日曆', 'Schedule'), icon: CalendarDays },
   ];
 
-  const activeJobsCount = jobs.filter((j) => j.status === 'active').length;
-  const inUseEq = equipment.filter((e) => e.inUse !== 'N');
-  const loanedCount = inUseEq.filter((e) => !!e.currentLoan).length;
-  const calAlertCount = inUseEq.filter((e) => {
-    const c = getEquipmentCalStatus(e);
-    return c.kind === 'warn' || c.kind === 'bad' || c.mismatch;
-  }).length;
-  const upcomingEventsCount = events.filter((e) => e.date >= REF_TODAY && e.status !== 'cancelled').length;
-
-  const getBadge = (id: FieldTabId) => {
-    if (id === 'jobs') return `${activeJobsCount}`;
-    if (id === 'equipment') return loanedCount > 0 ? tx(`借出 ${loanedCount}`, `${loanedCount} Out`) : `${inUseEq.length}`;
-    if (id === 'stp') return `${tests.length}`;
-    if (id === 'tools') return '6+8';
-    return upcomingEventsCount > 0 ? `${upcomingEventsCount}` : undefined;
-  };
+  const calAlertCount = equipment
+    .filter((e) => e.inUse !== 'N')
+    .filter((e) => {
+      const c = getEquipmentCalStatus(e);
+      return c.kind === 'warn' || c.kind === 'bad' || c.mismatch;
+    }).length;
 
   return (
     <>
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-64 lg:flex-col border-r border-slate-200/85 bg-white">
-        <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-56 lg:flex-col border-r border-slate-200/85 bg-white">
+        <div className="flex items-center gap-2 px-5 py-4">
           <img src="/labtech-logo.png" alt="LaBTECH" className="h-7 w-[108px] min-w-[108px] shrink-0 object-contain object-left" />
-          <span className="rounded-full bg-brand-wash px-2 py-0.5 text-[10px] font-extrabold text-brand-deep ring-1 ring-brand/20 shrink-0 whitespace-nowrap">HOKLAS 298</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          <div className="space-y-1">
-            <div className="px-2.5 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{tx('主工作區 Workspace', 'Main Workspace')}</div>
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              const badge = getBadge(tab.id);
-              const expandable = hasSubMenu(tab.id);
-              const isOpen = !!expandedMap[tab.id];
-              return (
-                <React.Fragment key={tab.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleMainTabClick(tab.id)}
-                    className={`flex w-full items-center justify-between gap-1.5 rounded-2xl px-3 py-2.5 text-left text-xs font-extrabold transition cursor-pointer ${
-                      active ? 'bg-brand text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
+        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            const showAlert = tab.id === 'equipment' && calAlertCount > 0;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onSelect(tab.id)}
+                className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition cursor-pointer ${
+                  active ? 'bg-brand-wash text-brand-deep' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-brand' : 'text-slate-400'}`} />
+                  {tab.label}
+                </span>
+                {showAlert && (
+                  <span
+                    onClick={(e) => { e.stopPropagation(); onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); }}
+                    title={tx(`${calAlertCount} 件儀器校準需要注意`, `${calAlertCount} calibration alerts`)}
+                    className="rounded-full bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-amber-800"
                   >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : tab.id === 'calendar' ? 'text-violet-600' : 'text-slate-400'}`} />
-                      <span className="leading-snug">{tab.label}</span>
-                    </span>
-                    <span className="flex items-center gap-1 shrink-0">
-                      {badge && (
-                        <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-extrabold whitespace-nowrap ${active ? 'bg-white/20 text-white' : tab.id === 'calendar' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'}`}>
-                          {badge}
-                        </span>
-                      )}
-                      {expandable && (
-                        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${active ? 'text-white/90' : 'text-slate-400'}`} />
-                      )}
-                    </span>
-                  </button>
-                  {tab.id === 'equipment' && isOpen && (
-                    <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelect('equipment');
-                          onSelectEquipmentSubTab?.('loans');
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[11px] font-extrabold transition cursor-pointer ${
-                          activeTab === 'equipment' && equipmentSubTab === 'loans'
-                            ? 'bg-brand-wash text-brand-deep ring-1 ring-brand/30'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 truncate">
-                          <ArrowLeftRight className="h-3.5 w-3.5 text-brand shrink-0" />
-                          <span className="truncate">{tx('儀器借還', 'Loan & Checkout')}</span>
-                        </span>
-                        <span className="rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep border border-slate-200">
-                          {loanedCount}/{inUseEq.length}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelect('equipment');
-                          onSelectEquipmentSubTab?.('calibration');
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-[11px] font-extrabold transition cursor-pointer ${
-                          activeTab === 'equipment' && equipmentSubTab === 'calibration'
-                            ? 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 truncate">
-                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                          <span className="truncate">{tx('校準及證書', 'Calibration & Certs')}</span>
-                        </span>
-                        {calAlertCount > 0 && (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-amber-800">
-                            {calAlertCount}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                  {tab.id === 'stp' && isOpen && (
-                    <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
-                      {([
-                        ['stp', tx('STP 標準測試程序', 'STP Procedures'), FileText, 'text-slate-700'],
-                        ['worksheets', tx('測試工作紙範本', 'Worksheet Templates'), FileSpreadsheet, 'text-brand'],
-                        ['order_forms', tx('測試委託單 FQS08', 'Order Forms FQS08'), FolderOpen, 'text-emerald-600'],
-                        ['daily_records', tx('每日測試紀錄 FQS09', 'Daily Records FQS09'), ClipboardList, 'text-indigo-600'],
-                        ['reports', tx('正式報告範本', 'Formal Report Templates'), Award, 'text-amber-600'],
-                        ['quality_forms', tx('品質及校準表格', 'Quality & Cal Forms'), BookCheck, 'text-teal-600'],
-                      ] as const).map(([subId, subLabel, SubIcon, iconCls]) => (
-                        <button
-                          key={subId}
-                          type="button"
-                          onClick={() => {
-                            onSelect('stp');
-                            onSelectDocVaultSubTab?.(subId);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-[11px] font-extrabold transition cursor-pointer ${
-                            activeTab === 'stp' && docVaultSubTab === subId
-                              ? 'bg-brand-wash text-brand-deep ring-1 ring-brand/30'
-                              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                          }`}
-                        >
-                          <span className="flex items-center gap-2 truncate">
-                            <SubIcon className={`h-3.5 w-3.5 shrink-0 ${iconCls}`} />
-                            <span className="truncate">{subLabel}</span>
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {tab.id === 'tools' && isOpen && (
-                    <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
-                      <button
-                        type="button"
-                        onClick={() => onSelect('tools')}
-                        className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-[11px] font-extrabold transition cursor-pointer ${
-                          activeTab === 'tools'
-                            ? 'bg-brand-wash text-brand-deep ring-1 ring-brand/30'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                      >
-                        <Calculator className="h-3.5 w-3.5 text-brand shrink-0" />
-                        <span className="truncate">{tx('測試計算及工作紙', 'Calculators & Worksheets')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onOpenGovSpecs}
-                        className="flex w-full items-center gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/60 px-2.5 py-2 text-[11px] font-extrabold text-indigo-800 hover:bg-indigo-100/70 cursor-pointer"
-                      >
-                        <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                        <span className="truncate">{tx('政府部門驗收標準', 'HK Dept Test Specs')}</span>
-                      </button>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 space-y-2 text-[11px]">
-            <div className="flex items-center gap-1.5 font-extrabold text-slate-700"><Activity className="h-3.5 w-3.5 text-emerald-600" /> {tx('即時狀態', 'Live Status')}</div>
-            <button type="button" onClick={() => { setExpandedMap((p) => ({ ...p, equipment: true })); onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); }} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-brand cursor-pointer">
-              <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3 text-brand" /> {tx('借出中儀器', 'On-Site Gear')}</span>
-              <span className="font-mono font-extrabold text-brand-deep">{loanedCount}</span>
-            </button>
-            {calAlertCount > 0 && (
-              <button type="button" onClick={() => { setExpandedMap((p) => ({ ...p, equipment: true })); onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); }} className="flex w-full items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer">
-                <span className="flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-600" /> {tx('校準到期提示', 'Cal Due Alert')}</span>
-                <span className="font-mono font-extrabold">{calAlertCount}</span>
+                    {calAlertCount}
+                  </span>
+                )}
               </button>
-            )}
-            <button type="button" onClick={() => onSelect('calendar')} className="flex w-full items-center justify-between rounded-xl bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:text-violet-700 cursor-pointer">
-              <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3 text-violet-600" /> {tx('近期排程項目', 'Upcoming Events')}</span>
-              <span className="font-mono font-extrabold text-violet-700">{upcomingEventsCount}</span>
-            </button>
-          </div>
-        </div>
+            );
+          })}
+        </nav>
 
-        <div className="border-t border-slate-100 p-3 space-y-2 bg-slate-50/50">
-          <select aria-label="Switch Staff Account" value={user?.id || ''} onChange={(e) => switchAccount(e.target.value)} className="w-full truncate rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-800 outline-none focus:border-brand cursor-pointer">
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>{lang === 'en' ? acc.name.split(',')[1]?.trim() || acc.name : acc.zh || acc.name} · {acc.role.toUpperCase()}</option>
-            ))}
-          </select>
-          <button type="button" onClick={logout} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 cursor-pointer">
-            <LogOut className="h-3.5 w-3.5" /> {tx('鎖定並登出系統', 'Lock & Sign Out')}
-          </button>
-        </div>
+        <div className="px-5 py-3 text-[10px] font-semibold text-slate-400">HOKLAS 298</div>
       </aside>
-      <header className="sticky top-0 z-20 lg:pl-64 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2 px-2.5 py-2 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 shrink-0 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle Section Menu"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand cursor-pointer"
-            >
-              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
-            <img src="/labtech-logo.png" alt="LaBTECH" className="block h-6 sm:h-7 w-[92px] sm:w-[108px] min-w-[92px] shrink-0 object-contain object-left" />
-          </div>
+
+      <header className="sticky top-0 z-20 lg:pl-56 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2.5 px-3 py-2 sm:px-6 lg:px-8">
+          <img src="/labtech-logo.png" alt="LaBTECH" className="lg:hidden block h-6 w-[88px] min-w-[88px] shrink-0 object-contain object-left" />
 
           <button
             type="button"
             onClick={onOpenSearch}
-            className="flex flex-1 min-w-0 max-w-xl overflow-hidden items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/90 px-2.5 sm:px-3.5 py-2 text-left text-xs text-slate-500 hover:border-brand/50 hover:bg-white transition cursor-pointer"
+            className="flex flex-1 min-w-0 max-w-xl items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50/90 px-3 py-2 text-left text-xs text-slate-500 hover:border-brand/50 hover:bg-white transition cursor-pointer"
           >
-            <span className="flex items-center gap-1.5 min-w-0 w-full">
-              <Search className="h-4 w-4 text-brand shrink-0" />
-              <span className="truncate">{tx('搜尋 Site ID、器材編號、STP、計算工具、部門標準...', 'Search Site ID, Equipment, STP, Calculator, Spec...')}</span>
-            </span>
+            <Search className="h-4 w-4 text-slate-400 shrink-0" />
+            <span className="truncate">{tx('搵文件、儀器編號、地盤…', 'Search documents, equipment, sites…')}</span>
           </button>
 
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <div className="hidden md:block">
-              <PWAInstallButton />
-            </div>
-
-            <button
-              type="button"
-              onClick={onOpenDriveSync}
-              title={tx('Google Drive 批次上傳及雲端資料庫', 'Google Drive Batch Upload & Database')}
-              className={`inline-flex items-center gap-1 rounded-xl border px-2 sm:px-2.5 py-1.5 text-[11px] font-extrabold cursor-pointer ${
-                driveSyncStatus === 'synced'
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-brand hover:text-brand'
-              }`}
-            >
-              <Cloud className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden xl:inline">{tx('Drive / 批次上傳', 'Drive / Batch Upload')}</span>
-            </button>
-
-            <button type="button" onClick={toggleLang} className="inline-flex items-center gap-1 rounded-xl border border-brand/30 bg-brand-wash/70 px-2 sm:px-2.5 py-1.5 text-[11px] font-extrabold text-brand-deep hover:bg-brand-wash cursor-pointer">
-              <Globe className="h-3.5 w-3.5 shrink-0" />
-              <span>{lang === 'zh' ? 'EN' : '中'}</span>
-            </button>
-
-            <ThemeQuickToggle />
-            <DisplaySettingsMenu onResetDemo={resetAllDemoData} />
-          </div>
+          <AccountMenu onOpenDriveSync={onOpenDriveSync} />
         </div>
-        <div className="lg:hidden border-t border-slate-100 bg-slate-50/95 px-2 py-1.5">
-          <div className="grid grid-cols-5 gap-1 sm:flex sm:items-center sm:gap-1.5">
+
+        <div className="lg:hidden border-t border-slate-100 bg-white px-2 py-1.5">
+          <div className="grid grid-cols-5 gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -308,145 +218,18 @@ export const FieldNavShell: React.FC<{
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => { onSelect(tab.id); setMobileMenuOpen(false); }}
-                  className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 rounded-xl px-1 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
-                    active ? 'bg-brand text-white shadow-xs' : 'bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-100'
+                  onClick={() => onSelect(tab.id)}
+                  className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-bold whitespace-nowrap transition cursor-pointer ${
+                    active ? 'bg-brand-wash text-brand-deep' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <Icon className="h-4 w-4 shrink-0" />
                   <span className="leading-tight">{tab.mobileLabel}</span>
                 </button>
               );
             })}
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-3 shadow-lg space-y-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              const badge = getBadge(tab.id);
-              const expandable = hasSubMenu(tab.id);
-              const isOpen = !!expandedMap[tab.id];
-              return (
-                <React.Fragment key={tab.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleMainTabClick(tab.id);
-                      if (!expandable) setMobileMenuOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-extrabold cursor-pointer ${
-                      active ? 'bg-brand text-white' : 'bg-slate-50 text-slate-800 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2.5"><Icon className="h-4 w-4 shrink-0" />{tab.label}</span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      {badge && <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}>{badge}</span>}
-                      {expandable && <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
-                    </span>
-                  </button>
-                  {tab.id === 'equipment' && isOpen && (
-                    <div className="ml-4 grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('loans'); setMobileMenuOpen(false); }}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-extrabold cursor-pointer ${
-                          activeTab === 'equipment' && equipmentSubTab === 'loans'
-                            ? 'border-brand bg-brand-wash text-brand-deep'
-                            : 'border-slate-200 bg-white text-slate-700'
-                        }`}
-                      >
-                        <ArrowLeftRight className="h-3.5 w-3.5 text-brand" />
-                        <span>{tx('儀器借還', 'Loan & Checkout')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { onSelect('equipment'); onSelectEquipmentSubTab?.('calibration'); setMobileMenuOpen(false); }}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-extrabold cursor-pointer ${
-                          activeTab === 'equipment' && equipmentSubTab === 'calibration'
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                            : 'border-slate-200 bg-white text-slate-700'
-                        }`}
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>{tx('校準及證書', 'Calibration & Certs')}</span>
-                      </button>
-                    </div>
-                  )}
-                  {tab.id === 'stp' && isOpen && (
-                    <div className="ml-4 grid grid-cols-2 gap-1.5">
-                      {([
-                        ['stp', tx('STP 程序', 'STP'), FileText],
-                        ['worksheets', tx('工作紙範本', 'Worksheets'), FileSpreadsheet],
-                        ['order_forms', tx('測試委託單', 'Orders'), FolderOpen],
-                        ['daily_records', tx('每日紀錄表', 'Daily Log'), ClipboardList],
-                        ['reports', tx('正式報告範本', 'Reports'), Award],
-                        ['quality_forms', tx('品質及校準表', 'Quality'), BookCheck],
-                      ] as const).map(([subId, subLabel, SubIcon]) => (
-                        <button
-                          key={subId}
-                          type="button"
-                          onClick={() => { onSelect('stp'); onSelectDocVaultSubTab?.(subId); setMobileMenuOpen(false); }}
-                          className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-extrabold cursor-pointer ${
-                            activeTab === 'stp' && docVaultSubTab === subId
-                              ? 'border-brand bg-brand-wash text-brand-deep'
-                              : 'border-slate-200 bg-white text-slate-700'
-                          }`}
-                        >
-                          <SubIcon className="h-3.5 w-3.5 text-brand shrink-0" />
-                          <span className="truncate">{subLabel}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {tab.id === 'tools' && isOpen && (
-                    <div className="ml-4 grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => { onSelect('tools'); setMobileMenuOpen(false); }}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-extrabold text-slate-700 cursor-pointer"
-                      >
-                        <Calculator className="h-3.5 w-3.5 text-brand shrink-0" />
-                        <span>{tx('計算及工作紙', 'Calculators')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { onOpenGovSpecs(); setMobileMenuOpen(false); }}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[11px] font-extrabold text-indigo-800 cursor-pointer"
-                      >
-                        <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                        <span>{tx('部門驗收標準', 'Dept Specs')}</span>
-                      </button>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-            <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
-              <select aria-label="Switch Staff Account" value={user?.id || ''} onChange={(e) => switchAccount(e.target.value)} className="flex-1 truncate rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-800 outline-none">
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>{lang === 'en' ? acc.name.split(',')[1]?.trim() || acc.name : acc.zh || acc.name}</option>
-                ))}
-              </select>
-              <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
-                {(['md', 'lg', 'xl'] as FontScale[]).map((s, idx) => (
-                  <button key={s} type="button" onClick={() => setFontScale(s)} className={`rounded-lg px-2 py-1 text-[11px] font-extrabold cursor-pointer ${fontScale === s ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>
-                    {['A', 'A+', 'A++'][idx]}
-                  </button>
-                ))}
-              </div>
-              <button type="button" onClick={() => { resetAllDemoData(); setMobileMenuOpen(false); }} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 cursor-pointer" title={tx('重設示範資料', 'Reset')}>
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <ThemeSegmented />
-            <button type="button" onClick={() => { setViewMode('mobile'); setMobileMenuOpen(false); }} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 cursor-pointer">
-              <Smartphone className="h-3.5 w-3.5 text-brand" /> {tx('切換至手機版介面', 'Switch to Mobile Layout')}
-            </button>
-          </div>
-        )}
       </header>
     </>
   );

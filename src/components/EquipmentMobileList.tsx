@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePermissions } from '../permissions';
 import { EquipmentItem } from '../types';
 import { usePrefs } from '../prefs';
 import { getEquipmentCalStatus } from '../utils';
@@ -21,6 +22,7 @@ export const EquipmentMobileList: React.FC<EquipmentMobileListProps> = ({
   items, loanCountMap, onOpenDetail, onOpenCheckout, onOpenReturn, onOpenHistory, onPreviewCert, onQuickUpload,
 }) => {
   const { lang, tx } = usePrefs();
+  const canUploadCert = usePermissions().canManageEquipment;
   if (items.length === 0) {
     return (
       <div className="md:hidden rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-xs font-semibold text-slate-400">
@@ -88,7 +90,7 @@ export const EquipmentMobileList: React.FC<EquipmentMobileListProps> = ({
               <button type="button" onClick={() => onOpenDetail(eq.code)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-2.5 py-1.5 font-bold text-slate-700 cursor-pointer">
                 <FileCheck2 className="h-3.5 w-3.5 text-brand" /> {tx('詳情', 'Info')}
               </button>
-              <label title={tx('上傳 Cal Cert', 'Upload Cal Cert')} className="ml-auto inline-flex items-center rounded-xl border border-slate-200 p-1.5 text-slate-600 cursor-pointer">
+              <label hidden={!canUploadCert} title={tx('上傳 Cal Cert', 'Upload Cal Cert')} className="ml-auto inline-flex items-center rounded-xl border border-slate-200 p-1.5 text-slate-600 cursor-pointer">
                 <UploadCloud className="h-3.5 w-3.5" />
                 <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(ev) => onQuickUpload(eq, ev)} className="hidden" />
               </label>

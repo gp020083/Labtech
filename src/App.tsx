@@ -32,7 +32,7 @@ const FieldShellContent: React.FC = () => {
     if (typeof window !== 'undefined' && parseEquipmentCodeFromUrl(window.location.href)) {
       return 'equipment';
     }
-    return 'jobs';
+    return 'stp';
   });
   const [routedEquipmentCode, setRoutedEquipmentCode] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -93,6 +93,7 @@ const FieldShellContent: React.FC = () => {
           onOpenDriveSync={() => setDriveModalOpen(true)}
           toolJump={toolJump}
           onConsumeJump={() => setToolJump(null)}
+          onStartCalc={(tool) => { setToolJump({ mode: 'calc', tool }); setActiveTab('tools'); }}
         />
       ) : (
         <div className="min-h-screen flex flex-col">
@@ -107,7 +108,7 @@ const FieldShellContent: React.FC = () => {
             onOpenGovSpecs={() => { setToolJump({ mode: 'specs' }); setActiveTab('tools'); }}
             onOpenDriveSync={() => setDriveModalOpen(true)}
           />
-          <div className="lg:pl-64 flex-1 flex flex-col">
+          <div className="lg:pl-56 flex-1 flex flex-col">
             <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-5 pb-10 sm:px-6 lg:px-8">
               {activeTab === 'jobs' && <JobsPage onNavigateEquipment={() => { setEquipmentSubTab('loans'); setActiveTab('equipment'); }} />}
               {activeTab === 'equipment' && (
@@ -122,6 +123,7 @@ const FieldShellContent: React.FC = () => {
                   subSection={docVaultSubTab}
                   onChangeSubSection={setDocVaultSubTab}
                   onOpenDriveBatch={() => setDriveModalOpen(true)}
+                  onStartCalc={(tool) => { setToolJump({ mode: 'calc', tool }); setActiveTab('tools'); }}
                 />
               )}
               {activeTab === 'tools' && (

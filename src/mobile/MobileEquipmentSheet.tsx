@@ -82,9 +82,9 @@ export const MobileEquipmentSheet: React.FC<{
 
         <div className="grid grid-cols-2 gap-2">
           {item.currentLoan ? (
-            <button type="button" onClick={onOpenReturn} className="col-span-2 rounded-2xl bg-emerald-600 py-3 text-sm font-extrabold text-white shadow-xs cursor-pointer">📥 {tx('登記交還入倉 (Return)', 'Return to Store')}</button>
+            <button type="button" onClick={onOpenReturn} className="col-span-2 rounded-2xl bg-emerald-600 py-3 text-sm font-extrabold text-white shadow-xs cursor-pointer">📥 {tx('登記交還入倉', 'Return to Store')}</button>
           ) : (
-            <button type="button" onClick={onOpenCheckout} className="col-span-2 rounded-2xl bg-brand py-3 text-sm font-extrabold text-white shadow-xs cursor-pointer">📤 {tx('登記借出至地盤 (Checkout)', 'Checkout to Site')}</button>
+            <button type="button" onClick={onOpenCheckout} className="col-span-2 rounded-2xl bg-brand py-3 text-sm font-extrabold text-white shadow-xs cursor-pointer">📤 {tx('登記借出至地盤', 'Checkout to Site')}</button>
           )}
           {item.certUrl && (
             <>

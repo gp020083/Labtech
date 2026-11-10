@@ -120,7 +120,7 @@ export const DailyDispatchModal: React.FC<{
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
                 <CalendarDays className="h-4 w-4 text-brand" />
-                <span>{tx('選擇派工日期 (Dispatch Date)', 'Select Dispatch Date')}</span>
+                <span>{tx('選擇派工日期', 'Select Dispatch Date')}</span>
               </div>
               <input
                 type="date"

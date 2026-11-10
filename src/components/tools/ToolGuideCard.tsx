@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { usePermissions } from '../../permissions';
 import { useApp } from '../../store';
 import { usePrefs } from '../../prefs';
 import { FieldCalcPhoto, FieldCalcRecord, SharedDocAttachment } from '../../types';
@@ -56,6 +57,7 @@ export const ToolGuideCard: React.FC<{
 }> = ({ stpCode, standardRef, formulaText, steps, pitfalls, copyText, structuredData, onViewAllSpecs }) => {
   const { jobs, equipment, tests, calcRecords, saveCalcRecord, deleteCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
   const { lang, tx } = usePrefs();
+  const perms = usePermissions();
   const govSpec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
   const templateMeta = getOfficialTemplateMeta(stpCode, tests);
   const [selectedJobNo, setSelectedJobNo] = useState<string>(jobs[0]?.no || 'LT0002');
@@ -152,7 +154,7 @@ export const ToolGuideCard: React.FC<{
     pushToast(
       tx(`🎯 已派發新 Job Ref. No.: ${nextRef}`, `🎯 Assigned New Job Ref. No.: ${nextRef}`),
       tx(
-        `已登記至工程 ${selectedJobNo} (${job?.shortName || ''}) · 操作員: ${user?.name || 'Operator'}`,
+        `已登記至工程 ${selectedJobNo} · 操作員: ${user?.name || 'Operator'}`,
         `Logged under Project ${selectedJobNo} · Operator: ${user?.name || 'Operator'}`
       )
     );
@@ -290,7 +292,7 @@ export const ToolGuideCard: React.FC<{
           <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand text-white"><FileSpreadsheet className="h-4 w-4" /></span>
           <div>
             <h3 className="text-sm font-extrabold text-slate-900">
-              {tx('📋 Step 2 · 編號編配及報告生成 (Job Ref. & Worksheet / Report)', '📋 Step 2 · Job Ref. & Worksheet / Report Generator')}
+              {tx('📋 Step 2 · 編號編配及報告生成', '📋 Step 2 · Job Ref. & Worksheet / Report Generator')}
             </h3>
             <p className="text-[11px] text-slate-500">{tx(`測試標準：${standardRef}`, `Standard: ${standardRef}`)}</p>
           </div>
@@ -348,7 +350,7 @@ export const ToolGuideCard: React.FC<{
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('1. 選擇所屬工程 (Project / Site)', '1. Select Project / Site')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('1. 選擇所屬工程', '1. Select Project / Site')}</label>
             <select
               aria-label="Select Site Job No"
               value={selectedJobNo}
@@ -406,7 +408,7 @@ export const ToolGuideCard: React.FC<{
                 }}
                 className="sm:col-span-5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 font-bold text-slate-800 cursor-pointer"
               >
-                <option value="">{tx('📂 選擇歷史客戶 (Previous Clients)...', '📂 Select Previous Client...')}</option>
+                <option value="">{tx('📂 選擇歷史客戶...', '📂 Select Previous Client...')}</option>
                 {previousClients.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -448,7 +450,7 @@ export const ToolGuideCard: React.FC<{
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('5. 測試位置 / 樁號 (Location in Work)', '5. Test Location / Pile Ref')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('5. 測試位置 / 樁號', '5. Test Location / Pile Ref')}</label>
             <input
               value={locationNote}
               onChange={(e) => setLocationNote(e.target.value)}
@@ -560,7 +562,7 @@ export const ToolGuideCard: React.FC<{
             <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
               <span>
                 {tx(
-                  `📋 已派發 Job Ref. No. 及測試工程紀錄表 (${recentForStp.length})`,
+                  `📋 已派發 Job Ref. No. 及測試工程紀錄表`,
                   `📋 Dispatched Job Ref. No. & Project Registry (${recentForStp.length})`
                 )}
               </span>
@@ -624,7 +626,7 @@ export const ToolGuideCard: React.FC<{
                         );
                       }}
                       className="rounded p-1 text-rose-600 hover:bg-rose-50 cursor-pointer"
-                      title="Delete Record"
+                      title="Delete Record" hidden={!perms.canDeleteRecords}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -654,7 +656,7 @@ export const ToolGuideCard: React.FC<{
         >
           <span className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-brand" />
-            {tx('📐 展開公式、測試步驟及部門驗收標準 (Formula, Procedure & Dept Specs)', '📐 Formula, Procedure & HK Dept Specs')}
+            {tx('📐 展開公式、測試步驟及部門驗收標準', '📐 Formula, Procedure & HK Dept Specs')}
           </span>
           <ChevronDown className={`h-4 w-4 text-slate-500 transition ${showGuide ? 'rotate-180' : ''}`} />
         </button>
@@ -695,7 +697,7 @@ export const ToolGuideCard: React.FC<{
 
             <div className="grid grid-cols-1 gap-2.5">
               <div className="rounded-xl bg-white p-3 border border-slate-200/75 space-y-2">
-                <div className="flex items-center gap-1.5 font-extrabold text-slate-900"><Lightbulb className="h-4 w-4 text-amber-500" /> {tx('標準測試步驟 (Test Procedure)', 'Test Procedure Steps')}</div>
+                <div className="flex items-center gap-1.5 font-extrabold text-slate-900"><Lightbulb className="h-4 w-4 text-amber-500" /> {tx('標準測試步驟', 'Test Procedure Steps')}</div>
                 <ol className="space-y-1.5">
                   {steps.map((s, idx) => (
                     <li key={idx} className="flex items-start gap-2 leading-relaxed">

@@ -194,7 +194,7 @@ export const EquipmentQrModal: React.FC<{
               </h2>
               <p className="text-[11px] text-slate-300">
                 {tx(
-                  `全部 ${inUseEquipment.length} 件儀器 QR 均編碼直達專屬校準狀態網址 (/equipment/:code/cert)`,
+                  `全部 ${inUseEquipment.length} 件儀器 QR 均編碼直達專屬校準狀態網址`,
                   `All ${inUseEquipment.length} QR codes encode direct URL paths (/equipment/:code/cert) to detail & cal cert status pages`
                 )}
               </p>
@@ -250,7 +250,7 @@ export const EquipmentQrModal: React.FC<{
                     value={scanInput}
                     onChange={(e) => setScanInput(e.target.value)}
                     placeholder={tx(
-                      '掃描 QR 網址 (/equipment/LT-KM-04/cert) 或輸入器材編號／簡碼／S/N...',
+                      '掃描 QR 網址 或輸入器材編號／簡碼／S/N...',
                       'Scan QR URL (/equipment/LT-KM-04/cert) or type Equipment Code / S/N...'
                     )}
                     className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 py-2.5 text-sm font-mono font-bold text-slate-900 outline-none focus:border-brand"

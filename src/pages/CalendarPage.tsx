@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { STATIC_DATA } from '../data/initialState';
@@ -39,6 +40,7 @@ function buildMonthGrid(year: number, month: number) {
 export const CalendarPage: React.FC = () => {
   const { events, user, setStpPreviewCode, openPreviewDoc } = useApp();
   const { lang, tx } = usePrefs();
+  const perms = usePermissions();
   const [initY, initM] = useMemo(() => REF_TODAY.split('-').map(Number), []);
   const [year, setYear] = useState(initY || 2026);
   const [month, setMonth] = useState((initM || 11) - 1);
@@ -131,7 +133,7 @@ export const CalendarPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setDispatchOpen(true)}
+              onClick={() => setDispatchOpen(true)} hidden={!perms.canManageSchedule}
               className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100 cursor-pointer whitespace-nowrap"
             >
               <MessageSquareShare className="h-3.5 w-3.5 text-emerald-700" />
@@ -139,7 +141,7 @@ export const CalendarPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setModalState({ date: selectedDate })}
+              onClick={() => setModalState({ date: selectedDate })} hidden={!perms.canManageSchedule}
               className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer whitespace-nowrap"
             >
               <Plus className="h-3.5 w-3.5" /> {tx('新增排程', 'Add Event')}
@@ -322,7 +324,7 @@ export const CalendarPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setModalState({ date: selectedDate })}
+            onClick={() => setModalState({ date: selectedDate })} hidden={!perms.canManageSchedule}
             className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-slate-800 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -337,7 +339,7 @@ export const CalendarPage: React.FC = () => {
             </p>
             <button
               type="button"
-              onClick={() => setModalState({ date: selectedDate })}
+              onClick={() => setModalState({ date: selectedDate })} hidden={!perms.canManageSchedule}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50 cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -433,7 +435,7 @@ export const CalendarPage: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setModalState({ date: ev.date, ev })}
+                      onClick={() => setModalState({ date: ev.date, ev })} hidden={!perms.canManageSchedule}
                       className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
                     >
                       <Edit3 className="h-3.5 w-3.5" />

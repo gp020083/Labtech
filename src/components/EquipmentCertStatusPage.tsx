@@ -420,7 +420,7 @@ export const EquipmentCertStatusPage: React.FC<{
                   <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900">
                     <span>
                       {tx(
-                        `⚠️ 系統登記 Due Date (${item.due}) 與最新證書日期 (${item.certDue}) 不一致`,
+                        `⚠️ 系統登記 Due Date 與最新證書日期 不一致`,
                         `⚠️ Register Due Date (${item.due}) differs from latest Cal Cert (${item.certDue})`
                       )}
                     </span>
@@ -442,7 +442,7 @@ export const EquipmentCertStatusPage: React.FC<{
                   <div className="flex items-center gap-2">
                     <FileCheck2 className="h-4 w-4 text-emerald-700" />
                     <h2 className="text-sm font-extrabold text-slate-900">
-                      {tx('官方校準證書認證檔案 (Calibration Certification Record)', 'Official Calibration Certification Record')}
+                      {tx('官方校準證書認證檔案', 'Official Calibration Certification Record')}
                     </h2>
                   </div>
                   <span className="font-mono text-[11px] font-bold text-emerald-700">
@@ -608,7 +608,7 @@ export const EquipmentCertStatusPage: React.FC<{
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                      {tx('QR 編碼專屬路徑 (Encoded Path)', 'Encoded URL Path')}
+                      {tx('QR 編碼專屬路徑', 'Encoded URL Path')}
                     </span>
                     <span className="font-mono text-[10px] font-bold text-slate-500">
                       ISO QR v{qrResult.version} ({qrResult.moduleCount}×{qrResult.moduleCount})

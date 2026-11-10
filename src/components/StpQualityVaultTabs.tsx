@@ -461,9 +461,9 @@ export const QualityDocsVaultTable: React.FC<{
                   <th className="w-44 px-4 py-3">{tx('文件編號', 'Code')}</th>
                   <th className="px-3 py-3">
                     {mode === 'order_forms'
-                      ? tx('測試委託單範本名稱 (FQS08 Test Order Form)', 'FQS08 Test Order Form Title')
+                      ? tx('測試委託單範本名稱', 'FQS08 Test Order Form Title')
                       : mode === 'daily_records'
-                      ? tx('現場每日測試紀錄表名稱 (FQS09 Daily Site Record)', 'FQS09 Daily Site Record Title')
+                      ? tx('現場每日測試紀錄表名稱', 'FQS09 Daily Site Record Title')
                       : tx('品質體系／校準／MU 文件名稱', 'Quality / Calibration / MU Document Title')}
                   </th>
                   <th className="w-24 px-3 py-3">{tx('關聯項目', 'Test')}</th>
@@ -514,12 +514,12 @@ export const PersonnelMatrixTable: React.FC = () => {
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-emerald-700 shrink-0" />
           <div>
-            <div className="font-extrabold text-emerald-900">{tx('FQS49 授權簽署人 (Approved Signatories) 及合資格操作員矩陣', 'FQS49 Approved Signatories & Qualified Operators Matrix')}</div>
+            <div className="font-extrabold text-emerald-900">{tx('FQS49 授權簽署人 及合資格操作員矩陣', 'FQS49 Approved Signatories & Qualified Operators Matrix')}</div>
             <div className="mt-0.5 text-emerald-800">{tx('資料同步自品質文件 FQS49 (2026-03-23) 及 HOKLAS 298 認可範圍證書 (Issue 2026-07-24)。', 'Synced from FQS49 (23 Mar 2026) and HOKLAS 298 Scope of Accreditation (Issue 24 Jul 2026).')}</div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => openPreviewDoc({ title: tx('HOKLAS 298 認可範圍證書 (Scope of Accreditation)', 'HOKLAS 298 Scope of Accreditation'), url: '/server-docs/forms/HOKLAS298_Scope_of_Accreditation_260727.pdf' })} className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 font-extrabold text-white hover:bg-emerald-800 cursor-pointer">
+          <button type="button" onClick={() => openPreviewDoc({ title: tx('HOKLAS 298 認可範圍證書', 'HOKLAS 298 Scope of Accreditation'), url: '/server-docs/forms/HOKLAS298_Scope_of_Accreditation_260727.pdf' })} className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 font-extrabold text-white hover:bg-emerald-800 cursor-pointer">
             <Eye className="h-3.5 w-3.5" /> {tx('預覽 HOKLAS 298 證書', 'Preview HOKLAS 298')}
           </button>
           <button type="button" onClick={() => openPreviewDoc({ title: tx('FQS49 合資格操作員及授權簽署人名單', 'FQS49 List of Qualified Operators & Approved Signatories'), url: '/server-docs/forms/FQS49_List_of_Qualified_Operator_260323.pdf' })} className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-white px-3 py-2 font-bold text-emerald-900 hover:bg-emerald-50 cursor-pointer">
@@ -535,9 +535,9 @@ export const PersonnelMatrixTable: React.FC = () => {
               <th className="w-20 px-4 py-3">Code</th>
               <th className="w-60 px-3 py-3">{tx('測試項目及參考標準', 'Test Item & Standard')}</th>
               <th className="w-28 px-3 py-3">{tx('HOKLAS 狀態', 'Status')}</th>
-              <th className="px-3 py-3">{tx('HOKLAS 授權簽署人 (Approved Signatories)', 'Approved Signatories')}</th>
-              <th className="px-3 py-3">{tx('合資格操作員 (Qualified Operators)', 'Qualified Operators')}</th>
-              <th className="px-4 py-3">{tx('受訓中人員 (In Training)', 'Trainees')}</th>
+              <th className="px-3 py-3">{tx('HOKLAS 授權簽署人', 'Approved Signatories')}</th>
+              <th className="px-3 py-3">{tx('合資格操作員', 'Qualified Operators')}</th>
+              <th className="px-4 py-3">{tx('受訓中人員', 'Trainees')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

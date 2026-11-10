@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { usePermissions } from '../../permissions';
 import { useApp } from '../../store';
 import { usePrefs } from '../../prefs';
 import { FieldCalcRecord } from '../../types';
@@ -37,6 +38,7 @@ export const JobRefSummaryView: React.FC<{
     pushToast,
   } = useApp();
   const { tx } = usePrefs();
+  const perms = usePermissions();
 
   const [filterJobNo, setFilterJobNo] = useState<string>('ALL');
   const [filterStp, setFilterStp] = useState<string>('ALL');
@@ -182,7 +184,7 @@ export const JobRefSummaryView: React.FC<{
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs">
           <div className="text-[11px] font-bold text-slate-500">
-            {tx('涵蓋工程數量 (Projects)', 'Active Projects Logged')}
+            {tx('涵蓋工程數量', 'Active Projects Logged')}
           </div>
           <div className="mt-1 font-mono text-2xl font-black text-brand-deep">
             {uniqueProjectsCount}
@@ -215,11 +217,11 @@ export const JobRefSummaryView: React.FC<{
             </span>
             <div>
               <h3 className="text-sm font-extrabold text-slate-900">
-                {tx('🎯 快速編配新 Job Reference No. (Assign New Job Ref. No.)', '🎯 Quick Dispatch New Job Reference No.')}
+                {tx('🎯 快速編配新 Job Reference No.', '🎯 Quick Dispatch New Job Reference No.')}
               </h3>
               <p className="text-[11px] text-slate-500">
                 {tx(
-                  '選擇工程項目 (Project) 及測試方法 (Test Method)，即可為技術員編配獨立 Job Ref. No. 並登記至工程總表',
+                  '選擇工程項目 及測試方法，即可為技術員編配獨立 Job Ref. No. 並登記至工程總表',
                   'Select Project and Test Method to assign a sequential Job Reference No. and log it to the registry.'
                 )}
               </p>
@@ -340,7 +342,7 @@ export const JobRefSummaryView: React.FC<{
             <FolderKanban className="h-4 w-4 text-brand" />
             <h3 className="text-sm font-extrabold text-slate-900">
               {tx(
-                `📋 Job Ref. No. 總表及測試工程紀錄 (${filteredRecords.length} / ${calcRecords.length})`,
+                `📋 Job Ref. No. 總表及測試工程紀錄`,
                 `📋 Job Ref. No. Registry & Project Summary (${filteredRecords.length} / ${calcRecords.length})`
               )}
             </h3>
@@ -362,7 +364,7 @@ export const JobRefSummaryView: React.FC<{
                 onChange={(e) => setFilterJobNo(e.target.value)}
                 className="bg-transparent font-bold text-slate-700 outline-none"
               >
-                <option value="ALL">{tx('全部工程 (All Projects)', 'All Projects')}</option>
+                <option value="ALL">{tx('全部工程', 'All Projects')}</option>
                 {jobs.map((j) => (
                   <option key={j.no} value={j.no}>
                     {j.no} · {j.shortName}
@@ -375,7 +377,7 @@ export const JobRefSummaryView: React.FC<{
               onChange={(e) => setFilterStp(e.target.value)}
               className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-bold text-slate-700"
             >
-              <option value="ALL">{tx('全部測試 (All Tests)', 'All Tests')}</option>
+              <option value="ALL">{tx('全部測試', 'All Tests')}</option>
               <option value="FC">FC · Flow Cone</option>
               <option value="BL">BL · Grout Bleeding</option>
               <option value="KD">KD · Koden Test</option>
@@ -495,7 +497,7 @@ export const JobRefSummaryView: React.FC<{
                             type="button"
                             onClick={() => handleDeleteRecord(r)}
                             className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] font-extrabold text-rose-700 hover:bg-rose-100 cursor-pointer"
-                            title="Delete Job Ref. No. Record"
+                            title="Delete Job Ref. No. Record" hidden={!perms.canDeleteRecords}
                           >
                             <Trash2 className="h-3.5 w-3.5" /> {tx('刪除', 'Del')}
                           </button>

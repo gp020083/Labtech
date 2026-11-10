@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { downloadBlankTemplate } from '../utils';
@@ -11,6 +12,7 @@ import { X, FileCheck2, Download, AlertOctagon, Eye, Users } from 'lucide-react'
 export const StpPreviewModal: React.FC = () => {
   const { stpPreviewCode, setStpPreviewCode, tests, equipment, uploadStpCalCert, uploadStpDocFile, openPreviewDoc, pushToast } = useApp();
   const { lang, tx } = usePrefs();
+  const perms = usePermissions();
 
   React.useEffect(() => {
     if (!stpPreviewCode) return;
@@ -84,7 +86,7 @@ export const StpPreviewModal: React.FC = () => {
               </div>
               <p className="mt-0.5 text-[#8d2227]">
                 {tx(
-                  `本頁面僅提供最新生效之受控版本（${test.stpDocCode} ${test.stpRev}）。所有已作廢（Obsolete）舊版均已封存並鎖定下載，確保現場測試及 HOKLAS 評審採用正確受控文件。`,
+                  `本頁面僅提供最新生效之受控版本。所有已作廢舊版均已封存並鎖定下載，確保現場測試及 HOKLAS 評審採用正確受控文件。`,
                   `This page strictly serves the latest controlled revision (${test.stpDocCode} ${test.stpRev}). Superseded revisions are locked from download to prevent outdated STP usage on site.`
                 )}
               </p>
@@ -178,7 +180,7 @@ export const StpPreviewModal: React.FC = () => {
             </div>
           ) : null}
 
-          <SharedDocUploadBox
+          {perms.canManageDocs && (<SharedDocUploadBox
             title={tx(`📄 ${test.code} 受控 STP PDF / 附件`, `📄 ${test.code} Controlled STP PDF / Attachments`)}
             buttonLabel={tx('上傳 STP / 附件', 'Upload STP / File')}
             docTypeOptions={[
@@ -191,7 +193,7 @@ export const StpPreviewModal: React.FC = () => {
             docs={test.stpFiles || []}
             onUpload={(doc) => uploadStpDocFile(test.code, doc)}
             onPreviewToast={(fn) => pushToast(tx('已開啟 STP 文件', 'Opened STP file'), fn)}
-          />
+          />)}
 
           <div className="rounded-xl border border-line p-4 space-y-2.5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-ink-faint">
@@ -208,7 +210,7 @@ export const StpPreviewModal: React.FC = () => {
             </div>
           </div>
 
-          <CalCertUploadBox
+          {perms.canManageDocs && (<CalCertUploadBox
             title={tx(`📄 ${test.code} STP 關聯 Cal Cert 管理`, `📄 ${test.code} Linked Calibration Certificates`)}
             certs={test.calCerts || []}
             eqOptions={equipment
@@ -226,7 +228,7 @@ export const StpPreviewModal: React.FC = () => {
               })
             }
             onPreviewToast={(fn) => pushToast(tx('已開啟 Cal Cert', 'Opened Cal Cert'), fn)}
-          />
+          />)}
 
           <div className="rounded-xl border border-line overflow-hidden">
             <div className="border-b border-line bg-ground px-4 py-2.5 text-xs font-bold text-ink-soft">

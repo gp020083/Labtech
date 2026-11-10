@@ -69,7 +69,7 @@ export const EquipmentReturnModal: React.FC<{
         </div>
 
         <div>
-          <label className="font-semibold text-ink-soft">{tx('交還同事 (Returned By)', 'Returned By (Operator)')}</label>
+          <label className="font-semibold text-ink-soft">{tx('交還同事', 'Returned By (Operator)')}</label>
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm">
             {STATIC_DATA.staff.map((s: any) => (
               <option key={s.id} value={s.id}>{s.name} {lang === 'zh' && s.zh ? `(${s.zh})` : ''}</option>

@@ -178,7 +178,7 @@ export const LoginScreen: React.FC = () => {
             </h2>
             <p className="text-xs text-slate-500">
               {tx(
-                '支援以公司 Microsoft 365 電郵（@lab-tech.com.hk / @kinwing.com.hk）直接登入，或使用當值同事通行密碼登入。',
+                '支援以公司 Microsoft 365 電郵直接登入，或使用當值同事通行密碼登入。',
                 'Sign in with your company Microsoft 365 account (@lab-tech.com.hk / @kinwing.com.hk) or internal staff password.'
               )}
             </p>

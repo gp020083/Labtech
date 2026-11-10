@@ -26,10 +26,10 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
     loan.returnCondition === 'damaged' ? 'bad' : loan.returnCondition === 'needs_check' ? 'warn' : 'ok';
   const condLabel =
     loan.returnCondition === 'damaged'
-      ? tx('異常送修 (Damaged)', 'Damaged')
+      ? tx('異常送修', 'Damaged')
       : loan.returnCondition === 'needs_check'
-      ? tx('待檢查 (Needs Check)', 'Needs Check')
-      : tx('正常良好 (Good)', 'Good');
+      ? tx('待檢查', 'Needs Check')
+      : tx('正常良好', 'Good');
 
   return (
     <div
@@ -186,7 +186,7 @@ export const LoanDetailModal: React.FC<LoanDetailModalProps> = ({
               }}
               className="flex-1 sm:flex-initial rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 cursor-pointer"
             >
-              📥 {tx('立即登記交還 (Return)', 'Return Now')}
+              📥 {tx('立即登記交還', 'Return Now')}
             </button>
           )}
           <button

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { FieldCalcRecord, JobItem } from '../types';
@@ -26,6 +27,7 @@ export const JobDetailDrawer: React.FC<{
   onGoEquipment: () => void;
 }> = ({ job, onClose, onEdit, onGoEquipment }) => {
   const { equipment, calcRecords, deleteCalcRecord, pushToast } = useApp();
+  const perms = usePermissions();
   const { tx } = usePrefs();
   const [worksheetRec, setWorksheetRec] = useState<FieldCalcRecord | null>(null);
   const [detailRec, setDetailRec] = useState<FieldCalcRecord | null>(null);
@@ -124,7 +126,7 @@ export const JobDetailDrawer: React.FC<{
             </button>
             <button
               type="button"
-              onClick={() => { onClose(); onEdit(job); }}
+              onClick={() => { onClose(); onEdit(job); }} hidden={!perms.canManageSites}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
               <Edit3 className="h-3.5 w-3.5" /> {tx('修改', 'Edit')}
@@ -180,7 +182,7 @@ export const JobDetailDrawer: React.FC<{
               <span className="inline-flex items-center gap-1.5 font-extrabold text-slate-900">
                 <Calculator className="h-4 w-4 text-brand" />
                 {tx(
-                  `本工程 Job Ref. No. 及現場測試計算紀錄 (${filteredSiteCalcs.length} / ${siteCalcs.length})`,
+                  `本工程 Job Ref. No. 及現場測試計算紀錄`,
                   `Site Job Ref. No. & Field Test Records (${filteredSiteCalcs.length} / ${siteCalcs.length})`
                 )}
               </span>
@@ -372,7 +374,7 @@ export const JobDetailDrawer: React.FC<{
                           </button>
                           <button
                             type="button"
-                            onClick={() => deleteCalcRecord(rec.id)}
+                            onClick={() => deleteCalcRecord(rec.id)} hidden={!perms.canDeleteRecords}
                             title={tx('刪除此紀錄', 'Delete record')}
                             className="rounded-xl border border-slate-200 p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
                           >

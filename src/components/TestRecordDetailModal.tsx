@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { FieldCalcPhoto, FieldCalcRecord, JobItem, SharedDocAttachment } from '../types';
@@ -23,6 +24,7 @@ export const TestRecordDetailModal: React.FC<{
     deleteCalcRecord, openPreviewDoc, pushToast, user,
   } = useApp();
   const { tx } = usePrefs();
+  const perms = usePermissions();
   const [reportPreviewMode, setReportPreviewMode] = useState<'worksheet' | 'formal_report' | null>(null);
   const woInputRef = useRef<HTMLInputElement | null>(null);
   const wsInputRef = useRef<HTMLInputElement | null>(null);
@@ -159,7 +161,7 @@ export const TestRecordDetailModal: React.FC<{
           {/* Top 4-Card Metadata Summary */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5">
-              <div className="text-[11px] font-semibold text-slate-400">{tx('對應工程及地盤 (Project & Site)', 'Project & Site')}</div>
+              <div className="text-[11px] font-semibold text-slate-400">{tx('對應工程及地盤', 'Project & Site')}</div>
               <select
                 value={liveRecord.jobNo}
                 onChange={(e) => {
@@ -234,7 +236,7 @@ export const TestRecordDetailModal: React.FC<{
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3.5 py-2.5">
                 <div>
                   <div className="font-extrabold text-emerald-900">
-                    ✍️ {tx('現場見證簽署 (Site Witness Sign-off)', 'Site Witness Sign-off')}
+                    ✍️ {tx('現場見證簽署', 'Site Witness Sign-off')}
                   </div>
                   <div className="text-[11px] text-emerald-700">
                     {liveRecord.signedBy || 'Witness'} ({liveRecord.signedRole || 'RE / RSS'}) · {liveRecord.signedAt || liveRecord.testedAt}
@@ -267,7 +269,7 @@ export const TestRecordDetailModal: React.FC<{
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-slate-900">
-                      📄 {tx('工程測試委託單 (Works Order Form)', 'Works Order / Test Request Form')}
+                      📄 {tx('工程測試委託單', 'Works Order / Test Request Form')}
                     </span>
                     <Badge tone={liveRecord.worksOrderAttachment ? 'ok' : 'info'}>
                       {liveRecord.worksOrderAttachment
@@ -499,7 +501,7 @@ export const TestRecordDetailModal: React.FC<{
               deleteCalcRecord(liveRecord.id);
               onClose();
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-1.5 font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-1.5 font-bold text-rose-600 hover:bg-rose-50 cursor-pointer" hidden={!perms.canDeleteRecords}
           >
             <Trash2 className="h-3.5 w-3.5" /> {tx('刪除此測試紀錄', 'Delete Record')}
           </button>

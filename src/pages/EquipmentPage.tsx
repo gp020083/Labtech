@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { EquipmentItem } from '../types';
@@ -41,6 +42,7 @@ export const EquipmentPage: React.FC<{
 }> = ({ subSection = 'loans', onChangeSubSection, onOpenDriveBatch }) => {
   const { equipment, loans, events, uploadEquipmentCalCert, openPreviewDoc } = useApp();
   const { lang, tx } = usePrefs();
+  const perms = usePermissions();
   const [activeSub, setActiveSub] = useState<EquipmentSubSectionId>(subSection);
   const [loanView, setLoanView] = useState<'list' | 'history'>('list');
   const [calView, setCalView] = useState<'registry' | 'forecast'>('registry');
@@ -237,7 +239,7 @@ export const EquipmentPage: React.FC<{
               </button>
               <button
                 type="button"
-                onClick={() => setNewOpen(true)}
+                onClick={() => setNewOpen(true)} hidden={!perms.canManageEquipment}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3 py-2 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -263,7 +265,7 @@ export const EquipmentPage: React.FC<{
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={tx('搜尋儀器編號 (Code)、名稱、序號 (S/N)、借用人或工程地點...', 'Search Equipment Code, Name, S/N, Borrower or Site...')}
+                    placeholder={tx('搜尋儀器編號、名稱、序號 (S/N)、借用人或工程地點...', 'Search Equipment Code, Name, S/N, Borrower or Site...')}
                     className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
                   />
                 </div>
@@ -345,7 +347,7 @@ export const EquipmentPage: React.FC<{
                                 {shortBorrower} · <span className="font-mono text-slate-500">{tx('預計歸還', 'Due')} {eq.currentLoan.expectedReturn}</span>
                               </div>
                             ) : (
-                              <span className="text-[11px] text-slate-400">{tx('可隨時借出 (Available)', 'Available for Checkout')}</span>
+                              <span className="text-[11px] text-slate-400">{tx('可隨時借出', 'Available for Checkout')}</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -365,7 +367,7 @@ export const EquipmentPage: React.FC<{
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setQrModal({ mode: 'labels', code: eq.code })}
+                                onClick={() => setQrModal({ mode: 'labels', code: eq.code })} hidden={!perms.canManageEquipment}
                                 title={tx(`檢視／列印 ${eq.code} QR 標籤`, `View / Print ${eq.code} QR Label`)}
                                 className="inline-flex h-8 w-[34px] items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand cursor-pointer"
                               >
@@ -424,7 +426,7 @@ export const EquipmentPage: React.FC<{
               <button type="button" onClick={() => openPreviewDoc({ title: tx('FCC01 (2026) 每月內檢紀錄', 'FCC01 (2026) Monthly Verification Check Record'), url: '/server-docs/forms/FCC01_Monthly_Check_Record_2026.pdf', fileName: 'FCC01_Monthly_Check_Record_2026.pdf' })} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
                 <Eye className="h-3.5 w-3.5 shrink-0" /> <span>{tx('FCC01 內檢紀錄', 'FCC01')}</span>
               </button>
-              {onOpenDriveBatch && (
+              {perms.canManageDocs && onOpenDriveBatch && (
                 <button
                   type="button"
                   onClick={onOpenDriveBatch}
@@ -471,7 +473,7 @@ export const EquipmentPage: React.FC<{
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={tx('搜尋儀器編號 (Code)、名稱、序號 (S/N) 或校準證書...', 'Search Equipment Code, Name, S/N or Cal Cert...')}
+                    placeholder={tx('搜尋儀器編號、名稱、序號 (S/N) 或校準證書...', 'Search Equipment Code, Name, S/N or Cal Cert...')}
                     className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
                   />
                 </div>
@@ -490,8 +492,8 @@ export const EquipmentPage: React.FC<{
                     <tr className="whitespace-nowrap">
                       <th className="px-4 py-3">Code</th>
                       <th className="px-3 py-3">{tx('儀器名稱、型號及 S/N', 'Instrument, Model & S/N')}</th>
-                      <th className="px-3 py-3">{tx('校準狀態 (Calibration Status)', 'Calibration Status')}</th>
-                      <th className="px-3 py-3">{tx('校準到期日 (Cal Due Date)', 'Cal Due Date')}</th>
+                      <th className="px-3 py-3">{tx('校準狀態', 'Calibration Status')}</th>
+                      <th className="px-3 py-3">{tx('校準到期日', 'Cal Due Date')}</th>
                       <th className="px-3 py-3">{tx('內檢及驗證要求', 'Verification / Check')}</th>
                       <th className="px-3 py-3">{tx('最新校準證書檔案', 'Latest Cal Cert PDF')}</th>
                       <th className="px-4 py-3 text-right">{tx('證書及校準操作', 'Calibration Actions')}</th>
@@ -559,7 +561,7 @@ export const EquipmentPage: React.FC<{
                                   <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('無證書', 'No Cert')}
                                 </button>
                               )}
-                              <label title={tx('上傳新校準證書 PDF (支援多選)', 'Upload Calibration Cert PDF')} className="inline-flex h-8 w-[90px] items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
+                              <label hidden={!perms.canManageEquipment} title={tx('上傳新校準證書 PDF (支援多選)', 'Upload Calibration Cert PDF')} className="inline-flex h-8 w-[90px] items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white font-bold text-slate-700 hover:border-brand hover:text-brand cursor-pointer">
                                 <UploadCloud className="h-3.5 w-3.5 shrink-0" />
                                 <span>{tx('上傳證書', 'Upload')}</span>
                                 <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" onChange={(ev) => handleQuickCalUpload(eq, ev)} className="hidden" />

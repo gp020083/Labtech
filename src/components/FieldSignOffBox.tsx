@@ -138,7 +138,7 @@ export const FieldSignOffBox: React.FC<{
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[11px] font-bold text-slate-600">
-                {tx('現場簽收人姓名 (Witness Name)', 'Witness / Signer Name')}
+                {tx('現場簽收人姓名', 'Witness / Signer Name')}
               </label>
               <input
                 value={signedBy}
@@ -149,7 +149,7 @@ export const FieldSignOffBox: React.FC<{
             </div>
             <div>
               <label className="text-[11px] font-bold text-slate-600">
-                {tx('職稱／單位 (Role / Dept)', 'Role / Organization')}
+                {tx('職稱／單位', 'Role / Organization')}
               </label>
               <input
                 value={signedRole}

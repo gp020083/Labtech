@@ -731,7 +731,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                   </span>
                   <div>
                     <div className="text-xs font-extrabold tracking-wide text-white">
-                      {tx('📊 本次工作階段批次同步總覽 (Batch Summary Dashboard)', '📊 Session Batch Summary Dashboard')}
+                      {tx('📊 本次工作階段批次同步總覽', '📊 Session Batch Summary Dashboard')}
                     </div>
                     <div className="text-[10px] text-slate-400">
                       {tx(
@@ -756,7 +756,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                 {/* Card 1: Total Files Synced */}
                 <div className="rounded-xl border border-slate-700/80 bg-slate-800/75 px-3 py-2.5">
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                    <span>{tx('已同步檔案總數 (Files Synced)', 'Total Files Synced')}</span>
+                    <span>{tx('已同步檔案總數', 'Total Files Synced')}</span>
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                   </div>
                   <div className="mt-1 flex items-baseline gap-2">
@@ -780,7 +780,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                 {/* Card 2: Total Size Synced */}
                 <div className="rounded-xl border border-slate-700/80 bg-slate-800/75 px-3 py-2.5">
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                    <span>{tx('累計傳輸總容量 (Total Size)', 'Total Size Synced')}</span>
+                    <span>{tx('累計傳輸總容量', 'Total Size Synced')}</span>
                     <HardDrive className="h-3.5 w-3.5 text-blue-400" />
                   </div>
                   <div className="mt-1 flex items-baseline gap-2">
@@ -801,7 +801,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                 {/* Card 3: Duration of Current Session */}
                 <div className="rounded-xl border border-slate-700/80 bg-slate-800/75 px-3 py-2.5">
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
-                    <span>{tx('本次連線及傳輸耗時 (Duration)', 'Session & Sync Duration')}</span>
+                    <span>{tx('本次連線及傳輸耗時', 'Session & Sync Duration')}</span>
                     <Clock className="h-3.5 w-3.5 text-amber-400" />
                   </div>
                   <div className="mt-1 flex items-baseline gap-2">
@@ -828,8 +828,8 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-300">
                   <span className="font-bold">
                     {batchSummaryMetrics.totalFilesSynced > 0
-                      ? tx('已同步檔案類別分佈 (Synced Category Breakdown)', 'Synced Category Breakdown')
-                      : tx('佇列檔案類別預覽 (Queue Category Breakdown)', 'Queue Category Breakdown')}
+                      ? tx('已同步檔案類別分佈', 'Synced Category Breakdown')
+                      : tx('佇列檔案類別預覽', 'Queue Category Breakdown')}
                   </span>
                   <div className="flex flex-wrap items-center gap-3 font-mono">
                     <span className="inline-flex items-center gap-1">
@@ -987,7 +987,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                 } inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer shrink-0`}
               >
                 <FolderUp className="h-4 w-4" />
-                <span>{tx('選擇多個本機檔案 (Select Multiple Files)', 'Select Multiple Local Files')}</span>
+                <span>{tx('選擇多個本機檔案', 'Select Multiple Local Files')}</span>
                 <input
                   type="file"
                   multiple
@@ -1017,7 +1017,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                       </div>
                       <p className="mt-0.5 text-[11px] text-amber-900">
                         {tx(
-                          '請選擇對重複檔案的處理方式：「覆蓋 (Overwrite)」、「保留兩者 (Keep Both)」或「略過 (Skip)」。',
+                          '請選擇對重複檔案的處理方式：「覆蓋」、「保留兩者」或「略過」。',
                           'Choose how to handle existing files in the destination folder: Overwrite, Keep Both, or Skip.'
                         )}
                       </p>
@@ -1030,21 +1030,21 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                       onClick={() => setAllCollisionResolutions('overwrite')}
                       className="rounded-xl border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-extrabold text-amber-900 hover:bg-amber-100 cursor-pointer"
                     >
-                      {tx('🔄 全部覆蓋 (Overwrite All)', '🔄 Overwrite All')}
+                      {tx('🔄 全部覆蓋', '🔄 Overwrite All')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setAllCollisionResolutions('keep_both')}
                       className="rounded-xl border border-brand/40 bg-brand-wash px-2.5 py-1.5 text-[11px] font-extrabold text-brand-deep hover:bg-brand-wash/80 cursor-pointer"
                     >
-                      {tx('📑 全部保留兩者 (Keep Both All)', '📑 Keep Both All')}
+                      {tx('📑 全部保留兩者', '📑 Keep Both All')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setAllCollisionResolutions('skip')}
                       className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-extrabold text-slate-700 hover:bg-slate-100 cursor-pointer"
                     >
-                      {tx('⏭️ 全部略過 (Skip All)', '⏭️ Skip All')}
+                      {tx('⏭️ 全部略過', '⏭️ Skip All')}
                     </button>
                   </div>
                 </div>
@@ -1122,7 +1122,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     <span>
-                      {tx('確認選擇並立即上傳 (Confirm & Upload)', 'Confirm Resolution & Upload')}
+                      {tx('確認選擇並立即上傳', 'Confirm Resolution & Upload')}
                     </span>
                   </button>
                 </div>
@@ -1160,7 +1160,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                         className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-900 hover:bg-amber-100 cursor-pointer"
                       >
                         <RotateCcw className="h-3 w-3" />
-                        {tx('↩️ 復原上傳 (Undo)', '↩️ Undo Upload')}
+                        {tx('↩️ 復原上傳', '↩️ Undo Upload')}
                       </button>
                     )}
                     <button
@@ -1170,7 +1170,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                     >
                       <Ban className="h-3 w-3" />
                       {uploadingBatch
-                        ? tx('🛑 停止並清空 (Cancel Upload)', '🛑 Cancel Upload')
+                        ? tx('🛑 停止並清空', '🛑 Cancel Upload')
                         : tx('取消並清空 Clear All', 'Cancel & Clear All')}
                     </button>
                   </div>
@@ -1181,10 +1181,10 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                   <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-700">
                     <span>
                       {uploadingBatch
-                        ? tx('🚀 總體批次上傳進度 (Overall Batch Progress)...', '🚀 Overall Batch Upload Progress...')
+                        ? tx('🚀 總體批次上傳進度...', '🚀 Overall Batch Upload Progress...')
                         : batchFinished
-                        ? tx('✅ 總體批次處理完成 (All Files Processed)', '✅ Batch Processing Complete')
-                        : tx('📊 佇列總體準備狀態 (Overall Queue Progress)', '📊 Overall Queue Status')}
+                        ? tx('✅ 總體批次處理完成', '✅ Batch Processing Complete')
+                        : tx('📊 佇列總體準備狀態', '📊 Overall Queue Status')}
                     </span>
                     <span className="font-mono text-brand-deep">
                       {overallProgress.completedCount} / {overallProgress.totalCount} ({overallProgress.overallPercent}%)
@@ -1398,8 +1398,8 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
                       <Ban className="h-3.5 w-3.5" />
                       <span>
                         {uploadingBatch
-                          ? tx('🛑 停止上傳並清空 (Cancel Upload)', '🛑 Cancel Upload & Clear')
-                          : tx('🗑️ 取消並清空佇列 (Cancel)', '🗑️ Cancel & Clear Queue')}
+                          ? tx('🛑 停止上傳並清空', '🛑 Cancel Upload & Clear')
+                          : tx('🗑️ 取消並清空佇列', '🗑️ Cancel & Clear Queue')}
                       </span>
                     </button>
 
