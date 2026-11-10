@@ -9,6 +9,7 @@ interface TableSortState {
   colIdx: number;
   dir: 'asc' | 'desc';
   headerSig: string;
+  rowCount: number;
 }
 
 function getHeaderSignature(theadRow: HTMLTableRowElement): string {
@@ -21,7 +22,7 @@ function extractCellSortValue(row: HTMLTableRowElement, colIdx: number): { empty
   const cell = row.cells[colIdx];
   if (!cell) return { empty: true, dateKey: '', textKey: '' };
 
-  let raw = (cell.innerText || cell.textContent || '').replace(/\s+/g, ' ').trim();
+  let raw = (cell.textContent || '').replace(/\s+/g, ' ').trim();
   if (!raw) {
     const filledSvg = cell.querySelector('svg[fill="currentColor"]');
     if (filledSvg) raw = '1_pinned';
@@ -43,13 +44,18 @@ function extractCellSortValue(row: HTMLTableRowElement, colIdx: number): { empty
 
 function updateHeaderIndicators(theadRow: HTMLTableRowElement, activeCol: number, dir: 'asc' | 'desc' | null) {
   Array.from(theadRow.cells).forEach((th, idx) => {
-    th.setAttribute('data-sortable-th', 'true');
-    th.setAttribute('data-col-idx', String(idx));
+    if (th.getAttribute('data-sortable-th') !== 'true') {
+      th.setAttribute('data-sortable-th', 'true');
+      th.style.cursor = 'pointer';
+      th.style.userSelect = 'none';
+    }
+    const idxStr = String(idx);
+    if (th.getAttribute('data-col-idx') !== idxStr) {
+      th.setAttribute('data-col-idx', idxStr);
+    }
     if (!th.getAttribute('title')) {
       th.setAttribute('title', '點擊切換升序 / 降序排列 (Click to sort)');
     }
-    th.style.cursor = 'pointer';
-    th.style.userSelect = 'none';
 
     let badge = th.querySelector<HTMLElement>('[data-sort-indicator="true"]');
     if (!badge) {
@@ -65,14 +71,15 @@ function updateHeaderIndicators(theadRow: HTMLTableRowElement, activeCol: number
     }
 
     if (idx === activeCol && dir) {
-      th.setAttribute('data-sort-dir', dir);
-      badge.textContent = dir === 'asc' ? '↑' : '↓';
+      const nextChar = dir === 'asc' ? '↑' : '↓';
+      if (th.getAttribute('data-sort-dir') !== dir) th.setAttribute('data-sort-dir', dir);
+      if (badge.textContent !== nextChar) badge.textContent = nextChar;
       badge.style.opacity = '1';
       badge.style.color = '#2563eb';
       badge.style.fontWeight = '900';
     } else {
-      th.removeAttribute('data-sort-dir');
-      badge.textContent = '↕';
+      if (th.hasAttribute('data-sort-dir')) th.removeAttribute('data-sort-dir');
+      if (badge.textContent !== '↕') badge.textContent = '↕';
       badge.style.opacity = '0.38';
       badge.style.color = 'currentColor';
       badge.style.fontWeight = '700';
@@ -112,7 +119,7 @@ function sortTableBody(table: HTMLTableElement, colIdx: number, dir: 'asc' | 'de
     }
     const cmp = collator.compare(va.textKey, vb.textKey);
     if (cmp !== 0) return cmp * mult;
-    return (Number(a.getAttribute('data-orig-idx') || 0) - Number(b.getAttribute('data-orig-idx') || 0));
+    return Number(a.getAttribute('data-orig-idx') || 0) - Number(b.getAttribute('data-orig-idx') || 0);
   });
 
   sortableRows.forEach((r) => tbody.appendChild(r));
@@ -121,11 +128,18 @@ function sortTableBody(table: HTMLTableElement, colIdx: number, dir: 'asc' | 'de
 export const GlobalTableSortController: React.FC = () => {
   useEffect(() => {
     const stateMap = new WeakMap<HTMLTableElement, TableSortState>();
-    let isMutating = false;
+    let rafId: number | null = null;
+    let observer: MutationObserver | null = null;
+
+    const observeBody = () => {
+      if (!observer) return;
+      observer.takeRecords();
+      observer.observe(document.body, { childList: true, subtree: true });
+    };
 
     const enhanceAllTables = () => {
-      if (isMutating) return;
-      isMutating = true;
+      rafId = null;
+      observer?.disconnect();
       try {
         const tables = document.querySelectorAll<HTMLTableElement>('table');
         tables.forEach((table) => {
@@ -135,20 +149,29 @@ export const GlobalTableSortController: React.FC = () => {
           if (!theadRow || !tbody || theadRow.cells.length === 0) return;
 
           const sig = getHeaderSignature(theadRow);
+          const rowCount = tbody.rows.length;
           const prev = stateMap.get(table);
           if (prev && prev.headerSig !== sig) {
             stateMap.delete(table);
             updateHeaderIndicators(theadRow, -1, null);
           } else if (prev) {
             updateHeaderIndicators(theadRow, prev.colIdx, prev.dir);
-            sortTableBody(table, prev.colIdx, prev.dir);
+            if (prev.rowCount !== rowCount) {
+              sortTableBody(table, prev.colIdx, prev.dir);
+              prev.rowCount = tbody.rows.length;
+            }
           } else {
             updateHeaderIndicators(theadRow, -1, null);
           }
         });
       } finally {
-        isMutating = false;
+        observeBody();
       }
+    };
+
+    const scheduleEnhance = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(enhanceAllTables);
     };
 
     const handleClick = (e: MouseEvent) => {
@@ -159,7 +182,8 @@ export const GlobalTableSortController: React.FC = () => {
       const table = th.closest<HTMLTableElement>('table');
       if (!table || table.closest('.hoklas-sheet')) return;
       const theadRow = table.tHead?.rows[0];
-      if (!theadRow || th.parentElement !== theadRow) return;
+      const tbody = table.tBodies[0];
+      if (!theadRow || !tbody || th.parentElement !== theadRow) return;
 
       const colIdx = Array.from(theadRow.cells).indexOf(th);
       if (colIdx < 0) return;
@@ -168,23 +192,23 @@ export const GlobalTableSortController: React.FC = () => {
       const nextDir: 'asc' | 'desc' = prev && prev.colIdx === colIdx && prev.dir === 'asc' ? 'desc' : 'asc';
       const sig = getHeaderSignature(theadRow);
 
-      isMutating = true;
+      observer?.disconnect();
       try {
-        stateMap.set(table, { colIdx, dir: nextDir, headerSig: sig });
         updateHeaderIndicators(theadRow, colIdx, nextDir);
         sortTableBody(table, colIdx, nextDir);
+        stateMap.set(table, { colIdx, dir: nextDir, headerSig: sig, rowCount: tbody.rows.length });
       } finally {
-        isMutating = false;
+        observeBody();
       }
     };
 
+    observer = new MutationObserver(() => scheduleEnhance());
     enhanceAllTables();
-    const observer = new MutationObserver(() => enhanceAllTables());
-    observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener('click', handleClick, true);
 
     return () => {
-      observer.disconnect();
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      observer?.disconnect();
       document.removeEventListener('click', handleClick, true);
     };
   }, []);
