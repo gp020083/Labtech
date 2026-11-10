@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePrefs } from '../prefs';
 import { resolveDocLink, dataUrlToBlobUrl } from '../driveDocs';
 import { X, ExternalLink, Download, FileText, FileSpreadsheet, Cloud } from 'lucide-react';
@@ -15,6 +15,8 @@ export const DocumentPreviewModal: React.FC<{
   onClose: () => void;
 }> = ({ doc, onClose }) => {
   const { isMobileApp, tx } = usePrefs();
+  const [fetchedPdfBlobUrl, setFetchedPdfBlobUrl] = useState<string | null>(null);
+  const [pdfFetchFailed, setPdfFetchFailed] = useState(false);
 
   useEffect(() => {
     if (!doc) return;
@@ -37,10 +39,63 @@ export const DocumentPreviewModal: React.FC<{
     };
   }, [safeUrl, doc?.url]);
 
-  if (!doc) return null;
-  const resolved = resolveDocLink(doc.url.startsWith('data:') ? safeUrl : doc.url, doc.fileName || doc.title);
-  const openHref = resolved.openTabUrl || safeUrl;
-  const pdfDlHref = resolved.pdfCompanionUrl || (resolved.kind === 'pdf' ? safeUrl : undefined);
+  const resolved = useMemo(
+    () => (doc ? resolveDocLink(doc.url.startsWith('data:') ? safeUrl : doc.url, doc.fileName || doc.title) : null),
+    [doc, safeUrl]
+  );
+
+  // Fetch local /server-docs/*.pdf as a Blob URL so Service Worker NavigationRoute can never replace it with /index.html
+  useEffect(() => {
+    let revoked = false;
+    let currentBlobUrl: string | null = null;
+    setFetchedPdfBlobUrl(null);
+    setPdfFetchFailed(false);
+
+    const targetPdfUrl = resolved?.embedUrl || safeUrl;
+    if (!doc || !resolved || resolved.kind !== 'pdf' || !targetPdfUrl.startsWith('/server-docs/')) {
+      return;
+    }
+
+    fetch(targetPdfUrl, { cache: 'no-cache' })
+      .then(async (res) => {
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (!res.ok || ct.includes('text/html')) {
+          throw new Error('Not a valid PDF response');
+        }
+        const buf = await res.arrayBuffer();
+        // Verify %PDF magic header
+        const head = new Uint8Array(buf.slice(0, 5));
+        const magic = String.fromCharCode(...head);
+        if (!magic.startsWith('%PDF')) {
+          throw new Error('Missing %PDF header');
+        }
+        if (revoked) return;
+        const blob = new Blob([buf], { type: 'application/pdf' });
+        currentBlobUrl = URL.createObjectURL(blob);
+        setFetchedPdfBlobUrl(currentBlobUrl);
+      })
+      .catch(() => {
+        if (!revoked) setPdfFetchFailed(true);
+      });
+
+    return () => {
+      revoked = true;
+      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    };
+  }, [doc, resolved, safeUrl]);
+
+  if (!doc || !resolved) return null;
+
+  const driveEmbedFallback = resolved.driveId ? `https://drive.google.com/file/d/${resolved.driveId}/preview` : undefined;
+  const driveOpenFallback = resolved.driveId ? `https://drive.google.com/file/d/${resolved.driveId}/view` : undefined;
+
+  const openHref =
+    fetchedPdfBlobUrl ||
+    (pdfFetchFailed && driveOpenFallback ? driveOpenFallback : resolved.openTabUrl || safeUrl);
+  const pdfDlHref =
+    fetchedPdfBlobUrl ||
+    resolved.pdfCompanionUrl ||
+    (resolved.kind === 'pdf' ? safeUrl : undefined);
   const officeDlHref = resolved.officeCompanionUrl;
   const officeExt = resolved.officeExt;
   const isExcel = officeExt === 'XLSX' || officeExt === 'XLS';
@@ -49,11 +104,18 @@ export const DocumentPreviewModal: React.FC<{
     : tx(`下載 Word (.${(officeExt || 'doc').toLowerCase()})`, `Download Word (.${(officeExt || 'doc').toLowerCase()})`);
   const isBlobPdf = resolved.kind === 'pdf' && safeUrl.startsWith('blob:');
 
-  let embedSrc = resolved.embedUrl || safeUrl;
-  if (isMobileApp && resolved.kind === 'pdf' && !isBlobPdf && typeof window !== 'undefined' && embedSrc) {
-    const absUrl = embedSrc.startsWith('http') ? embedSrc : `${window.location.origin}${embedSrc.startsWith('/') ? '' : '/'}${embedSrc}`;
-    if (!absUrl.includes('localhost') && !absUrl.includes('127.0.0.1')) {
-      embedSrc = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absUrl)}`;
+  let embedSrc =
+    fetchedPdfBlobUrl ||
+    (pdfFetchFailed && driveEmbedFallback ? driveEmbedFallback : resolved.embedUrl || safeUrl);
+
+  if (isMobileApp && resolved.kind === 'pdf' && !isBlobPdf && !fetchedPdfBlobUrl && typeof window !== 'undefined' && embedSrc) {
+    if (driveEmbedFallback) {
+      embedSrc = driveEmbedFallback;
+    } else {
+      const absUrl = embedSrc.startsWith('http') ? embedSrc : `${window.location.origin}${embedSrc.startsWith('/') ? '' : '/'}${embedSrc}`;
+      if (!absUrl.includes('localhost') && !absUrl.includes('127.0.0.1')) {
+        embedSrc = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absUrl)}`;
+      }
     }
   }
 
@@ -94,7 +156,11 @@ export const DocumentPreviewModal: React.FC<{
               </a>
             )}
             {pdfDlHref && (
-              <a href={pdfDlHref} download className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep shadow-xs">
+              <a
+                href={pdfDlHref}
+                download={(doc.fileName || doc.title).replace(/\.(xlsx?|docx?)$/i, '') + (/\.(pdf)$/i.test(doc.fileName || doc.title) ? '' : '.pdf')}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep shadow-xs"
+              >
                 <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載 PDF (.pdf)', 'Download PDF (.pdf)')}
               </a>
             )}
@@ -113,7 +179,13 @@ export const DocumentPreviewModal: React.FC<{
 
         <div className="flex-1 bg-slate-100 relative overflow-auto">
           {(resolved.kind === 'drive' || (resolved.kind === 'pdf' && !(isMobileApp && isBlobPdf))) ? (
-            <iframe src={embedSrc} title={doc.title} className="h-full w-full border-0 bg-white" allow="autoplay" />
+            resolved.kind === 'pdf' && (resolved.embedUrl || safeUrl).startsWith('/server-docs/') && !fetchedPdfBlobUrl && !pdfFetchFailed ? (
+              <div className="flex h-full items-center justify-center text-xs font-bold text-slate-500">
+                {tx('正在載入 PDF 文件...', 'Loading PDF document...')}
+              </div>
+            ) : (
+              <iframe src={embedSrc} title={doc.title} className="h-full w-full border-0 bg-white" allow="autoplay" />
+            )
           ) : resolved.kind === 'image' ? (
             <div className="flex h-full w-full items-center justify-center p-3">
               <img src={embedSrc} alt={doc.title} className="max-h-full max-w-full rounded-lg object-contain shadow-md" />
