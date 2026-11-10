@@ -533,20 +533,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginWithMs = (email?: string) => {
     const clean = (email || 'benshih@lab-tech.com.hk').trim().toLowerCase();
+    const localPart = clean.split('@')[0];
     const matched =
-      MS_ACCOUNTS.find((a) => a.email.toLowerCase() === clean) ||
+      MS_ACCOUNTS.find(
+        (a) =>
+          a.email.toLowerCase() === clean ||
+          a.email.toLowerCase().split('@')[0] === localPart
+      ) ||
       ({
-        id: 'usr-custom',
-        staffId: 'BS',
+        id: `usr-ms-${localPart}`,
+        staffId: localPart.slice(0, 3).toUpperCase(),
         email: clean.includes('@') ? clean : `${clean}@lab-tech.com.hk`,
-        name: clean.split('@')[0],
+        name: localPart,
         zh: '同事',
         title: 'Operator / Staff',
         role: 'operator',
-        msTenant: 'Labtech Testing Ltd',
+        msTenant: clean.endsWith('@kinwing.com.hk') ? 'Kin Wing Engineering Co., Ltd.' : 'Labtech Testing Ltd',
       } satisfies UserAccount);
+    try {
+      localStorage.setItem(AUTH_KEY, 'unlocked');
+      localStorage.setItem(STORAGE_KEY + '_user', JSON.stringify(matched));
+    } catch {}
     setUser(matched);
-    pushToast('已登入系統', `${matched.zh || matched.name} (${matched.email})`);
+    pushToast('已透過公司 Microsoft 365 帳號登入', `${matched.zh || matched.name} · ${matched.email}`);
   };
 
   const switchAccount = (accountId: string) => {

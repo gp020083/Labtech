@@ -54,8 +54,15 @@ export const GlobalModalDragController: React.FC = () => {
     let moved = false;
     let suppressNextClickUntil = 0;
 
+    let rafId: number | null = null;
+    const observer = new MutationObserver(() => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        markDraggableModals();
+      });
+    });
     markDraggableModals();
-    const observer = new MutationObserver(() => markDraggableModals());
     observer.observe(document.body, { childList: true, subtree: true });
 
     const onPointerDown = (e: PointerEvent) => {
