@@ -91,108 +91,60 @@ export const StpPage: React.FC<{
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <div>
-          <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-extrabold text-emerald-800">
-            <ShieldCheck className="h-3.5 w-3.5" /> CONTROLLED WORKING DOCUMENTS &amp; TEMPLATES VAULT
-          </div>
-          <h1 className="sm:mt-2 text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900">
-            {tx('受控工作文件庫 (Controlled Working Documents Vault)', 'Controlled Working Documents & Templates Vault')}
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 sm:px-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
+            {tx('受控工作文件及範本庫', 'Controlled Working Documents & Templates')}
           </h1>
-          <p className="hidden sm:block mt-0.5 text-xs text-slate-500">
-            {tx(
-              '集中管理及預覽全部受控 STP 標準測試程序、測試工作紙範本 (Worksheet Templates)、委託單及品質表格 (Order Forms)、以及正式報告範本 (Formal Report Templates)。點擊任何一列即可直接打開預覽。',
-              'Centralized vault for Controlled STP Procedures, Worksheet Templates, Test Order & Quality Forms, and Formal Report Templates. Click any row to open preview.'
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onOpenDriveBatch && (
+              <button
+                type="button"
+                onClick={onOpenDriveBatch}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+              >
+                <UploadCloud className="h-3.5 w-3.5" /> {tx('批次上傳至 Drive', 'Batch Upload')}
+              </button>
             )}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {onOpenDriveBatch && (
             <button
               type="button"
-              onClick={onOpenDriveBatch}
-              className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-3.5 py-3 text-xs font-extrabold text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+              onClick={() => setNewOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer"
             >
-              <UploadCloud className="h-4 w-4" /> {tx('批次上傳工作文件至 Drive', 'Batch Upload to Drive')}
+              <Plus className="h-3.5 w-3.5" /> {tx('新增 STP 文件', 'Add STP')}
             </button>
-          )}
-          <button type="button" onClick={() => setNewOpen(true)} className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-4 py-3 text-xs font-extrabold text-white shadow-sm hover:bg-brand-deep cursor-pointer">
-            <Plus className="h-4 w-4" /> {tx('新增 / 上傳 STP 文件', 'Add / Upload STP')}
-          </button>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3">
-        <button
-          type="button"
-          onClick={() => handleSelectSection('stp')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'stp' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="leading-tight">{tx(`1. STP 程序 (${tests.length})`, `1. STP (${tests.length})`)}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectSection('worksheets')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'worksheets' ? 'bg-brand text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="leading-tight">{tx(`2. 工作紙範本 (${tests.length})`, `2. Worksheets (${tests.length})`)}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectSection('order_forms')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'order_forms' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <FolderOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="leading-tight">{tx(
-            `3. 測試委託單 (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`,
-            `3. Order Forms (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length})`
-          )}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectSection('daily_records')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'daily_records' ? 'bg-teal-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="leading-tight">{tx(
-            `4. 每日紀錄表 (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`,
-            `4. Daily Records (${SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length})`
-          )}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectSection('reports')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'reports' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="leading-tight">{tx(`5. 正式報告範本 (${tests.length})`, `5. Reports (${tests.length})`)}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSelectSection('quality_forms')}
-          className={`inline-flex items-center gap-1.5 rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
-            sectionTab === 'quality_forms' ? 'bg-indigo-700 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <BookCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-          <span className="leading-tight">{tx(
-            `6. 品質及校準表 (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`,
-            `6. Quality Forms (${SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length})`
-          )}</span>
-        </button>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2.5">
+          {([
+            ['stp', tx('STP 標準程序', 'STP Procedures'), tests.length, FileText],
+            ['worksheets', tx('工作紙範本', 'Worksheets'), tests.length, FileSpreadsheet],
+            ['order_forms', tx('測試委託單 FQS08', 'Order Forms FQS08'), SERVER_QUALITY_DOCS.filter((d) => d.category === 'order_form').length, FolderOpen],
+            ['daily_records', tx('每日紀錄表 FQS09', 'Daily Records FQS09'), SERVER_QUALITY_DOCS.filter((d) => d.category === 'daily_record').length, ClipboardList],
+            ['reports', tx('正式報告範本', 'Report Templates'), tests.length, Award],
+            ['quality_forms', tx('品質及校準表', 'Quality Forms'), SERVER_QUALITY_DOCS.filter((d) => d.category !== 'order_form' && d.category !== 'daily_record').length, BookCheck],
+          ] as const).map(([id, label, count, Icon]) => {
+            const active = sectionTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleSelectSection(id)}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 py-2 text-[11px] sm:text-xs font-extrabold transition cursor-pointer ${
+                  active
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="leading-tight truncate">{label}</span>
+                <span className="ml-0.5 font-mono opacity-80">{count}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       {sectionTab === 'worksheets' ? (
         <WorksheetTemplatesTable />

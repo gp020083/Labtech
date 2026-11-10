@@ -53,49 +53,79 @@ export const JobsPage: React.FC<{ onNavigateEquipment?: () => void }> = ({ onNav
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-slate-200/80 bg-white px-6 py-5 shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-wash px-3 py-1 text-[11px] font-extrabold text-brand-deep">
-            <MapPin className="h-3.5 w-3.5" /> {tx('工程及地盤總覽 · 支援整列點擊開啟詳情與測試紀錄', 'PROJECTS & SITES · FULL-ROW CLICK ENABLED')}
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 sm:px-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
+              {tx('工程及地盤目錄', 'Projects & Site Locations')}
+            </h1>
+            <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-extrabold text-slate-600 tabular-nums">
+              {filtered.length}
+            </span>
           </div>
-          <h1 className="mt-2 text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-            {tx('工程及地盤目錄', 'Projects & Site Locations')}
-          </h1>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {tx('點擊任何工程列即可檢視地盤定位、在場儀器及所屬 Job Ref. No. 現場測試紀錄與夾附文件夾。', 'Click any project row to inspect site map, on-site equipment, and bundled Job Ref. No. test records.')}
-          </p>
-        </div>
-        <button type="button" onClick={() => setEditingJob('new')} className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-brand px-4 py-3 text-xs font-extrabold text-white shadow-sm hover:bg-brand-deep cursor-pointer shrink-0">
-          <Plus className="h-4 w-4" /> {tx('新增工程地盤', 'Add New Site')}
-        </button>
-      </div>
 
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={tx('搜尋 LT0001 / 工程編號 / 地盤名稱...', 'Search Site ID / Project No. / Name...')}
-            className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold cursor-pointer ${
+                  viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <List className="h-3.5 w-3.5" /> {tx('列表', 'List')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold cursor-pointer ${
+                  viewMode === 'cards' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" /> {tx('地圖', 'Maps')}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setEditingJob('new')}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white shadow-xs hover:bg-brand-deep cursor-pointer shrink-0"
+            >
+              <Plus className="h-3.5 w-3.5" /> {tx('新增工程地盤', 'Add Site')}
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5">
-          <div className="flex items-center gap-1">
+
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 pt-2.5">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tx('搜尋 Site ID、工程編號、地盤名稱或地址...', 'Search Site ID, Project No., Name or Address...')}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-3.5 py-2 text-xs sm:text-sm outline-none focus:border-brand focus:bg-white transition"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
             {([
-              ['active', tx(`進行中 (${activeCount})`, `Active (${activeCount})`)],
-              ['with_eq', tx(`有儀器 (${withEqCount})`, `With Gear (${withEqCount})`)],
-              ['all', tx(`全部 (${jobs.length})`, `All (${jobs.length})`)],
-            ] as const).map(([k, label]) => (
-              <button key={k} type="button" onClick={() => setFilter(k)} className={`rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold whitespace-nowrap transition cursor-pointer ${filter === k ? 'bg-slate-900 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                {label}
+              ['active', tx('進行中', 'Active'), activeCount],
+              ['with_eq', tx('有儀器在場', 'With Gear'), withEqCount],
+              ['all', tx('全部', 'All'), jobs.length],
+            ] as const).map(([k, label, cnt]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setFilter(k)}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                  filter === k
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+                }`}
+              >
+                {label} <span className="ml-0.5 font-mono opacity-80">{cnt}</span>
               </button>
             ))}
-          </div>
-          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 shrink-0">
-            <button type="button" onClick={() => setViewMode('table')} className={`inline-flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs font-bold cursor-pointer ${viewMode === 'table' ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-900'}`}><List className="h-3.5 w-3.5" /> {tx('列表', 'List')}</button>
-            <button type="button" onClick={() => setViewMode('cards')} className={`inline-flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs font-bold cursor-pointer ${viewMode === 'cards' ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-900'}`}><LayoutGrid className="h-3.5 w-3.5" /> {tx('地圖', 'Maps')}</button>
           </div>
         </div>
       </div>

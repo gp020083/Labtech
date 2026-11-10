@@ -37,47 +37,43 @@ export const ToolsPage: React.FC<{
   ];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-[11px] font-extrabold text-amber-800">
-            <Calculator className="h-3.5 w-3.5" /> HOKLAS FIELD TEST · WORKSHEET &amp; REPORT GENERATOR
-          </div>
-          <h1 className="mt-2 text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
-            {tx('現場測試計算、編號管理及報告生成系統', 'Field Test Calculators, Job Ref. Registry & Report Generator')}
-          </h1>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {tx(
-              '左欄輸入測試讀數及樣本資料 (Sample Information)，右欄即時編配 Job Reference No. 並生成全英文官方 Excel (.xlsx)、工作紙 (Worksheet) 及正式報告 (Formal Report)。',
-              'Enter test readings and Sample Information on the left; assign Job Reference No. and generate 100% English Official Excel (.xlsx), Worksheet & Formal Report on the right.'
-            )}
-          </p>
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 sm:px-5 shadow-xs">
+        <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
+          {tx('現場測試計算及報告生成', 'Field Test Calculators & Report Generator')}
+        </h1>
 
-        <div className="inline-flex flex-wrap rounded-2xl bg-slate-100 p-1.5 ring-1 ring-slate-200/80 shrink-0 gap-1">
+        <div className="inline-flex flex-wrap rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/80 shrink-0 gap-1">
           <button
             type="button"
             onClick={() => setMode('calc')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${mode === 'calc' ? 'bg-white text-brand-deep shadow-xs ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+              mode === 'calc' ? 'bg-white text-brand-deep shadow-2xs ring-1 ring-slate-200/80' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <Calculator className="h-4 w-4" />
-            <span>{tx('1. 測試計算及工作紙 (Test & Worksheet)', '1. Test & Worksheet (6)')}</span>
+            <Calculator className="h-3.5 w-3.5" />
+            <span>{tx('測試計算及工作紙', 'Test & Worksheet')}</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('registry')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${mode === 'registry' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+              mode === 'registry' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <FolderKanban className="h-4 w-4" />
-            <span>{tx(`2. Job Ref. 編號總表 (${calcRecords.length})`, `2. Job Ref. Summary (${calcRecords.length})`)}</span>
+            <FolderKanban className="h-3.5 w-3.5" />
+            <span>{tx('Job Ref. 編號總表', 'Job Ref. Summary')}</span>
+            <span className="ml-0.5 font-mono opacity-80">{calcRecords.length}</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('specs')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition cursor-pointer ${mode === 'specs' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-extrabold transition cursor-pointer ${
+              mode === 'specs' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <Landmark className="h-4 w-4" />
-            <span>{tx('3. 政府部門驗收標準 (Gov Specs)', '3. HK Gov Specs (8)')}</span>
+            <Landmark className="h-3.5 w-3.5" />
+            <span>{tx('政府部門驗收標準', 'HK Gov Specs')}</span>
           </button>
         </div>
       </div>

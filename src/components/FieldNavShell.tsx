@@ -45,11 +45,11 @@ export const FieldNavShell: React.FC<{
   };
 
   const tabs: { id: FieldTabId; label: string; mobileLabel: string; icon: React.FC<{ className?: string }> }[] = [
-    { id: 'jobs', label: tx('工程項目管理 (Projects)', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
-    { id: 'equipment', label: tx('儀器管理 (Equipment)', 'Equipment'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
-    { id: 'stp', label: tx('受控工作文件庫 (Controlled Docs)', 'Controlled Docs'), mobileLabel: tx('工作文件', 'Docs'), icon: FileText },
-    { id: 'tools', label: tx('測試計算及報告 (Test & Report)', 'Test & Worksheet'), mobileLabel: tx('測試報告', 'Test/Report'), icon: Calculator },
-    { id: 'calendar', label: tx('測試排程日曆 (Schedule)', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
+    { id: 'jobs', label: tx('工程及地盤', 'Projects & Sites'), mobileLabel: tx('工程', 'Sites'), icon: MapPin },
+    { id: 'equipment', label: tx('儀器管理', 'Equipment'), mobileLabel: tx('儀器', 'Gear'), icon: Wrench },
+    { id: 'stp', label: tx('受控文件庫', 'Controlled Docs'), mobileLabel: tx('文件庫', 'Docs'), icon: FileText },
+    { id: 'tools', label: tx('測試計算及報告', 'Test & Report'), mobileLabel: tx('測試報告', 'Test/Report'), icon: Calculator },
+    { id: 'calendar', label: tx('排程日曆', 'Schedule'), mobileLabel: tx('日曆', 'Cal'), icon: CalendarDays },
   ];
 
   const activeJobsCount = jobs.filter((j) => j.status === 'active').length;
@@ -126,7 +126,7 @@ export const FieldNavShell: React.FC<{
                       >
                         <span className="flex items-center gap-2 truncate">
                           <ArrowLeftRight className="h-3.5 w-3.5 text-brand shrink-0" />
-                          <span className="truncate">{tx('1. 儀器借還管理', '1. Loan & Checkout')}</span>
+                          <span className="truncate">{tx('儀器借還', 'Loan & Checkout')}</span>
                         </span>
                         <span className="rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep border border-slate-200">
                           {loanedCount}/{inUseEq.length}
@@ -146,7 +146,7 @@ export const FieldNavShell: React.FC<{
                       >
                         <span className="flex items-center gap-2 truncate">
                           <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                          <span className="truncate">{tx('2. 校準及證書管理', '2. Calibration & Certs')}</span>
+                          <span className="truncate">{tx('校準及證書', 'Calibration & Certs')}</span>
                         </span>
                         {calAlertCount > 0 && (
                           <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-amber-800">
@@ -159,12 +159,12 @@ export const FieldNavShell: React.FC<{
                   {tab.id === 'stp' && isOpen && (
                     <div className="ml-4 pl-2.5 border-l-2 border-slate-200 space-y-1 py-0.5">
                       {([
-                        ['stp', tx('1. STP 標準測試程序', '1. STP Procedures'), FileText, 'text-slate-700'],
-                        ['worksheets', tx('2. 測試工作紙範本', '2. Worksheet Templates'), FileSpreadsheet, 'text-brand'],
-                        ['order_forms', tx('3. 測試委託單範本', '3. Order Forms (FQS08)'), FolderOpen, 'text-emerald-600'],
-                        ['daily_records', tx('4. 每日測試紀錄表', '4. Daily Records (FQS09)'), ClipboardList, 'text-indigo-600'],
-                        ['reports', tx('5. 正式報告範本', '5. Formal Report Templates'), Award, 'text-amber-600'],
-                        ['quality_forms', tx('6. 品質體系及校準表格', '6. Quality & Cal Forms'), BookCheck, 'text-teal-600'],
+                        ['stp', tx('STP 標準測試程序', 'STP Procedures'), FileText, 'text-slate-700'],
+                        ['worksheets', tx('測試工作紙範本', 'Worksheet Templates'), FileSpreadsheet, 'text-brand'],
+                        ['order_forms', tx('測試委託單 FQS08', 'Order Forms FQS08'), FolderOpen, 'text-emerald-600'],
+                        ['daily_records', tx('每日測試紀錄 FQS09', 'Daily Records FQS09'), ClipboardList, 'text-indigo-600'],
+                        ['reports', tx('正式報告範本', 'Formal Report Templates'), Award, 'text-amber-600'],
+                        ['quality_forms', tx('品質及校準表格', 'Quality & Cal Forms'), BookCheck, 'text-teal-600'],
                       ] as const).map(([subId, subLabel, SubIcon, iconCls]) => (
                         <button
                           key={subId}
@@ -199,7 +199,7 @@ export const FieldNavShell: React.FC<{
                         }`}
                       >
                         <Calculator className="h-3.5 w-3.5 text-brand shrink-0" />
-                        <span className="truncate">{tx('1. 測試計算及工作紙 (6)', '1. Calculators & Worksheets (6)')}</span>
+                        <span className="truncate">{tx('測試計算及工作紙', 'Calculators & Worksheets')}</span>
                       </button>
                       <button
                         type="button"
@@ -207,7 +207,7 @@ export const FieldNavShell: React.FC<{
                         className="flex w-full items-center gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/60 px-2.5 py-2 text-[11px] font-extrabold text-indigo-800 hover:bg-indigo-100/70 cursor-pointer"
                       >
                         <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                        <span className="truncate">{tx('2. CEDD · ASD · Housing · BD Spec', '2. HK Dept Test Specs')}</span>
+                        <span className="truncate">{tx('政府部門驗收標準', 'HK Dept Test Specs')}</span>
                       </button>
                     </div>
                   )}
@@ -359,7 +359,7 @@ export const FieldNavShell: React.FC<{
                         }`}
                       >
                         <ArrowLeftRight className="h-3.5 w-3.5 text-brand" />
-                        <span>{tx('1. 儀器借還管理', '1. Loan & Checkout')}</span>
+                        <span>{tx('儀器借還', 'Loan & Checkout')}</span>
                       </button>
                       <button
                         type="button"
@@ -371,19 +371,19 @@ export const FieldNavShell: React.FC<{
                         }`}
                       >
                         <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>{tx('2. 校準及證書管理', '2. Calibration & Certs')}</span>
+                        <span>{tx('校準及證書', 'Calibration & Certs')}</span>
                       </button>
                     </div>
                   )}
                   {tab.id === 'stp' && isOpen && (
                     <div className="ml-4 grid grid-cols-2 gap-1.5">
                       {([
-                        ['stp', tx('1. STP 程序', '1. STP'), FileText],
-                        ['worksheets', tx('2. 工作紙範本', '2. Worksheets'), FileSpreadsheet],
-                        ['order_forms', tx('3. 測試委託單', '3. Orders'), FolderOpen],
-                        ['daily_records', tx('4. 每日紀錄表', '4. Daily Log'), ClipboardList],
-                        ['reports', tx('5. 正式報告範本', '5. Reports'), Award],
-                        ['quality_forms', tx('6. 品質及校準表', '6. Quality'), BookCheck],
+                        ['stp', tx('STP 程序', 'STP'), FileText],
+                        ['worksheets', tx('工作紙範本', 'Worksheets'), FileSpreadsheet],
+                        ['order_forms', tx('測試委託單', 'Orders'), FolderOpen],
+                        ['daily_records', tx('每日紀錄表', 'Daily Log'), ClipboardList],
+                        ['reports', tx('正式報告範本', 'Reports'), Award],
+                        ['quality_forms', tx('品質及校準表', 'Quality'), BookCheck],
                       ] as const).map(([subId, subLabel, SubIcon]) => (
                         <button
                           key={subId}
@@ -409,7 +409,7 @@ export const FieldNavShell: React.FC<{
                         className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-extrabold text-slate-700 cursor-pointer"
                       >
                         <Calculator className="h-3.5 w-3.5 text-brand shrink-0" />
-                        <span>{tx('1. 計算及工作紙', '1. Calculators')}</span>
+                        <span>{tx('計算及工作紙', 'Calculators')}</span>
                       </button>
                       <button
                         type="button"
@@ -417,7 +417,7 @@ export const FieldNavShell: React.FC<{
                         className="flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[11px] font-extrabold text-indigo-800 cursor-pointer"
                       >
                         <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                        <span>{tx('2. 部門 Spec 標準', '2. Dept Specs')}</span>
+                        <span>{tx('部門驗收標準', 'Dept Specs')}</span>
                       </button>
                     </div>
                   )}

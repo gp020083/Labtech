@@ -12,6 +12,7 @@
 :root.dark .bg-amber-50\/80:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-amber-500) 12%, var(--d-surface)) 80%, transparent)}
 :root.dark .bg-amber-50\/90:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-amber-500) 12%, var(--d-surface)) 90%, transparent)}
 :root.dark .bg-blue-50:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-blue-500) 12%, var(--d-surface))}
+:root.dark .bg-blue-50\/80:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-blue-500) 12%, var(--d-surface)) 80%, transparent)}
 :root.dark .bg-brand-wash:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-brand) 20%, var(--d-surface))}
 :root.dark .bg-brand-wash\/20:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-brand) 20%, var(--d-surface)) 20%, transparent)}
 :root.dark .bg-brand-wash\/30:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-brand) 20%, var(--d-surface)) 30%, transparent)}
@@ -85,7 +86,6 @@
 :root.dark .bg-violet-100:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-violet-500) 18%, var(--d-surface))}
 :root.dark .bg-violet-50:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface))}
 :root.dark .bg-violet-50\/50:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 50%, transparent)}
-:root.dark .bg-violet-50\/55:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 55%, transparent)}
 :root.dark .bg-violet-50\/60:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 60%, transparent)}
 :root.dark .bg-violet-50\/80:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 80%, transparent)}
 :root.dark .bg-white:not(.light-island, .light-island *){background-color:var(--d-surface)}
@@ -99,6 +99,7 @@
 :root.dark .border-amber-200:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-amber-500) 30%, transparent)}
 :root.dark .border-amber-200\/80:not(.light-island, .light-island *){border-color:color-mix(in oklab, color-mix(in oklab, var(--color-amber-500) 30%, transparent) 80%, transparent)}
 :root.dark .border-amber-300:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-amber-500) 42%, transparent)}
+:root.dark .border-blue-200:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-blue-500) 30%, transparent)}
 :root.dark .border-emerald-200:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-emerald-500) 30%, transparent)}
 :root.dark .border-emerald-200\/70:not(.light-island, .light-island *){border-color:color-mix(in oklab, color-mix(in oklab, var(--color-emerald-500) 30%, transparent) 70%, transparent)}
 :root.dark .border-emerald-200\/80:not(.light-island, .light-island *){border-color:color-mix(in oklab, color-mix(in oklab, var(--color-emerald-500) 30%, transparent) 80%, transparent)}
@@ -176,13 +177,11 @@
 :root.dark .hover\:bg-slate-700:hover:not(.light-island, .light-island *){background-color:#46566f}
 :root.dark .hover\:bg-slate-800:hover:not(.light-island, .light-island *){background-color:#3b4a63}
 :root.dark .hover\:bg-slate-900:hover:not(.light-island, .light-island *){background-color:#2f3c54}
-:root.dark .hover\:bg-violet-100:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-violet-500) 18%, var(--d-surface))}
-:root.dark .hover\:bg-violet-50:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface))}
 :root.dark .hover\:bg-violet-50\/30:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 30%, transparent)}
-:root.dark .hover\:bg-violet-50\/40:hover:not(.light-island, .light-island *){background-color:color-mix(in oklab, color-mix(in oklab, var(--color-violet-500) 12%, var(--d-surface)) 40%, transparent)}
 :root.dark .hover\:bg-white:hover:not(.light-island, .light-island *){background-color:var(--d-surface)}
 :root.dark .hover\:border-indigo-300:hover:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-indigo-500) 42%, transparent)}
 :root.dark .hover\:border-rose-200:hover:not(.light-island, .light-island *){border-color:color-mix(in oklab, var(--color-rose-500) 30%, transparent)}
+:root.dark .hover\:border-slate-300:hover:not(.light-island, .light-island *){border-color:var(--d-line-strong)}
 :root.dark .hover\:text-brand:hover:not(.light-island, .light-island *){color:#7ea4ff}
 :root.dark .hover\:text-brand-deep:hover:not(.light-island, .light-island *){color:#9bb8ff}
 :root.dark .hover\:text-ink:hover:not(.light-island, .light-island *){color:var(--d-text)}
