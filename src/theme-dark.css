@@ -191,6 +191,7 @@
 :root.dark .hover\:text-slate-900:hover:not(.light-island, .light-island *){color:var(--d-text)}
 :root.dark .hover\:text-violet-700:hover:not(.light-island, .light-island *){color:var(--color-violet-300)}
 :root.dark .ring-emerald-300:not(.light-island, .light-island *){--tw-ring-color:color-mix(in oklab, var(--color-emerald-500) 42%, transparent)}
+:root.dark .ring-slate-200:not(.light-island, .light-island *){--tw-ring-color:var(--d-line)}
 :root.dark .ring-slate-200\/80:not(.light-island, .light-island *){--tw-ring-color:color-mix(in oklab, var(--d-line) 80%, transparent)}
 :root.dark .ring-slate-900:not(.light-island, .light-island *){--tw-ring-color:#6b7894}
 :root.dark .ring-slate-900\/15:not(.light-island, .light-island *){--tw-ring-color:color-mix(in oklab, #6b7894 15%, transparent)}

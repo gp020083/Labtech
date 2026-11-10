@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePrefs } from '../prefs';
 import { resolveDocLink, dataUrlToBlobUrl } from '../driveDocs';
+import { PdfCanvasViewer } from './PdfCanvasViewer';
 import { X, ExternalLink, Download, FileText, FileSpreadsheet, Cloud } from 'lucide-react';
 
 export interface PreviewDocRequest {
@@ -15,7 +16,6 @@ export const DocumentPreviewModal: React.FC<{
   onClose: () => void;
 }> = ({ doc, onClose }) => {
   const { isMobileApp, tx } = usePrefs();
-  const [fetchedPdfBlobUrl, setFetchedPdfBlobUrl] = useState<string | null>(null);
   const [pdfFetchFailed, setPdfFetchFailed] = useState(false);
 
   useEffect(() => {
@@ -44,80 +44,27 @@ export const DocumentPreviewModal: React.FC<{
     [doc, safeUrl]
   );
 
-  // Fetch local /server-docs/*.pdf as a Blob URL so Service Worker NavigationRoute can never replace it with /index.html
+  // PDFs are rendered in-app with PDF.js (see PdfCanvasViewer) so preview works even when the
+  // browser's built-in PDF reader is disabled by policy ("Always download PDF files") or on iOS.
   useEffect(() => {
-    let revoked = false;
-    let currentBlobUrl: string | null = null;
-    setFetchedPdfBlobUrl(null);
     setPdfFetchFailed(false);
-
-    const targetPdfUrl = resolved?.embedUrl || safeUrl;
-    if (!doc || !resolved || resolved.kind !== 'pdf' || !targetPdfUrl.startsWith('/server-docs/')) {
-      return;
-    }
-
-    fetch(targetPdfUrl, { cache: 'no-cache' })
-      .then(async (res) => {
-        const ct = (res.headers.get('content-type') || '').toLowerCase();
-        if (!res.ok || ct.includes('text/html')) {
-          throw new Error('Not a valid PDF response');
-        }
-        const buf = await res.arrayBuffer();
-        // Verify %PDF magic header
-        const head = new Uint8Array(buf.slice(0, 5));
-        const magic = String.fromCharCode(...head);
-        if (!magic.startsWith('%PDF')) {
-          throw new Error('Missing %PDF header');
-        }
-        if (revoked) return;
-        const blob = new Blob([buf], { type: 'application/pdf' });
-        currentBlobUrl = URL.createObjectURL(blob);
-        setFetchedPdfBlobUrl(currentBlobUrl);
-      })
-      .catch(() => {
-        if (!revoked) setPdfFetchFailed(true);
-      });
-
-    return () => {
-      revoked = true;
-      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-    };
-  }, [doc, resolved, safeUrl]);
+  }, [doc?.url]);
 
   if (!doc || !resolved) return null;
 
   const driveEmbedFallback = resolved.driveId ? `https://drive.google.com/file/d/${resolved.driveId}/preview` : undefined;
   const driveOpenFallback = resolved.driveId ? `https://drive.google.com/file/d/${resolved.driveId}/view` : undefined;
+  const pdfSrc = resolved.kind === 'pdf' ? resolved.embedUrl || safeUrl : '';
 
-  const openHref =
-    fetchedPdfBlobUrl ||
-    (pdfFetchFailed && driveOpenFallback ? driveOpenFallback : resolved.openTabUrl || safeUrl);
-  const pdfDlHref =
-    fetchedPdfBlobUrl ||
-    resolved.pdfCompanionUrl ||
-    (resolved.kind === 'pdf' ? safeUrl : undefined);
+  const openHref = pdfFetchFailed && driveOpenFallback ? driveOpenFallback : resolved.openTabUrl || safeUrl;
+  const pdfDlHref = resolved.pdfCompanionUrl || (resolved.kind === 'pdf' ? pdfSrc : undefined);
   const officeDlHref = resolved.officeCompanionUrl;
   const officeExt = resolved.officeExt;
   const isExcel = officeExt === 'XLSX' || officeExt === 'XLS';
   const officeLabel = isExcel
     ? tx(`下載 Excel (.${officeExt?.toLowerCase()})`, `Download Excel (.${officeExt?.toLowerCase()})`)
     : tx(`下載 Word (.${(officeExt || 'doc').toLowerCase()})`, `Download Word (.${(officeExt || 'doc').toLowerCase()})`);
-  const isBlobPdf = resolved.kind === 'pdf' && safeUrl.startsWith('blob:');
-
-  let embedSrc =
-    fetchedPdfBlobUrl ||
-    (pdfFetchFailed && driveEmbedFallback ? driveEmbedFallback : resolved.embedUrl || safeUrl);
-
-  if (isMobileApp && resolved.kind === 'pdf' && !isBlobPdf && !fetchedPdfBlobUrl && typeof window !== 'undefined' && embedSrc) {
-    if (driveEmbedFallback) {
-      embedSrc = driveEmbedFallback;
-    } else {
-      const absUrl = embedSrc.startsWith('http') ? embedSrc : `${window.location.origin}${embedSrc.startsWith('/') ? '' : '/'}${embedSrc}`;
-      if (!absUrl.includes('localhost') && !absUrl.includes('127.0.0.1')) {
-        embedSrc = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absUrl)}`;
-      }
-    }
-  }
+  const embedSrc = resolved.embedUrl || safeUrl;
 
   return (
     <div
@@ -177,15 +124,18 @@ export const DocumentPreviewModal: React.FC<{
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-100 relative overflow-auto">
-          {(resolved.kind === 'drive' || (resolved.kind === 'pdf' && !(isMobileApp && isBlobPdf))) ? (
-            resolved.kind === 'pdf' && (resolved.embedUrl || safeUrl).startsWith('/server-docs/') && !fetchedPdfBlobUrl && !pdfFetchFailed ? (
-              <div className="flex h-full items-center justify-center text-xs font-bold text-slate-500">
-                {tx('正在載入 PDF 文件...', 'Loading PDF document...')}
-              </div>
-            ) : (
-              <iframe src={embedSrc} title={doc.title} className="h-full w-full border-0 bg-white" allow="autoplay" />
-            )
+        <div className="flex-1 bg-slate-100 relative overflow-hidden">
+          {resolved.kind === 'pdf' && !(pdfFetchFailed && driveEmbedFallback) ? (
+            <PdfCanvasViewer
+              src={pdfSrc}
+              onError={() => setPdfFetchFailed(true)}
+              labels={{
+                loading: tx('正在載入 PDF 文件...', 'Loading PDF document...'),
+                failed: tx('無法預覽此 PDF，請使用上方按鈕下載', 'Unable to preview this PDF. Please use the download button above.'),
+              }}
+            />
+          ) : resolved.kind === 'drive' || resolved.kind === 'pdf' ? (
+            <iframe src={driveEmbedFallback || embedSrc} title={doc.title} className="h-full w-full border-0 bg-white" allow="autoplay" />
           ) : resolved.kind === 'image' ? (
             <div className="flex h-full w-full items-center justify-center p-3">
               <img src={embedSrc} alt={doc.title} className="max-h-full max-w-full rounded-lg object-contain shadow-md" />
@@ -194,9 +144,7 @@ export const DocumentPreviewModal: React.FC<{
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-xs text-slate-600">
               <FileText className="h-12 w-12 text-brand" />
               <div className="text-sm font-extrabold text-slate-900">
-                {isBlobPdf
-                  ? tx('請點擊下方按鈕以手機內建 PDF 閱讀器開啟檢視', 'Tap below to open PDF in native mobile viewer')
-                  : tx('請點擊上方或下方按鈕開啟／下載檔案檢視', 'Tap below to open or download this document')}
+                {tx('此檔案格式未能直接預覽，請下載後開啟', 'This file type cannot be previewed. Please download it.')}
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {openHref && (
