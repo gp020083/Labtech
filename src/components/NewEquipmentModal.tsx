@@ -1,9 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { X, Wrench } from 'lucide-react';
 
-const TAG_OPTIONS = ['KD', 'SO', 'FC', 'BL', 'PO', 'PLT'];
+const TAG_OPTIONS = ['KD', 'SO', 'FC', 'BL', 'PO', 'PLT', 'VC'];
+
+function isTopmostModalBackdrop(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const backdrops = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+  );
+  if (backdrops.length === 0) return true;
+  const getZ = (el: HTMLElement) => {
+    const attrZ = Number(el.dataset.modalZ);
+    if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+    const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+    return Number.isNaN(computed) ? 0 : computed;
+  };
+  let topEl = backdrops[0];
+  let topZ = getZ(topEl);
+  for (let i = 1; i < backdrops.length; i++) {
+    const z = getZ(backdrops[i]);
+    if (z >= topZ) {
+      topEl = backdrops[i];
+      topZ = z;
+    }
+  }
+  return topEl === target;
+}
 
 export const NewEquipmentModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { addEquipment } = useApp();
@@ -16,6 +41,22 @@ export const NewEquipmentModal: React.FC<{ onClose: () => void }> = ({ onClose }
   const [due, setDue] = useState('2027-06-30');
   const [store, setStore] = useState('Fanling Lab Store A');
   const [tags, setTags] = useState<string[]>(['KD']);
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isTopmostModalBackdrop(backdropRef.current)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [onClose]);
+
+  if (typeof document === 'undefined') return null;
 
   const toggleTag = (t: string) =>
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -44,8 +85,14 @@ export const NewEquipmentModal: React.FC<{ onClose: () => void }> = ({ onClose }
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+  return createPortal(
+    <div
+      ref={backdropRef}
+      data-modal-backdrop="true"
+      data-modal-z="76"
+      className="fixed inset-0 z-[76] flex items-center justify-center bg-slate-900/45 p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
       <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl space-y-3 text-xs">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2 font-extrabold text-sm text-slate-900"><Wrench className="h-4 w-4 text-brand" />{tx('新增測試 Equipment / Tool', 'Add Testing Equipment / Tool')}</div>
@@ -63,7 +110,7 @@ export const NewEquipmentModal: React.FC<{ onClose: () => void }> = ({ onClose }
         </div>
         <div><label className="font-bold text-slate-600">{tx('預設存放 Store 倉位', 'Default Store Location')}</label><input value={store} onChange={(e) => setStore(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-1.5 text-sm" /></div>
         <div>
-          <label className="font-bold text-slate-600">{tx('適用 Test Tags（可多選共用）', 'Shared Test Tags (Multi-select)')}</label>
+          <label className="font-bold text-slate-600">{tx('適用 Test Tags · 可多選共用', 'Shared Test Tags · Multi-select')}</label>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {TAG_OPTIONS.map((t) => (
               <button key={t} type="button" onClick={() => toggleTag(t)} className={`rounded-lg border px-2.5 py-1 font-mono font-bold cursor-pointer ${tags.includes(t) ? 'border-brand bg-brand-wash text-brand-deep' : 'border-slate-200 text-slate-500'}`}>{t}</button>
@@ -75,6 +122,7 @@ export const NewEquipmentModal: React.FC<{ onClose: () => void }> = ({ onClose }
           <button type="submit" className="rounded-xl bg-brand px-4 py-2 font-bold text-white hover:bg-brand-deep cursor-pointer">{tx('Save 新增器材', 'Create Equipment')}</button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body
   );
 };

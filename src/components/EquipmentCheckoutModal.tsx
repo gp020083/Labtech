@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { STATIC_DATA } from '../data/initialState';
@@ -6,6 +7,30 @@ import { EquipmentItem } from '../types';
 import { nowTimestamp, REF_TODAY } from '../utils';
 import { evaluateCheckoutCompliance } from '../utils/limsRules';
 import { X, PackagePlus, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
+
+function isTopmostModalBackdrop(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const backdrops = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+  );
+  if (backdrops.length === 0) return true;
+  const getZ = (el: HTMLElement) => {
+    const attrZ = Number(el.dataset.modalZ);
+    if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+    const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+    return Number.isNaN(computed) ? 0 : computed;
+  };
+  let topEl = backdrops[0];
+  let topZ = getZ(topEl);
+  for (let i = 1; i < backdrops.length; i++) {
+    const z = getZ(backdrops[i]);
+    if (z >= topZ) {
+      topEl = backdrops[i];
+      topZ = z;
+    }
+  }
+  return topEl === target;
+}
 
 function defaultExpectedReturnIso(baseIso: string): string {
   const [y, m, d] = baseIso.split('-').map(Number);
@@ -26,6 +51,7 @@ export const EquipmentCheckoutModal: React.FC<{
   const [expectedReturn, setExpectedReturn] = useState(() => defaultExpectedReturnIso(REF_TODAY));
   const [remark, setRemark] = useState('');
   const [overrideConfirmed, setOverrideConfirmed] = useState(false);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (item) {
@@ -36,12 +62,26 @@ export const EquipmentCheckoutModal: React.FC<{
     }
   }, [item]);
 
+  useEffect(() => {
+    if (!item) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isTopmostModalBackdrop(backdropRef.current)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [item, onClose]);
+
   const compliance = useMemo(
     () => (item ? evaluateCheckoutCompliance(item, expectedReturn, REF_TODAY) : null),
     [item, expectedReturn]
   );
 
-  if (!item || !compliance) return null;
+  if (!item || !compliance || typeof document === 'undefined') return null;
 
   const canSubmit = !compliance.requiresOverride || (overrideConfirmed && remark.trim().length >= 4);
 
@@ -52,7 +92,7 @@ export const EquipmentCheckoutModal: React.FC<{
     const job = jobs.find((j) => j.no === jobNo);
     const siteLocation =
       customSite.trim() ||
-      (job ? `${job.shortName} (${job.companyProjNo})` : '地盤現場');
+      (job ? `${job.shortName} · ${job.companyProjNo}` : '地盤現場');
 
     const finalRemark = compliance.requiresOverride
       ? `[HOKLAS Override] ${remark.trim()}`
@@ -71,9 +111,12 @@ export const EquipmentCheckoutModal: React.FC<{
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      ref={backdropRef}
+      data-modal-backdrop="true"
+      data-modal-z="76"
+      className="fixed inset-0 z-[76] flex items-center justify-center bg-black/40 p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <form
@@ -89,7 +132,7 @@ export const EquipmentCheckoutModal: React.FC<{
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="text-ink-soft">{item.name}（S/N: {item.serial}）</div>
+        <div className="text-ink-soft">{item.name} · S/N {item.serial}</div>
 
         <div
           className={`rounded-xl border p-3 space-y-1.5 ${
@@ -198,7 +241,8 @@ export const EquipmentCheckoutModal: React.FC<{
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body
   );
 };
 

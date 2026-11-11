@@ -654,7 +654,7 @@ export const JobRefSummaryView: React.FC<{
                             <th className="px-3 py-2.5">{tx('客戶及工程項目', 'Customer & Project')}</th>
                             <th className="px-3 py-2.5">{tx('樁號 / 樣本編號', 'Pile / Sample No. & Site')}</th>
                             <th className="px-3 py-2.5">{tx('操作員及測試日期', 'Operator & Date')}</th>
-                            <th className="px-3.5 py-2.5 text-right">{tx('詳情及 PDF 報告', 'Dossier & PDF Actions')}</th>
+                            <th className="px-3.5 py-2.5 text-right">{tx('結果及 PDF 報告', 'Dossier & PDF Actions')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -737,7 +737,7 @@ export const JobRefSummaryView: React.FC<{
                                       className="inline-flex items-center gap-1 rounded-xl bg-brand px-2.5 py-1.5 text-[11px] font-extrabold text-white hover:bg-brand-deep cursor-pointer"
                                     >
                                       <FolderOpen className="h-3.5 w-3.5" />
-                                      {tx('詳情及附件', 'Dossier')}
+                                      {tx('結果及附件', 'Dossier')}
                                     </button>
                                     <button
                                       type="button"
@@ -839,7 +839,7 @@ export const JobRefSummaryView: React.FC<{
                                 className="flex-1 min-w-[92px] inline-flex items-center justify-center gap-1 rounded-xl bg-brand px-2.5 py-2 text-[11px] font-extrabold text-white"
                               >
                                 <FolderOpen className="h-3.5 w-3.5" />
-                                {tx('詳情及附件', 'Dossier')}
+                                {tx('結果及附件', 'Dossier')}
                               </button>
                               <button
                                 type="button"

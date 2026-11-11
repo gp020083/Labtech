@@ -54,7 +54,7 @@ export const ToolGuideCard: React.FC<{
   structuredData?: StructuredCalcPayload;
   onViewAllSpecs?: () => void;
 }> = ({ stpCode, standardRef, formulaText, steps, pitfalls, copyText, structuredData, onViewAllSpecs }) => {
-  const { jobs, equipment, tests, calcRecords, saveCalcRecord, deleteCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
+  const { jobs, tests, calcRecords, saveCalcRecord, deleteCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
   const { lang, tx } = usePrefs();
   const perms = usePermissions();
   const govSpec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
@@ -147,7 +147,7 @@ export const ToolGuideCard: React.FC<{
       sampleId: effectiveSampleId,
       projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
-      title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
+      title: `${stpCode} · ${standardRef.split('·')[0].trim()}`,
       locationNote: locationNote.trim() || undefined,
       summary: copyText,
       pass: passStatus,
@@ -342,14 +342,14 @@ export const ToolGuideCard: React.FC<{
             >
               {jobs.map((j) => (
                 <option key={j.no} value={j.no}>
-                  {j.no} · {j.companyProjNo} ({j.shortName})
+                  {j.no} · {j.companyProjNo} · {j.shortName}
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-              <span>{tx('2. Job Reference No. (每次測試編號)', '2. Job Reference No. (Assigned per Test)')}</span>
+              <span>{tx('2. Job Reference No. · 每次測試編號', '2. Job Reference No. · Assigned per Test')}</span>
               <button
                 type="button"
                 onClick={handleDispatchNewRefNo}
@@ -368,14 +368,14 @@ export const ToolGuideCard: React.FC<{
           </div>
           <div className="sm:col-span-2">
             <label className="text-[11px] font-bold text-slate-600">
-              {tx('3. Client 客戶名稱 (手動輸入或從下拉選單選擇歷史客戶)', '3. Client Name (Manual Input or Select Previous Client)')}
+              {tx('3. Client 客戶名稱 · 手動輸入或選取歷史客戶', '3. Client Name · Enter or Select Previous Client')}
             </label>
             <div className="mt-1 grid grid-cols-1 sm:grid-cols-12 gap-1.5">
               <input
                 list={`prev-clients-${stpCode}`}
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder="Type Client Name manually (e.g. CEDD / Gammon Construction Ltd.)"
+                placeholder="e.g. CEDD / Gammon Construction Limited"
                 className="sm:col-span-7 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-900 focus:border-brand outline-none"
               />
               <datalist id={`prev-clients-${stpCode}`}>
@@ -402,11 +402,11 @@ export const ToolGuideCard: React.FC<{
           </div>
           <div>
             <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-              <span>{tx('4. Works Order No. (手動輸入)', '4. Works Order No. (Manual Input)')}</span>
+              <span>{tx('4. Works Order No. · 委託單編號', '4. Works Order No.')}</span>
               <input
                 ref={woFileInputRef}
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                accept=".pdf,.png,.jpg,.jpeg"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -421,14 +421,14 @@ export const ToolGuideCard: React.FC<{
               >
                 <Upload className="h-2.5 w-2.5" />
                 {worksOrderAttachment
-                  ? tx(`✓ 已夾附 (${worksOrderAttachment.fileName.slice(0, 12)}...)`, '✓ Attached')
-                  : tx('📎 夾附委託單檔案', '📎 Attach Order Form')}
+                  ? tx(`✓ 已夾附 ${worksOrderAttachment.fileName.slice(0, 14)}`, '✓ Attached')
+                  : tx('📎 夾附委託單 PDF', '📎 Attach Order PDF')}
               </button>
             </label>
             <input
               value={worksOrderNo}
               onChange={(e) => setWorksOrderNo(e.target.value)}
-              placeholder="e.g. WO/2026/11/018 (Manual Input)"
+              placeholder="e.g. WO/2026/11/018"
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
@@ -442,20 +442,20 @@ export const ToolGuideCard: React.FC<{
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('6. Batch No. (手動輸入)', '6. Batch No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('6. Batch No. · 批號', '6. Batch No.')}</label>
             <input
               value={batchNo}
               onChange={(e) => setBatchNo(e.target.value)}
-              placeholder="Manual Batch No. (e.g. B-01)"
+              placeholder="e.g. B-01"
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-slate-600">{tx('7. Sample Identification No. (手動輸入)', '7. Sample Identification No. (Manual Input)')}</label>
+            <label className="text-[11px] font-bold text-slate-600">{tx('7. Sample Identification No. · 樣本編號', '7. Sample Identification No.')}</label>
             <input
               value={sampleId}
               onChange={(e) => setSampleId(e.target.value)}
-              placeholder="Manual Sample ID (e.g. GS-01)"
+              placeholder="e.g. GS-01"
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-slate-900 focus:border-brand outline-none"
             />
           </div>
@@ -485,58 +485,43 @@ export const ToolGuideCard: React.FC<{
           />
         )}
 
-        {/* Primary Action Row: Save to Site + Gen Completed Excel (.xls) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+        {/* Action Row: Explicit Save + Preview A4 Worksheet PDF + Preview A4 Formal Report PDF + CSV */}
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">
           <button
             type="button"
             onClick={handleSaveToJob}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2.5 font-extrabold text-white hover:bg-brand-deep transition cursor-pointer whitespace-nowrap"
+            className="flex-1 min-w-[165px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2.5 font-extrabold text-white hover:bg-brand-deep transition cursor-pointer whitespace-nowrap"
           >
-            {justSavedId ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+            {justSavedId ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Save className="h-4 w-4 shrink-0" />}
             {justSavedId
-              ? tx(`已存入 ${selectedJobNo} (${justSavedId})`, `Saved to ${selectedJobNo} (${justSavedId})`)
+              ? tx(`已存入 ${selectedJobNo} · ${justSavedId}`, `Saved to ${selectedJobNo} · ${justSavedId}`)
               : tx(`💾 儲存至地盤 ${selectedJobNo}`, `💾 Save to Site ${selectedJobNo}`)}
           </button>
           <button
             type="button"
-            onClick={handleDirectGenExcel}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2.5 font-extrabold text-white hover:bg-emerald-700 transition cursor-pointer whitespace-nowrap shadow-xs"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            {tx(
-              `📊 一鍵匯出官方 Excel (.xlsx · ${templateMeta.templateFileCode.split('_')[0]})`,
-              `📊 Gen Official Excel (.xlsx · ${templateMeta.templateFileCode.split('_')[0]})`
-            )}
-          </button>
-        </div>
-
-        {/* Secondary Action Row: Completed Worksheet (A4) + Formal Report (A4) + CSV */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
             onClick={() => handleOpenPreview('worksheet')}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 font-extrabold text-white hover:bg-slate-800 transition cursor-pointer whitespace-nowrap"
+            className="flex-1 min-w-[148px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2.5 font-extrabold text-white hover:bg-slate-800 transition cursor-pointer whitespace-nowrap"
           >
-            <Printer className="h-3.5 w-3.5" />
-            {tx(
-              `📋 官方工作紙 (${templateMeta.templateFileCode.split('_')[0]})`,
-              `📋 Official Worksheet (${templateMeta.templateFileCode.split('_')[0]})`
-            )}
+            <Printer className="h-3.5 w-3.5 shrink-0" />
+            {tx('📋 官方工作紙 A4', '📋 Official Worksheet A4')}
           </button>
           <button
             type="button"
             onClick={() => handleOpenPreview('formal_report')}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/80 bg-amber-50 px-3 py-2 font-extrabold text-amber-950 hover:bg-amber-100 transition cursor-pointer whitespace-nowrap"
+            className="flex-1 min-w-[165px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/80 bg-amber-50 px-3 py-2.5 font-extrabold text-amber-950 hover:bg-amber-100 transition cursor-pointer whitespace-nowrap"
           >
-            <Award className="h-3.5 w-3.5 text-amber-700" />
-            {tx('📜 HOKLAS 正式報告 (A4)', '📜 Formal Report (A4)')}
+            <Award className="h-3.5 w-3.5 shrink-0 text-amber-700" />
+            {tx(
+              isHoklasAccredited ? '📜 HOKLAS 正式報告 A4' : '📜 正式報告 A4',
+              isHoklasAccredited ? '📜 HOKLAS Report A4' : '📜 Formal Report A4'
+            )}
           </button>
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 font-extrabold text-slate-700 hover:border-brand hover:text-brand transition cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-extrabold text-slate-700 hover:border-brand hover:text-brand transition cursor-pointer whitespace-nowrap"
           >
-            <Download className="h-3.5 w-3.5" /> CSV
+            <Download className="h-3.5 w-3.5 shrink-0" /> CSV
           </button>
         </div>
 
@@ -545,8 +530,8 @@ export const ToolGuideCard: React.FC<{
             <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
               <span>
                 {tx(
-                  `📋 已派發 Job Ref. No. 及測試工程紀錄表`,
-                  `📋 Dispatched Job Ref. No. & Project Registry (${recentForStp.length})`
+                  `📋 已派發 Job Ref. No. 及測試工程紀錄表 · ${recentForStp.length}`,
+                  `📋 Dispatched Job Ref. No. & Project Registry · ${recentForStp.length}`
                 )}
               </span>
               <span className="text-brand-deep normal-case">
@@ -574,7 +559,7 @@ export const ToolGuideCard: React.FC<{
                     <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
                       {r.worksOrderNo ? `WO: ${r.worksOrderNo} · ` : ''}
                       {r.locationNote ? `Loc: ${r.locationNote} · ` : ''}
-                      Op: {r.operatorName} ({r.testedAt.slice(5)})
+                      Op: {r.operatorName} · {r.testedAt.slice(5)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -583,7 +568,7 @@ export const ToolGuideCard: React.FC<{
                       onClick={() => setDetailModalRecord(r)}
                       className="inline-flex items-center gap-1 rounded-lg bg-brand/10 px-2 py-0.5 font-extrabold text-brand-deep hover:bg-brand hover:text-white cursor-pointer"
                     >
-                      <FolderOpen className="h-3 w-3" /> {tx('檢視結果及附件', 'Dossier')}
+                      <FolderOpen className="h-3 w-3" /> {tx('結果及附件', 'Dossier')}
                     </button>
                     <button
                       type="button"
@@ -655,7 +640,7 @@ export const ToolGuideCard: React.FC<{
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
                     <Landmark className="h-4 w-4 text-indigo-600" />
-                    <span>{tx('各部門驗收要求 (CEDD · ASD · Housing · BD)', 'HK Dept Requirements (CEDD · ASD · Housing · BD)')}</span>
+                    <span>{tx('各部門驗收要求 · CEDD / ASD / Housing / BD', 'HK Dept Requirements · CEDD / ASD / Housing / BD')}</span>
                   </div>
                   {onViewAllSpecs && (
                     <button type="button" onClick={onViewAllSpecs} className="text-[11px] font-extrabold text-indigo-700 hover:underline cursor-pointer">
@@ -692,7 +677,13 @@ export const ToolGuideCard: React.FC<{
               </div>
 
               <div className="rounded-xl bg-amber-50/70 p-3 border border-amber-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-extrabold text-amber-900"><AlertTriangle className="h-4 w-4 text-amber-600" /> {tx('HOKLAS 評審及操作重點', 'HOKLAS Audit & Precautions')}</div>
+                <div className="flex items-center gap-1.5 font-extrabold text-amber-900">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />{' '}
+                  {tx(
+                    isHoklasAccredited ? 'HOKLAS 評審及操作重點' : '受控測試及操作重點',
+                    isHoklasAccredited ? 'HOKLAS Audit & Precautions' : 'Controlled Test Precautions'
+                  )}
+                </div>
                 <ul className="space-y-1 text-amber-950/85 leading-relaxed">
                   {pitfalls.map((p, idx) => (
                     <li key={idx} className="flex items-start gap-1.5"><span className="font-bold text-amber-600">•</span><span>{p}</span></li>

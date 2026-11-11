@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
@@ -579,46 +578,38 @@ export const MobileEquipmentView: React.FC = () => {
       />
       {(() => {
         const selectedLoan = selectedLoanId ? loans.find((l) => l.id === selectedLoanId) || null : null;
-        if (!selectedLoan || typeof document === 'undefined') return null;
+        if (!selectedLoan) return null;
         const selectedEq = eqMap.get(selectedLoan.equipmentCode) || null;
-        return createPortal(
-          <div className="fixed inset-0 z-[76] pointer-events-none [&>*]:pointer-events-auto">
-            <LoanDetailModal
-              loan={selectedLoan}
-              equipment={selectedEq}
-              onClose={() => setSelectedLoanId(null)}
-              onOpenReturn={
-                !selectedLoan.returnedAt && selectedEq
-                  ? () => setReturnItem(selectedEq)
-                  : undefined
-              }
-              onOpenEquipment={() => {
-                setDetailCode(selectedLoan.equipmentCode);
-                setSelectedLoanId(null);
-              }}
-            />
-          </div>,
-          document.body
+        return (
+          <LoanDetailModal
+            loan={selectedLoan}
+            equipment={selectedEq}
+            onClose={() => setSelectedLoanId(null)}
+            onOpenReturn={
+              !selectedLoan.returnedAt && selectedEq
+                ? () => setReturnItem(selectedEq)
+                : undefined
+            }
+            onOpenEquipment={() => {
+              setDetailCode(selectedLoan.equipmentCode);
+              setSelectedLoanId(null);
+            }}
+          />
         );
       })()}
       <EquipmentCheckoutModal item={checkoutItem} onClose={() => setCheckoutItem(null)} />
       <EquipmentReturnModal item={returnItem} onClose={() => setReturnItem(null)} />
       {newOpen && <NewEquipmentModal onClose={() => setNewOpen(false)} />}
-      {qrModal &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div className="fixed inset-0 z-[90] pointer-events-none [&>*]:pointer-events-auto">
-            <EquipmentQrModal
-              initialMode={qrModal.mode}
-              initialCode={qrModal.code}
-              onClose={() => setQrModal(null)}
-              onOpenCheckout={(eq) => setCheckoutItem(eq)}
-              onOpenReturn={(eq) => setReturnItem(eq)}
-              onOpenDetail={(code) => setDetailCode(code)}
-            />
-          </div>,
-          document.body
-        )}
+      {qrModal && (
+        <EquipmentQrModal
+          initialMode={qrModal.mode}
+          initialCode={qrModal.code}
+          onClose={() => setQrModal(null)}
+          onOpenCheckout={(eq) => setCheckoutItem(eq)}
+          onOpenReturn={(eq) => setReturnItem(eq)}
+          onOpenDetail={(code) => setDetailCode(code)}
+        />
+      )}
     </div>
   );
 };

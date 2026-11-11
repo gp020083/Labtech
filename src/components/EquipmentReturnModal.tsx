@@ -1,10 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { STATIC_DATA } from '../data/initialState';
 import { EquipmentItem } from '../types';
 import { nowTimestamp } from '../utils';
 import { X, PackageCheck } from 'lucide-react';
+
+function isTopmostModalBackdrop(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const backdrops = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+  );
+  if (backdrops.length === 0) return true;
+  const getZ = (el: HTMLElement) => {
+    const attrZ = Number(el.dataset.modalZ);
+    if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+    const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+    return Number.isNaN(computed) ? 0 : computed;
+  };
+  let topEl = backdrops[0];
+  let topZ = getZ(topEl);
+  for (let i = 1; i < backdrops.length; i++) {
+    const z = getZ(backdrops[i]);
+    if (z >= topZ) {
+      topEl = backdrops[i];
+      topZ = z;
+    }
+  }
+  return topEl === target;
+}
 
 export const EquipmentReturnModal: React.FC<{
   item: EquipmentItem | null;
@@ -17,6 +42,7 @@ export const EquipmentReturnModal: React.FC<{
   const [returnedDt, setReturnedDt] = useState(() => nowTimestamp().replace(' ', 'T'));
   const [condition, setCondition] = useState<'good' | 'needs_check' | 'damaged'>('good');
   const [remark, setRemark] = useState('');
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (item) {
@@ -28,7 +54,21 @@ export const EquipmentReturnModal: React.FC<{
     }
   }, [item, user?.staffId]);
 
-  if (!item) return null;
+  useEffect(() => {
+    if (!item) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isTopmostModalBackdrop(backdropRef.current)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [item, onClose]);
+
+  if (!item || typeof document === 'undefined') return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,9 +84,12 @@ export const EquipmentReturnModal: React.FC<{
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      ref={backdropRef}
+      data-modal-backdrop="true"
+      data-modal-z="76"
+      className="fixed inset-0 z-[76] flex items-center justify-center bg-black/40 p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <form
@@ -55,7 +98,7 @@ export const EquipmentReturnModal: React.FC<{
       >
         <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2">
-            <PackageCheck className="h-4 w-4 text-[#1f7a4d]" />
+            <PackageCheck className="h-4 w-4 text-emerald-700" />
             <h3 className="text-sm font-bold text-ink">{tx(`登記 Return 交還：${item.code}`, `Return Equipment: ${item.code}`)}</h3>
           </div>
           <button type="button" onClick={onClose} className="text-ink-faint hover:text-ink cursor-pointer">
@@ -65,14 +108,14 @@ export const EquipmentReturnModal: React.FC<{
 
         <div className="rounded-lg bg-ground p-2.5 text-ink-soft">
           {tx('現時借出 Site：', 'Current Site: ')}<span className="font-bold text-ink">{item.currentLoan?.siteLocation || item.loc}</span>
-          （{tx('借用人', 'Borrower')}: {item.currentLoan?.borrowerName || '—'}）
+          {' · '}{tx('借用人', 'Borrower')}: {item.currentLoan?.borrowerName || '—'}
         </div>
 
         <div>
-          <label className="font-semibold text-ink-soft">{tx('交還同事', 'Returned By (Operator)')}</label>
+          <label className="font-semibold text-ink-soft">{tx('交還同事', 'Returned By · Operator')}</label>
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm">
             {STATIC_DATA.staff.map((s: any) => (
-              <option key={s.id} value={s.id}>{s.name} {lang === 'zh' && s.zh ? `(${s.zh})` : ''}</option>
+              <option key={s.id} value={s.id}>{s.name} {lang === 'zh' && s.zh ? `· ${s.zh}` : ''}</option>
             ))}
           </select>
         </div>
@@ -91,22 +134,23 @@ export const EquipmentReturnModal: React.FC<{
         <div>
           <label className="font-semibold text-ink-soft">{tx('交還時 Equipment Condition', 'Equipment Condition on Return')}</label>
           <select value={condition} onChange={(e) => setCondition(e.target.value as any)} className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm">
-            <option value="good">{tx('✓ Good 運作正常（可供下次直接 Checkout）', '✓ Good — Ready for next checkout')}</option>
+            <option value="good">{tx('✓ Good 運作正常 · 可供下次直接借出', '✓ Good — Ready for next checkout')}</option>
             <option value="needs_check">{tx('⚠ Needs Check 需清潔 / 內部檢查', '⚠ Needs Cleaning / Inspection')}</option>
-            <option value="damaged">{tx('✕ Damaged 發現異常 / 送修（自動凍結借用）', '✕ Damaged / Out of Service (Lock Checkout)')}</option>
+            <option value="damaged">{tx('✕ Damaged 發現異常 / 送修 · 自動凍結借用', '✕ Damaged / Out of Service')}</option>
           </select>
         </div>
 
         <div>
-          <label className="font-semibold text-ink-soft">{tx('Return Remark（選填）', 'Return Remark (Optional)')}</label>
+          <label className="font-semibold text-ink-soft">{tx('Return Remark · 選填', 'Return Remark · Optional')}</label>
           <input value={remark} onChange={(e) => setRemark(e.target.value)} placeholder={tx('已清潔 Probe 並放回原箱...', 'Probe cleaned and packed in case...')} className="mt-1 w-full rounded-lg border border-line px-3 py-1.5 text-sm" />
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose} className="rounded-lg px-3.5 py-2 text-ink-soft hover:bg-ground cursor-pointer">{tx('取消', 'Cancel')}</button>
-          <button type="submit" className="rounded-lg bg-[#1f7a4d] px-4 py-2 font-bold text-white hover:opacity-90 cursor-pointer">{tx('確認 Return 入倉', 'Confirm Return')}</button>
+          <button type="submit" className="rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-700 cursor-pointer">{tx('確認 Return 入倉', 'Confirm Return')}</button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body
   );
 };

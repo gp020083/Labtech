@@ -336,18 +336,12 @@ export const EquipmentDetailDrawer: React.FC<{
         </div>,
         document.body
       )}
-      {selectedLoan &&
-        createPortal(
-          <div className="fixed inset-0 z-[76] pointer-events-none [&>*]:pointer-events-auto">
-            <LoanDetailModal
-              loan={selectedLoan}
-              equipment={item}
-              onClose={() => setSelectedLoanId(null)}
-              onOpenReturn={!selectedLoan.returnedAt ? onOpenReturn : undefined}
-            />
-          </div>,
-          document.body
-        )}
+      <LoanDetailModal
+        loan={selectedLoan}
+        equipment={item}
+        onClose={() => setSelectedLoanId(null)}
+        onOpenReturn={!selectedLoan?.returnedAt ? onOpenReturn : undefined}
+      />
     </>
   );
 };

@@ -453,20 +453,10 @@ export const JobDetailDrawer: React.FC<{
         </div>,
         document.body
       )}
-      {detailRec &&
-        createPortal(
-          <div className="fixed inset-0 z-[80] pointer-events-none [&>*]:pointer-events-auto">
-            <TestRecordDetailModal record={detailRec} job={job} onClose={() => setDetailRec(null)} />
-          </div>,
-          document.body
-        )}
-      {worksheetRec &&
-        createPortal(
-          <div className="fixed inset-0 z-[90] pointer-events-none [&>*]:pointer-events-auto">
-            <HoklasReportPreview record={worksheetRec} job={job} onClose={() => setWorksheetRec(null)} />
-          </div>,
-          document.body
-        )}
+      <TestRecordDetailModal record={detailRec} job={job} onClose={() => setDetailRec(null)} />
+      {worksheetRec && (
+        <HoklasReportPreview record={worksheetRec} job={job} onClose={() => setWorksheetRec(null)} />
+      )}
     </>
   );
 };

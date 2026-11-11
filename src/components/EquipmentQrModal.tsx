@@ -69,6 +69,30 @@ export const EquipmentQrSvg: React.FC<{
   );
 };
 
+function isTopmostModalBackdrop(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const backdrops = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+  );
+  if (backdrops.length === 0) return true;
+  const getZ = (el: HTMLElement) => {
+    const attrZ = Number(el.dataset.modalZ);
+    if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+    const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+    return Number.isNaN(computed) ? 0 : computed;
+  };
+  let topEl = backdrops[0];
+  let topZ = getZ(topEl);
+  for (let i = 1; i < backdrops.length; i++) {
+    const z = getZ(backdrops[i]);
+    if (z >= topZ) {
+      topEl = backdrops[i];
+      topZ = z;
+    }
+  }
+  return topEl === target;
+}
+
 export const EquipmentQrModal: React.FC<{
   initialMode?: 'lookup' | 'labels';
   initialCode?: string | null;
@@ -84,7 +108,7 @@ export const EquipmentQrModal: React.FC<{
   onOpenReturn,
   onOpenDetail,
 }) => {
-  const { equipment, openPreviewDoc, pushToast } = useApp();
+  const { equipment, pushToast } = useApp();
   const { lang, tx } = usePrefs();
   const [mode, setMode] = useState<'lookup' | 'labels'>(initialCode ? 'labels' : initialMode);
   const [scanInput, setScanInput] = useState<string>(initialCode || '');
@@ -94,6 +118,7 @@ export const EquipmentQrModal: React.FC<{
   const [cameraStatusMsg, setCameraStatusMsg] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
 
   const inUseEquipment = useMemo(() => equipment.filter((e) => e.inUse !== 'N'), [equipment]);
 
@@ -106,12 +131,23 @@ export const EquipmentQrModal: React.FC<{
   };
 
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isTopmostModalBackdrop(backdropRef.current)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        stopCamera();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
     return () => {
+      window.removeEventListener('keydown', onKey, { capture: true });
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
-  }, []);
+  }, [onClose]);
 
   const startCameraScan = async () => {
     setCameraStatusMsg(null);
@@ -171,9 +207,14 @@ export const EquipmentQrModal: React.FC<{
     navigateToEquipmentCertPage(code);
   };
 
+  if (typeof document === 'undefined') return null;
+
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 p-2 sm:p-4 overflow-y-auto print:bg-white print:p-0"
+      ref={backdropRef}
+      data-modal-backdrop="true"
+      data-modal-z="90"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/65 p-2 sm:p-4 overflow-y-auto print:bg-white print:p-0"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           stopCamera();
@@ -526,7 +567,7 @@ export const EquipmentQrModal: React.FC<{
                 return (
                   <div
                     key={eq.code}
-                    className="flex items-center justify-between gap-3 rounded-2xl border-2 border-slate-800 bg-white p-3.5 shadow-2xs print:rounded-lg print:p-2.5 print:shadow-none break-inside-avoid"
+                    className="light-island flex items-center justify-between gap-3 rounded-2xl border-2 border-slate-800 bg-white p-3.5 shadow-2xs print:rounded-lg print:p-2.5 print:shadow-none break-inside-avoid"
                   >
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center justify-between gap-1 border-b border-slate-200 pb-1">
