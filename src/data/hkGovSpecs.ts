@@ -5,98 +5,87 @@ import { HK_GOV_SPECS_C } from './hkGovSpecsPart3';
 
 export * from './hkGovSpecTypes';
 
-const HK_GOV_SPECS_D: GovTestSpecItem[] = [
-  {
-    id: 'conc',
-    emoji: '🧱',
-    titleZh: 'Concrete Cube & Slump 混凝土測試',
-    titleEn: 'Concrete Cube Strength & Slump',
-    testStd: 'CS1:2010',
-    summaryZh: '27±2°C 養護 · 抗壓強度 · Slump',
-    summaryEn: '27±2°C Curing · Cube Strength · Slump',
-    depts: {
-      CEDD: {
-        dept: 'CEDD',
-        clauseZh: 'GS Sec. 16 & CS1:2010',
-        clauseEn: 'GS Sec. 16 & CS1:2010',
-        keyLimitBadge: '27±2°C · Tremie 175–225mm',
-        criteriaZh: '養護水溫: 27 ± 2°C (CS1:2010)\nTremie 樁混凝土 Slump: 175–225 mm\n每車卸料前核對 Slump',
-        criteriaEn: 'Curing: 27 ± 2°C (CS1:2010)\nTremie pile slump: 175–225 mm\nCheck every truck on site',
-      },
-      ASD: {
-        dept: 'ASD',
-        clauseZh: 'ArchSD GS Sec. 6',
-        clauseEn: 'ArchSD GS Sec. 6',
-        keyLimitBadge: 'CS1:2010 · Slump ±25/30mm',
-        criteriaZh: 'Slump 容差: ±25 mm (≥150mm 為 ±30mm)\nHOKLAS Lab 按 CS1:2010 壓試',
-        criteriaEn: 'Slump tol.: ±25 mm (±30mm if ≥150mm)\nTested by HOKLAS lab per CS1',
-      },
-      HOUSING: {
-        dept: 'HOUSING',
-        clauseZh: 'HKHA Concrete & RFID Spec',
-        clauseEn: 'HKHA Concrete & RFID Spec',
-        keyLimitBadge: 'RFID 晶片 · 7d 強度監察',
-        criteriaZh: '強制嵌入 RFID 防偽晶片\n27 ± 2°C 養護 + 7d 早期強度預警',
-        criteriaEn: 'Mandatory embedded RFID tag\n27 ± 2°C curing + 7d trend alert',
-      },
-      BD: {
-        dept: 'BD',
-        clauseZh: 'PNAP APP-53 & CS1:2010',
-        clauseEn: 'PNAP APP-53 & CS1:2010',
-        keyLimitBadge: 'Mean4 ≥ fcu+4/5 · Min ≥ fcu-4',
-        criteriaZh: 'Mean of 4 ≥ fcu + 4 MPa (100mm: +5)\nMin Single ≥ fcu - 4 MPa',
-        criteriaEn: 'Mean of 4 ≥ fcu + 4 MPa (100mm: +5)\nMin Single ≥ fcu - 4 MPa',
-      },
+const HK_GOV_SPEC_VC: GovTestSpecItem = {
+  id: 'inclinometer',
+  stpCode: 'VC',
+  calcId: 'inclinometer',
+  emoji: '🧭',
+  titleZh: '鑽孔及樁身垂直度偏差檢測',
+  titleEn: 'Verticality Check — PeeWee & Biaxial Inclinometer',
+  testStd: 'HOKLAS-5 PeeWee / Devishot · BD Table 7.4',
+  summaryZh: '微型樁 · 嵌岩工字樁 · 鋼板樁 · 鑽孔偏斜測量',
+  summaryEn: 'Mini-pile · Socketed H-pile · Sheet Pile · Borehole Deviation Survey',
+  depts: {
+    CEDD: {
+      dept: 'CEDD',
+      clauseZh: 'GS 2020 Ed. Sec. 8',
+      clauseEn: 'GS 2020 Ed. Sec. 8',
+      keyLimitBadge: '直樁 ≤ 1:75 · 斜樁 ≤ 1:25',
+      highlightBadge: '直樁 ≤ 1:75 · 斜樁 ≤ 1:25',
+      metrics: [
+        { label: '垂直樁傾斜上限', value: '≤ 1 : 75', tone: 'brand' },
+        { label: '斜樁偏差 · 樁頂偏位', value: '≤ 1 : 25 · ± 75 mm', tone: 'emerald' },
+        { label: '雙軸正反讀數核查', value: 'A0+A180 零位補償', tone: 'amber' },
+      ],
+      criteriaZh:
+        'Sec. 8 垂直樁傾斜度 ≤ 1:75 · 斜樁偏差 ≤ 1:25\n樁頂切斷面平面偏位 ≤ 75 mm\n按 A0/A180 及 B0/B180 正反讀數消除探頭零點偏移',
+      criteriaEn:
+        'Sec. 8 Vertical piles ≤ 1:75 · raking piles ≤ 1:25\nCut-off plan offset ≤ 75 mm\nBiaxial A0/A180 & B0/B180 survey eliminates zero-bias drift',
+    },
+    ASD: {
+      dept: 'ASD',
+      clauseZh: 'ArchSD GS 2022 Sec. 4 & Sec. 5',
+      clauseEn: 'ArchSD GS 2022 Sec. 4 & Sec. 5',
+      keyLimitBadge: '鋼板樁 ≤ 1:400 · Mini ≤ 1:100',
+      highlightBadge: '鋼板樁 ≤ 1:400 · Mini ≤ 1:100',
+      metrics: [
+        { label: 'Sec. 4 鋼板樁垂直度', value: '≤ 1 : 400 · 導樁 1 : 500', tone: 'rose' },
+        { label: 'Sec. 5 Mini-pile 微型樁', value: '≤ 1 : 100', tone: 'emerald' },
+        { label: 'Sec. 5 鑽孔樁 / 工字樁', value: '≤ 1 : 75', tone: 'brand' },
+      ],
+      criteriaZh:
+        'Sec. 4 鋼板樁 ≤ 1:400 · 端樁及導向樁 ≤ 1:500\nSec. 5 樁基 ≤ 1:75 · Mini-pile 微型樁 ≤ 1:100\n全孔分段記錄傾角與方位角計算累積合成位移',
+      criteriaEn:
+        'Sec. 4 Steel sheet piles ≤ 1:400 · end/guide piles ≤ 1:500\nSec. 5 Bored/Socketed H-piles ≤ 1:75 · Mini-piles ≤ 1:100\nLog inclination & azimuth per depth station for cumulative drift',
+    },
+    HOUSING: {
+      dept: 'HOUSING',
+      clauseZh: 'HA GS 2024 & HKHA Piling Spec',
+      clauseEn: 'HA GS 2024 & HKHA Piling Spec',
+      keyLimitBadge: 'Mini ≤ 1:100 · 大樁 ≤ 1:75',
+      highlightBadge: 'Mini ≤ 1:100 · 大樁 ≤ 1:75',
+      metrics: [
+        { label: 'Mini-pile 微型樁', value: '≤ 1 : 100 · ± 15 mm', tone: 'amber' },
+        { label: '大口徑樁 / 嵌岩工字樁', value: '≤ 1 : 75 · ± 75 mm', tone: 'brand' },
+        { label: '下放鋼芯前核實', value: '全深連續偏斜剖面', tone: 'emerald' },
+      ],
+      criteriaZh:
+        'Mini-pile 微型樁：垂直度 ≤ 1:100 · 平面偏位 ± 15 mm\n大口徑鑽孔樁及嵌岩工字樁：垂直度 ≤ 1:75 · 平面偏位 ± 75 mm\n落鋼筋或工字鋼前完成全孔垂直度驗收',
+      criteriaEn:
+        'Mini-piles: Verticality ≤ 1:100 · plan offset ± 15 mm\nLarge bored & socketed H-piles: ≤ 1:75 · plan offset ± 75 mm\nVerify full-depth deviation profile prior to steel installation',
+    },
+    BD: {
+      dept: 'BD',
+      clauseZh: 'CoP Foundations Table 7.4',
+      clauseEn: 'CoP Foundations Table 7.4',
+      keyLimitBadge: 'Mini ±15mm/1:100 · 大樁 ±75mm/1:75',
+      highlightBadge: 'Mini ±15mm/1:100 · 大樁 ±75mm/1:75',
+      metrics: [
+        { label: 'Table 7.4 Mini-pile', value: '± 15 mm · ≤ 1 : 100', tone: 'rose' },
+        { label: 'Table 7.4 鑽孔樁 / 工字樁', value: '± 75 mm · ≤ 1 : 75', tone: 'violet' },
+        { label: '截面尺寸容差', value: '± 3%', tone: 'emerald' },
+      ],
+      criteriaZh:
+        'Table 7.4 Mini-pile 微型樁：平面 ± 15 mm · 垂直度 ≤ 1:100\nTable 7.4 鑽孔樁、嵌岩工字樁及壁樁：平面 ± 75 mm · 垂直度 ≤ 1:75\n構件截面尺寸容差 ± 3%',
+      criteriaEn:
+        'Table 7.4 Mini-piles: Plan ± 15 mm · Verticality ≤ 1:100\nTable 7.4 Bored piles, Socketed H-piles & Barrettes: Plan ± 75 mm · ≤ 1:75\nCross-sectional dimension tolerance ± 3%',
     },
   },
-  {
-    id: 'srt',
-    emoji: '🏜️',
-    titleZh: 'Sand Replacement 壓實度測試 (MDD %)',
-    titleEn: 'Sand Replacement Soil Compaction',
-    testStd: 'Geospec 3 (TM 11.1 / 10.1)',
-    summaryZh: 'Earthworks · Subgrade · Backfill',
-    summaryEn: 'Earthworks · Subgrade · Backfill',
-    depts: {
-      CEDD: {
-        dept: 'CEDD',
-        clauseZh: 'GS Sec. 6 & Geospec 3',
-        clauseEn: 'GS Sec. 6 & Geospec 3',
-        keyLimitBadge: '一般 ≥ 95% · 路基 ≥ 98% MDD',
-        criteriaZh: '一般填土 / 斜坡 ≥ 95% MDD\n路基頂 300–600mm / 背填 ≥ 98% MDD\n綠化區 ≥ 90% MDD',
-        criteriaEn: 'General / slope fill ≥ 95% MDD\nRoad subgrade / backfill ≥ 98% MDD\nLandscape ≥ 90% MDD',
-      },
-      ASD: {
-        dept: 'ASD',
-        clauseZh: 'ArchSD GS Sec. 3',
-        clauseEn: 'ArchSD GS Sec. 3',
-        keyLimitBadge: '≥ 95% MDD · OMC ±2–3%',
-        criteriaZh: '結構底回填 ≥ 95% MDD (每層 ≤ 250mm)\nMoisture Content: OMC ±2% 至 ±3%',
-        criteriaEn: 'Structural backfill ≥ 95% MDD (≤ 250mm/lift)\nMoisture: OMC ±2% to ±3%',
-      },
-      HOUSING: {
-        dept: 'HOUSING',
-        clauseZh: 'HKHA Earthworks Spec',
-        clauseEn: 'HKHA Earthworks Spec',
-        keyLimitBadge: 'EVA 車道 ≥ 98% MDD',
-        criteriaZh: '一般回填 ≥ 95% MDD\n屋邨道路及 EVA 車道 ≥ 98% MDD',
-        criteriaEn: 'General backfill ≥ 95% MDD\nEstate roads & EVA ≥ 98% MDD',
-      },
-      BD: {
-        dept: 'BD',
-        clauseZh: 'Approved Site Formation Plan',
-        clauseEn: 'Approved Site Formation Plan',
-        keyLimitBadge: '≥ 95% / 98% MDD',
-        criteriaZh: '按批核圖每層抽驗 ≥ 95% / 98% MDD\nHOKLAS 報告核實',
-        criteriaEn: 'Per approved plan ≥ 95% / 98% MDD\nVerified by HOKLAS report',
-      },
-    },
-  },
-];
+};
 
 export const HK_GOV_SPECS: GovTestSpecItem[] = [
   ...HK_GOV_SPECS_A,
   ...HK_GOV_SPECS_B,
   ...HK_GOV_SPECS_C,
-  ...HK_GOV_SPECS_D,
+  HK_GOV_SPEC_VC,
 ];
