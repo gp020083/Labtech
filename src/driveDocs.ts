@@ -15,8 +15,6 @@ export interface ResolvedDocLink {
 const LOCAL_COMPANION_PDF_OVERRIDES: Record<string, string> = {
   '/server-docs/worksheets/FST02-FDT-TM3-6-260612_Worksheet_template.xlsx':
     '/server-docs/worksheets/FST02-FDT-TM3-6-260612_Worksheet_blank.pdf',
-  '/server-docs/worksheets/FST02-FDT-TM3-6-260612_Worksheet_template.pdf':
-    '/server-docs/worksheets/FST02-FDT-TM3-6-260612_Worksheet_blank.pdf',
   '/templates/STP07-PLT_Worksheet_template.xlsx':
     '/server-docs/worksheets/FST07-FDT-PLT-1-261028_Worksheet_template.pdf',
   '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx':
@@ -88,7 +86,7 @@ export function resolveDocLink(rawUrl?: string, fileName = ''): ResolvedDocLink 
       kind: 'pdf',
     };
   }
-  if (/^\/server-docs\/(stp|worksheets|forms|reports|schedules)\/.+\.pdf$/i.test(clean)) {
+  if (/^\/server-docs\/.+\.pdf$/i.test(clean)) {
     return {
       driveId,
       previewUrl: clean,

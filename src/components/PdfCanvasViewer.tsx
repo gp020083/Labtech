@@ -103,7 +103,7 @@ const PdfPage: React.FC<{
   return (
     <div
       ref={holderRef}
-      className="relative mx-auto bg-white shadow-md ring-1 ring-slate-200"
+      className="light-island relative mx-auto bg-white shadow-md ring-1 ring-slate-200"
       style={{ width: cssWidth, height: cssWidth * ratio }}
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
