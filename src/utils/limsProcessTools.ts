@@ -132,9 +132,9 @@ export function buildHoklasFieldWorksheetData(params: {
   record: FieldCalcRecord;
   job?: JobItem | null;
   equipment: EquipmentItem[];
-  tests: TestMethodItem[];
+  tests?: TestMethodItem[];
 }): HoklasWorksheetPayload {
-  const { record, job: rawJob, equipment, tests } = params;
+  const { record, job: rawJob, equipment, tests = [] } = params;
   const cleanStp = (record.stpCode || 'KD').trim().toUpperCase();
   const isAccredited = cleanStp !== 'PLT' && cleanStp !== 'VC';
   const job = rawJob ? localizeJob(rawJob, 'en') : null;

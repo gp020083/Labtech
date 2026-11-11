@@ -30,6 +30,8 @@ import {
 import { classifyAssetWorkboxStrategy, buildOfflineCacheSummary } from './pwaConfig';
 import {
   buildHoklasFieldWorksheetData,
+  equipmentMatchesStp,
+  stripManualInputPlaceholder,
   generateDeterministicQrMatrix,
   matchEquipmentByQrOrQuery,
   buildCalibrationForecast,
@@ -1105,5 +1107,195 @@ test('Workstream 3A: STP04/05 nearest 0.2 rounding, STP06 trimmed mean, detectCa
       assert.equal(req.metrics?.length, 3, `${item.stpCode}.${d.id} must have 3 structured metrics`);
     }
   }
+});
+
+test('Post-Audit: strict stpCode equipment filtering, blank placeholder hygiene, PLT/VC non-HOKLAS metadata & Axial Core PO', () => {
+  const mixedEquipment: EquipmentItem[] = [
+    {
+      code: 'LT-KM-04',
+      name: 'Ultrasonic Echo Sounder',
+      model: 'DM-602/604R',
+      serial: 'KM04',
+      store: 'Site',
+      loc: 'PolyU Hung Hom',
+      cal: 'External',
+      last: '2026-01-10',
+      due: '2027-01-10',
+      tests: 'KD',
+      testTags: ['KD'],
+      currentLoan: {
+        loanId: 'LN-1',
+        borrowerName: 'Ben',
+        borrowerStaffId: 'LT01',
+        jobNo: 'LT0002',
+        siteLocation: 'PolyU Hung Hom',
+        checkoutAt: '2026-10-01',
+        expectedReturn: '2026-12-01',
+      },
+    },
+    {
+      code: 'LT-CA-01',
+      name: 'Cross-hole Ultrasonic Analyzer',
+      model: 'CHA-W',
+      serial: 'CA01',
+      store: 'Site',
+      loc: 'PolyU Hung Hom',
+      cal: 'External',
+      last: '2026-02-01',
+      due: '2027-02-01',
+      tests: 'SO',
+      testTags: ['SO'],
+      currentLoan: {
+        loanId: 'LN-2',
+        borrowerName: 'Ben',
+        borrowerStaffId: 'LT01',
+        jobNo: 'LT0002',
+        siteLocation: 'PolyU Hung Hom',
+        checkoutAt: '2026-10-01',
+        expectedReturn: '2026-12-01',
+      },
+    },
+    {
+      code: 'LT-GC-04',
+      name: '1000 mL Graduated Cylinder',
+      model: '1000mL',
+      serial: 'GC04',
+      store: 'Site',
+      loc: 'PolyU Hung Hom',
+      cal: 'Internal',
+      last: '2026-03-01',
+      due: '2027-03-01',
+      tests: 'BL',
+      testTags: ['BL'],
+      currentLoan: {
+        loanId: 'LN-3',
+        borrowerName: 'Ben',
+        borrowerStaffId: 'LT01',
+        jobNo: 'LT0002',
+        siteLocation: 'PolyU Hung Hom',
+        checkoutAt: '2026-10-01',
+        expectedReturn: '2026-12-01',
+      },
+    },
+    {
+      code: 'LT-TD-01',
+      name: 'Digital Stopwatch',
+      model: 'HS-70W',
+      serial: 'TD01',
+      store: 'Office',
+      loc: 'Office',
+      cal: 'External',
+      last: '2026-04-01',
+      due: '2027-04-01',
+      tests: 'FC + BL + SO + PO',
+    },
+  ];
+
+  assert.equal(equipmentMatchesStp(mixedEquipment[0], 'BL'), false);
+  assert.equal(equipmentMatchesStp(mixedEquipment[1], 'BL'), false);
+  assert.equal(equipmentMatchesStp(mixedEquipment[2], 'BL'), true);
+  assert.equal(equipmentMatchesStp(mixedEquipment[3], 'BL'), true);
+  assert.equal(equipmentMatchesStp(mixedEquipment[3], 'PO'), true);
+
+  const blSheet = buildHoklasFieldWorksheetData({
+    record: {
+      id: 'BL-260018',
+      jobNo: 'LT0002',
+      jobRefNo: 'BL-260018',
+      worksOrderNo: 'Manual Input (e.g. WO/2026/01)',
+      batchNo: 'Manual Input (e.g. B-01)',
+      sampleId: 'Manual Input (e.g. GS-01)',
+      stpCode: 'BL',
+      title: 'Grout Bleeding',
+      summary: 'Initial (V1): 800 mL\nFinal Bleeding: 1.4% (PASS)',
+      pass: true,
+      testedAt: '2026-11-11 10:00',
+      operatorName: 'Shih Chak Lung, Ben',
+    },
+    equipment: mixedEquipment,
+    tests: [],
+  });
+
+  const blEqCodes = blSheet.equipmentList.map((e) => e.code);
+  assert.equal(blEqCodes.includes('LT-KM-04'), false, 'KD equipment must never leak onto BL report');
+  assert.equal(blEqCodes.includes('LT-CA-01'), false, 'SO equipment must never leak onto BL report');
+  assert.deepEqual(blEqCodes, ['LT-GC-04', 'LT-TD-01']);
+  assert.equal(blSheet.equipmentList[0].source, 'on_site');
+  assert.equal(blSheet.equipmentList[1].source, 'recommended_lab');
+  assert.equal(blSheet.worksOrderNo, '');
+  assert.equal(blSheet.batchNo, '');
+  assert.equal(blSheet.sampleId, '');
+  assert.equal(stripManualInputPlaceholder('Manual Input (e.g. WO/2026/01)'), '');
+  assert.equal(stripManualInputPlaceholder('WO/2026/11/018'), 'WO/2026/11/018');
+  assert.ok(blSheet.approvedSignatory.includes('HOKLAS'));
+
+  // Non-HOKLAS accreditation flags & PDF template names for PLT and VC
+  const pltMeta2 = getOfficialTemplateMeta('PLT');
+  const vcMeta2 = getOfficialTemplateMeta('VC');
+  assert.equal(pltMeta2.accredited, false);
+  assert.equal(vcMeta2.accredited, false);
+  assert.equal(vcMeta2.templateFileCode, 'FST08-INC');
+  assert.equal(vcMeta2.pdfTemplateName, 'FST08-INC_Worksheet_template.pdf');
+  assert.equal(vcMeta2.reportCode, 'INC-RT');
+
+  for (const code of ['KD', 'SO', 'FC', 'BL', 'PO', 'PLT', 'VC']) {
+    const meta = getOfficialTemplateMeta(code);
+    assert.ok(meta.pdfTemplateName.endsWith('.pdf'), `${code} pdfTemplateName must end in .pdf`);
+    assert.equal(meta.pdfTemplateName.includes('_Worksheet_blank.pdf'), false);
+    const expectedAcc = code !== 'PLT' && code !== 'VC';
+    assert.equal(meta.accredited, expectedAcc, `${code} accredited mismatch`);
+  }
+
+  const vcSheet = buildHoklasFieldWorksheetData({
+    record: {
+      id: 'VC-260001',
+      jobNo: 'LT0002',
+      jobRefNo: 'VC-260001',
+      stpCode: 'VC',
+      title: 'Verticality Check',
+      summary: 'Inclination = 1:350 (PASS)',
+      pass: true,
+      testedAt: '2026-11-11 11:00',
+      operatorName: 'Shih Chak Lung, Ben',
+    },
+    equipment: mixedEquipment,
+  });
+  assert.equal(vcSheet.approvedSignatory.includes('HOKLAS'), false);
+
+  const poExcel = buildCompletedExcelWorkbookXml({
+    stpCode: 'PO',
+    reportRefNo: 'PO-260004',
+    jobRefNo: 'PO-260004',
+    testedAt: '2026-11-05 11:40',
+    jobNo: 'LT0004',
+    companyProjNo: 'SR-953',
+    projectTitle: 'Sandy Ridge Data Facility',
+    clientName: 'DrilTech Ground Engineering Limited',
+    siteLocation: 'Sandy Ridge',
+    locationNote: 'BH12',
+    ambientTemp: '24.5 °C',
+    weatherNote: 'Fine',
+    operatorName: 'Chu Kar Wai, Peter',
+    approvedSignatory: 'Chu Kar Wai, Peter (HOKLAS AS)',
+    pass: true,
+    equipmentRows: [],
+    measurementRows: [],
+    structured: {
+      kind: 'PO',
+      mode: 'axial',
+      dMm: 38,
+      wMm: 52,
+      loadKn: 11.8,
+      failSec: 26,
+      deMm: 50.16,
+      isUncorrMpa: 4.69,
+      fFactor: 1.001,
+      is50Mpa: 4.70,
+      estUcsMpa: 103,
+      batchCount: 17,
+      timeOk: true,
+    },
+  });
+  assert.ok(poExcel.xmlContent.includes('Axial Core'));
 });
 

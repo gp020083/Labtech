@@ -304,21 +304,21 @@ function buildInitialCalcRecords(): FieldCalcRecord[] {
       title: 'Point Load Strength Index Is(50) — ASTM D5731',
       locationNote: 'Lai Chi Kok Laboratory · Qty 1 Core Specimen',
       summary:
-        '[Labtech Calc — Point Load Test (ASTM D5731)]\nMode = Diametral ｜ D = 50 mm\nDe = 50.00 mm ｜ Failure Load P = 11.8 kN (24s)\nUncorrected Is = 4.72 MPa ｜ F = 1.000 → Is(50) = 4.72 MPa',
+        '[Labtech Calc — Point Load Test · ASTM D5731]\nMode = Axial Core ｜ D = 39 mm, W = 50 mm\nDe = 49.83 mm ｜ Failure Load P = 11.7 kN · 24s\nUncorrected Is = 4.71 MPa ｜ F = 0.998 → Is(50) = 4.71 MPa',
       pass: true,
       testedAt: '2026-08-06 14:00',
       operatorName: 'Chu Kar Wai, Peter',
       structuredData: {
         kind: 'PO',
-        mode: 'diametral',
-        dMm: 50,
+        mode: 'axial',
+        dMm: 39,
         wMm: 50,
-        loadKn: 11.8,
+        loadKn: 11.7,
         failSec: 24,
-        deMm: 50,
-        isUncorrMpa: 4.72,
-        fFactor: 1.0,
-        is50Mpa: 4.72,
+        deMm: 49.83,
+        isUncorrMpa: 4.71,
+        fFactor: 0.998,
+        is50Mpa: 4.71,
         estUcsMpa: 104,
         batchCount: 1,
         timeOk: true,
@@ -512,21 +512,21 @@ function buildInitialCalcRecords(): FieldCalcRecord[] {
       title: 'Point Load Strength Index Is(50) — ASTM D5731',
       locationNote: 'Lai Chi Kok Laboratory · Qty 3 Core Specimens',
       summary:
-        '[Labtech Calc — Point Load Test (ASTM D5731)]\nMode = Diametral ｜ D = 51 mm\nDe = 51.00 mm ｜ Failure Load P = 13.1 kN (28s)\nUncorrected Is = 5.04 MPa ｜ F = 1.009 → Is(50) = 5.08 MPa',
+        '[Labtech Calc — Point Load Test · ASTM D5731]\nMode = Axial Core ｜ D = 40 mm, W = 51 mm\nDe = 50.96 mm ｜ Failure Load P = 13.1 kN · 28s\nUncorrected Is = 5.04 MPa ｜ F = 1.009 → Is(50) = 5.09 MPa',
       pass: true,
       testedAt: '2026-04-23 11:00',
       operatorName: 'Chu Kar Wai, Peter',
       structuredData: {
         kind: 'PO',
-        mode: 'diametral',
-        dMm: 51,
+        mode: 'axial',
+        dMm: 40,
         wMm: 51,
         loadKn: 13.1,
         failSec: 28,
-        deMm: 51,
+        deMm: 50.96,
         isUncorrMpa: 5.04,
         fFactor: 1.009,
-        is50Mpa: 5.08,
+        is50Mpa: 5.09,
         estUcsMpa: 112,
         batchCount: 3,
         timeOk: true,
@@ -570,22 +570,22 @@ function buildInitialCalcRecords(): FieldCalcRecord[] {
       title: 'Point Load Strength Index Is(50) — ASTM D5731',
       locationNote: 'Lai Chi Kok Laboratory · BH06 & BH04 · Qty 2 Cores',
       summary:
-        '[Labtech Calc — Point Load Test (ASTM D5731)]\nMode = Diametral ｜ D = 52 mm\nDe = 52.00 mm ｜ Failure Load P = 12.0 kN (22s)\nUncorrected Is = 4.44 MPa ｜ F = 1.018 → Is(50) = 4.52 MPa',
+        '[Labtech Calc — Point Load Test · ASTM D5731]\nMode = Axial Core ｜ D = 38 mm, W = 52 mm\nDe = 50.16 mm ｜ Failure Load P = 11.4 kN · 22s\nUncorrected Is = 4.53 MPa ｜ F = 1.001 → Is(50) = 4.54 MPa',
       pass: true,
       testedAt: '2026-04-22 10:30',
       operatorName: 'Chu Kar Wai, Peter',
       structuredData: {
         kind: 'PO',
-        mode: 'diametral',
-        dMm: 52,
+        mode: 'axial',
+        dMm: 38,
         wMm: 52,
-        loadKn: 12.0,
+        loadKn: 11.4,
         failSec: 22,
-        deMm: 52,
-        isUncorrMpa: 4.44,
-        fFactor: 1.018,
-        is50Mpa: 4.52,
-        estUcsMpa: 99,
+        deMm: 50.16,
+        isUncorrMpa: 4.53,
+        fFactor: 1.001,
+        is50Mpa: 4.54,
+        estUcsMpa: 100,
         batchCount: 2,
         timeOk: true,
       },
@@ -851,6 +851,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     clientName: c.clientName || seedMatch.clientName,
                     sampleId: c.sampleId || seedMatch.sampleId,
                     projectTitle: c.projectTitle || seedMatch.projectTitle,
+                    summary: c.updatedAt ? c.summary : seedMatch.summary,
+                    structuredData: c.updatedAt ? c.structuredData || seedMatch.structuredData : seedMatch.structuredData,
                   }
                 : c;
             }),
@@ -1452,21 +1454,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }) => {
     const ts = nowTimestamp();
     const actor = user?.name || 'Operator';
-    const matchedJob = state.jobs.find((j) => j.no === jobNo);
+    const currentState = stateRef.current;
+    const currentCalcs = currentState.calcRecords || [];
+    const matchedJob = currentState.jobs.find((j) => j.no === jobNo);
     const resolvedProjTitle = projectTitle?.trim() || matchedJob?.project || matchedJob?.shortName || jobNo;
     const incomingRef = jobRefNo?.trim();
-    const validRef = isOfficialJobRefNo(incomingRef) ? incomingRef!.toUpperCase() : undefined;
-    const existingByRef = validRef
-      ? (state.calcRecords || []).find((r) => (r.jobRefNo || '').toUpperCase() === validRef)
-      : incomingRef
-      ? (state.calcRecords || []).find((r) => r.jobRefNo === incomingRef)
+    const normIncomingRef = incomingRef ? incomingRef.toUpperCase() : '';
+    const existingByRef = normIncomingRef
+      ? currentCalcs.find((r) => (r.jobRefNo || r.id || '').trim().toUpperCase() === normIncomingRef)
       : undefined;
+    const validRef = isOfficialJobRefNo(incomingRef) ? normIncomingRef : undefined;
     const resolvedRefNo =
-      validRef || generateSequentialJobRefNo(jobNo, stpCode, state.calcRecords || [], ts.slice(0, 10));
-    const idTaken = (state.calcRecords || []).some(
-      (r) => r.id === resolvedRefNo && r.id !== existingByRef?.id
+      validRef ||
+      (existingByRef?.jobRefNo ? existingByRef.jobRefNo.trim().toUpperCase() : undefined) ||
+      (normIncomingRef || generateSequentialJobRefNo(jobNo, stpCode, currentCalcs, ts.slice(0, 10)));
+    const normResolvedRef = resolvedRefNo.trim().toUpperCase();
+    const matchedExisting =
+      existingByRef ||
+      currentCalcs.find((r) => (r.jobRefNo || r.id || '').trim().toUpperCase() === normResolvedRef);
+    const idTaken = currentCalcs.some(
+      (r) => r.id === resolvedRefNo && r.id !== matchedExisting?.id
     );
-    const recId = existingByRef?.id || (idTaken ? `${stpCode}-${Date.now().toString().slice(-5)}` : resolvedRefNo);
+    const recId = matchedExisting?.id || (idTaken ? `${stpCode}-${Date.now().toString().slice(-5)}` : resolvedRefNo);
     const normalizedPhotos =
       sitePhotos && sitePhotos.length > 0
         ? sitePhotos.slice(0, MAX_SITE_PHOTOS_PER_RECORD).map((ph, idx) => {
@@ -1487,32 +1496,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               syncStatus: 'uploading' as const,
             };
           })
-        : undefined;
+        : matchedExisting?.sitePhotos;
 
     const draftRec: FieldCalcRecord = {
       id: recId,
       jobNo,
       jobRefNo: resolvedRefNo,
-      worksOrderNo: worksOrderNo?.trim() || undefined,
-      clientName: clientName?.trim() || undefined,
-      batchNo: batchNo?.trim() || undefined,
-      sampleId: sampleId?.trim() || undefined,
+      worksOrderNo: worksOrderNo?.trim() || matchedExisting?.worksOrderNo || undefined,
+      clientName: clientName?.trim() || matchedExisting?.clientName || undefined,
+      batchNo: batchNo?.trim() || matchedExisting?.batchNo || undefined,
+      sampleId: sampleId?.trim() || matchedExisting?.sampleId || undefined,
       projectTitle: resolvedProjTitle,
       stpCode,
       title,
-      locationNote: locationNote?.trim() || undefined,
+      locationNote: locationNote?.trim() || matchedExisting?.locationNote || undefined,
       summary,
       pass,
-      testedAt: ts,
+      testedAt: matchedExisting?.testedAt || ts,
       operatorName: actor,
-      signatureDataUrl: signatureDataUrl || undefined,
-      signedBy: signedBy?.trim() || undefined,
-      signedRole: signedRole?.trim() || undefined,
-      signedAt: signatureDataUrl ? (signedAt || ts) : undefined,
+      signatureDataUrl: signatureDataUrl || matchedExisting?.signatureDataUrl || undefined,
+      signedBy: signedBy?.trim() || matchedExisting?.signedBy || undefined,
+      signedRole: signedRole?.trim() || matchedExisting?.signedRole || undefined,
+      signedAt: signatureDataUrl ? (signedAt || ts) : matchedExisting?.signedAt,
       sitePhotos: normalizedPhotos,
-      worksOrderAttachment: worksOrderAttachment || existingByRef?.worksOrderAttachment,
-      worksheetAttachment: worksheetAttachment || existingByRef?.worksheetAttachment,
-      structuredData: structuredData || undefined,
+      worksOrderAttachment: worksOrderAttachment || matchedExisting?.worksOrderAttachment,
+      worksheetAttachment: worksheetAttachment || matchedExisting?.worksheetAttachment,
+      structuredData: structuredData || matchedExisting?.structuredData || undefined,
       driveFolderId: TARGET_DRIVE_UPLOADS_FOLDER_ID,
       driveSyncStatus: 'uploading',
       updatedAt: ts,
@@ -1547,7 +1556,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       calcRecords: [
         rec,
-        ...(prev.calcRecords || []).filter((r) => r.id !== rec.id && r.jobRefNo !== resolvedRefNo),
+        ...(prev.calcRecords || []).filter(
+          (r) => r.id !== rec.id && (r.jobRefNo || r.id || '').trim().toUpperCase() !== normResolvedRef
+        ),
       ],
       driveFiles: [...vaultEntries, ...(prev.driveFiles || [])],
     }));
