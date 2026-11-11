@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs, FontScale } from '../prefs';
+import { parseEquipmentCodeFromUrl, EQUIPMENT_ROUTE_EVENT } from '../utils/equipmentQr';
 import { Lock, Eye, EyeOff, Globe, ArrowRight, AlertCircle, UserCheck, MapPin, Wrench, Calculator, CalendarDays, Mail, ShieldCheck } from 'lucide-react';
 
 const MS_TENANT_ID = (import.meta as any).env?.VITE_MS_TENANT_ID || 'common';
@@ -27,6 +29,24 @@ export const LoginScreen: React.FC = () => {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
+  const [hasQrRoute, setHasQrRoute] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? Boolean(parseEquipmentCodeFromUrl(window.location.href)) : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncQr = () => setHasQrRoute(Boolean(parseEquipmentCodeFromUrl(window.location.href)));
+    const onCustom = (ev: Event) => {
+      const code = (ev as CustomEvent<{ code?: string | null }>).detail?.code;
+      setHasQrRoute(Boolean(code));
+    };
+    window.addEventListener('popstate', syncQr);
+    window.addEventListener(EQUIPMENT_ROUTE_EVENT, onCustom);
+    return () => {
+      window.removeEventListener('popstate', syncQr);
+      window.removeEventListener(EQUIPMENT_ROUTE_EVENT, onCustom);
+    };
+  }, []);
 
   // Handle Microsoft Entra ID (Azure AD) OAuth 2.0 implicit id_token callback
   useEffect(() => {
@@ -66,8 +86,8 @@ export const LoginScreen: React.FC = () => {
     if (!clean || (!clean.endsWith('@lab-tech.com.hk') && !clean.endsWith('@kinwing.com.hk'))) {
       setError(
         tx(
-          '請輸入建榮或 Labtech 公司 Microsoft 365 電郵（@lab-tech.com.hk 或 @kinwing.com.hk）。',
-          'Please enter a valid company Microsoft 365 email (@lab-tech.com.hk or @kinwing.com.hk).'
+          '請輸入建榮或 Labtech 公司 Microsoft 365 電郵：@lab-tech.com.hk 或 @kinwing.com.hk。',
+          'Please enter a valid company Microsoft 365 email: @lab-tech.com.hk or @kinwing.com.hk.'
         )
       );
       return;
@@ -94,8 +114,16 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  return (
-    <div className="grid min-h-screen lg:grid-cols-12 bg-slate-950">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      data-modal-backdrop="true"
+      data-modal-z={hasQrRoute ? '40' : '105'}
+      data-auth-gate="true"
+      data-no-drag="true"
+      className={`fixed inset-0 ${hasQrRoute ? 'z-40' : 'z-[105]'} overflow-y-auto grid min-h-screen lg:grid-cols-12 bg-slate-950`}
+    >
       {/* Left Hero Showcase */}
       <div className="blueprint-bg hidden lg:col-span-7 lg:flex flex-col justify-between p-12 text-white border-r border-slate-800/80">
         <div className="flex items-center gap-3">
@@ -139,7 +167,7 @@ export const LoginScreen: React.FC = () => {
             <div className="rounded-2xl border border-slate-800 bg-slate-900/85 p-4">
               <CalendarDays className="h-5 w-5 text-violet-400 mb-2" />
               <div className="font-extrabold text-sm">{tx('受控文件庫及排程日曆', 'Controlled Docs & Calendar')}</div>
-              <div className="mt-1 text-slate-400 text-[11px]">{tx('6 大文件分類 · 內部例會與培訓排程日曆', '6 doc sub-sections · Meeting & training schedule')}</div>
+              <div className="mt-1 text-slate-400 text-[11px]">{tx('7 項測試全 PDF 文件庫 · 內部例會與培訓排程日曆', '7-test all-PDF document vault · Meeting & training schedule')}</div>
             </div>
           </div>
         </div>
@@ -179,7 +207,7 @@ export const LoginScreen: React.FC = () => {
             <p className="text-xs text-slate-500">
               {tx(
                 '支援以公司 Microsoft 365 電郵直接登入，或使用當值同事通行密碼登入。',
-                'Sign in with your company Microsoft 365 account (@lab-tech.com.hk / @kinwing.com.hk) or internal staff password.'
+                'Sign in with your company Microsoft 365 account — @lab-tech.com.hk or @kinwing.com.hk — or internal staff password.'
               )}
             </p>
           </div>
@@ -332,6 +360,9 @@ export const LoginScreen: React.FC = () => {
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
+
+export const LoginModal = LoginScreen;

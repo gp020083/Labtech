@@ -229,8 +229,10 @@ export interface OfficialTemplateMeta {
   stpCode: string;
   worksheetFormCode: string;
   formalReportFormCode: string;
+  reportCode: string;
   formalReportFileUrl?: string;
   templateFileCode: string;
+  pdfTemplateName: string;
   templateTitleEn: string;
   templateTitleZh: string;
   formalReportTitleEn: string;
@@ -252,8 +254,10 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'FC',
         worksheetFormCode: 'FST05-GTT-C939-2-260417',
         formalReportFormCode: 'GTT-C939-RT',
+        reportCode: 'GTT-C939-RT',
         formalReportFileUrl: '/server-docs/reports/GTT-C939-RT_Report_template.pdf',
         templateFileCode: 'FST05-GTT-C939-2-260417_Worksheet_template.xlsx',
+        pdfTemplateName: 'FST05-GTT-C939-2-260417_Worksheet_template.pdf',
         templateTitleEn: 'Flow of Grout for Preplaced-Aggregate Concrete (Flow Cone Method)',
         templateTitleZh: '水泥漿流動度流錐法現場完成工作紙 · FST05-GTT-C939-2-260417',
         formalReportTitleEn: 'TEST REPORT — FLOW OF GROUT FOR PREPLACED-AGGREGATE CONCRETE BY FLOW CONE METHOD',
@@ -269,8 +273,10 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'BL',
         worksheetFormCode: 'FST04-GTT-C940-3-261001',
         formalReportFormCode: 'GTT-C940-RT',
+        reportCode: 'GTT-C940-RT',
         formalReportFileUrl: '/server-docs/reports/GTT-C940-RT_Report_template.pdf',
         templateFileCode: 'FST04-GTT-C940-3-261001_Worksheet_template.xlsx',
+        pdfTemplateName: 'FST04-GTT-C940-3-261001_Worksheet_template.pdf',
         templateTitleEn: 'Bleeding and free expansion of grout',
         templateTitleZh: '新拌水泥漿自由膨脹率及泌水率完成工作紙 · FST04-GTT-C940-3-261001',
         formalReportTitleEn: 'TEST REPORT — BLEEDING AND FREE EXPANSION OF GROUT',
@@ -286,14 +292,16 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'PLT',
         worksheetFormCode: 'FST07-FDT-PLT-1-261028',
         formalReportFormCode: 'FDT-PLT-RT-1-261028',
+        reportCode: 'FDT-PLT-RT-1-261028',
         formalReportFileUrl: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.pdf',
         templateFileCode: 'FST07-FDT-PLT-1-261028_Worksheet_template.xlsx',
+        pdfTemplateName: 'FST07-FDT-PLT-1-261028_Worksheet_template.pdf',
         templateTitleEn:
           'WORKSHEET FOR DETERMINATION OF VERTICAL DEFORMATION AND STRENGTH CHARACTERISTICS OF SOIL BY PLATE LOADING TEST (INCREMENTAL LOADING METHOD)',
         templateTitleZh: '平板載荷試驗現場工作紙 · FST07-FDT-PLT-1-261028',
         formalReportTitleEn:
           'TEST REPORT — DETERMINATION OF VERTICAL DEFORMATION AND STRENGTH CHARACTERISTICS OF SOIL BY PLATE LOADING TEST (INCREMENTAL LOADING METHOD)',
-        formalReportTitleZh: '平板載荷試驗 23 頁主控正式報告範本 · FDT-PLT-RT-1-261028',
+        formalReportTitleZh: '平板載荷試驗正式測試報告 · FDT-PLT-RT-1-261028',
         testStandard: matched?.std || 'BS 1377: Part 9: 1990 Cl. 4.1 / Geoguide 7 / CoP Foundations',
         stpDocRef: `${matched?.stpDocCode || 'STP07-PLT'} (${matched?.stpRev || 'Issue 0'})`,
         muRefCode: 'PLT_Setup_Checking_750kPa (v20261021)',
@@ -305,11 +313,13 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'PO',
         worksheetFormCode: 'FST06-RKT-D5731-2-260421',
         formalReportFormCode: 'RKT-D5731-RT',
+        reportCode: 'RKT-D5731-RT',
         formalReportFileUrl: '/server-docs/reports/RKT-D5731-RT_Report_template.pdf',
         templateFileCode: 'FST06-RKT-D5731-2-260421_Worksheet_template.xlsx',
-        templateTitleEn: 'On Determination of Point Load Strength Index of Rock',
+        pdfTemplateName: 'FST06-RKT-D5731-2-260421_Worksheet_template.pdf',
+        templateTitleEn: 'On Determination of Point Load Strength Index of Rock (Axial Core)',
         templateTitleZh: '岩石點荷載強度指數 Is(50) 完成工作紙 · FST06-RKT-D5731-2-260421',
-        formalReportTitleEn: 'TEST REPORT — POINT LOAD STRENGTH INDEX OF ROCK BY DIAMETRAL AND AXIAL TESTS',
+        formalReportTitleEn: 'TEST REPORT — POINT LOAD STRENGTH INDEX OF ROCK (AXIAL CORE)',
         formalReportTitleZh: 'HOKLAS 認可岩石點荷載強度指數 Is(50) 正式測試報告 · RKT-D5731-RT',
         testStandard: matched?.std || 'ASTM D5731-16',
         stpDocRef: `${matched?.stpDocCode || 'STP06-RKT-D5731'} (${matched?.stpRev || 'rev 2'})`,
@@ -323,8 +333,10 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'SO',
         worksheetFormCode: 'FST03-FDT-D6760-2-260417',
         formalReportFormCode: 'FDT-D6760-RT',
+        reportCode: 'FDT-D6760-RT',
         formalReportFileUrl: '/server-docs/reports/FDT-D6760-RT_Report_template.pdf',
         templateFileCode: 'FST03-FDT-D6760-2-260417_Worksheet_template.xlsx',
+        pdfTemplateName: 'FST03-FDT-D6760-2-260417_Worksheet_template.pdf',
         templateTitleEn: 'ULTRASONIC LOGGING TESTING',
         templateTitleZh: '跨孔超聲波測井完成工作紙 · FST03-FDT-D6760-2-260417',
         formalReportTitleEn: 'TEST REPORT — INTEGRITY TESTING OF CONCRETE DEEP FOUNDATION BY CROSSHOLE SONIC LOGGING TEST',
@@ -338,15 +350,17 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
     case 'VC':
       return {
         stpCode: 'VC',
-        worksheetFormCode: 'FST08-INC-Draft',
+        worksheetFormCode: 'FST08-INC',
         formalReportFormCode: 'INC-RT',
+        reportCode: 'INC-RT',
         formalReportFileUrl: '/server-docs/reports/INC-RT_Report_template.pdf',
-        templateFileCode: 'STP07-PLT_Worksheet_template.xlsx',
-        templateTitleEn: 'WORKSHEET FOR BIAXIAL INCLINOMETER VERTICALITY PROFILE CHECK (A0/A180 & B0/B180)',
-        templateTitleZh: '雙軸測斜儀鑽孔及樁身垂直度完成工作紙',
-        formalReportTitleEn: 'TEST REPORT — VERTICALITY CHECK BY BIAXIAL INCLINOMETER',
-        formalReportTitleZh: '雙軸測斜儀樁身垂直度測試正式報告 · INC-RT',
-        testStandard: matched?.std || 'BD CoP Foundations / PeeWee & Inclinometer Verticality Survey',
+        templateFileCode: 'FST08-INC',
+        pdfTemplateName: 'FST08-INC_Worksheet_template.pdf',
+        templateTitleEn: 'WORKSHEET FOR VERTICALITY PROFILE CHECK (PEEWEE & BIAXIAL INCLINOMETER)',
+        templateTitleZh: '鑽孔及樁身垂直度測試完成工作紙 · FST08-INC',
+        formalReportTitleEn: 'TEST REPORT — VERTICALITY CHECK BY PEEWEE & BIAXIAL INCLINOMETER',
+        formalReportTitleZh: '樁身及鑽孔垂直度測試正式報告 · INC-RT',
+        testStandard: matched?.std || 'BD CoP Foundations / PeeWee & Biaxial Inclinometer Verticality Survey',
         stpDocRef: `${matched?.stpDocCode || 'STP08-INC-DRAFT'} (${matched?.stpRev || 'Draft'})`,
         muRefCode: 'MU-INC-01',
         uncertaintyStatement: 'Expanded Uncertainty U95 = ± 1.5 mm per 10 m depth (A0/A180 zero-bias compensated, k = 2)',
@@ -358,8 +372,10 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: clean,
         worksheetFormCode: 'FST02-FDT-TM3-6-260612',
         formalReportFormCode: 'FDT-TM3-RT',
+        reportCode: 'FDT-TM3-RT',
         formalReportFileUrl: '/server-docs/reports/FDT-TM3-RT_Report_template.pdf',
         templateFileCode: 'FST02-FDT-TM3-6-260612_Worksheet_template.xlsx',
+        pdfTemplateName: 'FST02-FDT-TM3-6-260612_Worksheet_template.pdf',
         templateTitleEn: 'ULTRASONIC ECHO SOUNDER TEST',
         templateTitleZh: 'Koden 超聲波鑽孔垂直度及孔徑剖面完成工作紙 · FST02-FDT-TM3-6-260612',
         formalReportTitleEn: 'TEST REPORT — ULTRASONIC ECHO SOUNDER TEST (DETERMINATION OF GEOMETRY OF VERTICAL SHAFT EXCAVATION)',
@@ -738,6 +754,19 @@ export function buildCompletedExcelWorkbookXml(params: CompletedExcelGeneratorPa
         `<Row ss:Height="18">${buildCell(p.pair, 'sValBold')}${buildCell(Number(p.distMm.toFixed(0)), 'sValNum', { type: 'Number' })}${buildCell(Number(p.baseFatUs.toFixed(1)), 'sValNum', { type: 'Number' })}${buildCell(Number(p.measFatUs.toFixed(1)), 'sValNum', { type: 'Number' })}${buildCell(Number(p.waveSpeedMs.toFixed(0)), 'sValBoldNum', { type: 'Number' })}${buildCell(`${p.fatDelayPct.toFixed(1)}% / ${p.energyDropDb.toFixed(1)} dB`, 'sValMono')}${buildCell(p.anomaly ? 'ANOMALY' : 'NORMAL', p.anomaly ? 'sValWarn' : 'sValPass')}</Row>`
       );
     });
+  } else if (st?.kind === 'PO') {
+    const isDiametral = st.mode === 'diametral';
+    const poTypeLabel = isDiametral ? 'D — Diametral Core' : 'A — Axial Core';
+    const deFormulaLabel = isDiametral ? 'De = sqrt(D*D\')' : 'De = sqrt(4*D*W/pi)';
+    wsRows.push(
+      `<Row ss:Height="20">${buildCell('Point Load Strength Index of Rock — AXIAL CORE (FST06-RKT-D5731-2-260421)', 'sSecHdr', { mergeAcross: 6 })}</Row>`
+    );
+    wsRows.push(
+      `<Row ss:Height="18">${buildCell('Test Type', 'sTblHdr')}${buildCell('D x W (mm)', 'sTblHdr')}${buildCell(`Equiv. Dia De (${deFormulaLabel})`, 'sTblHdr')}${buildCell('Failure Load P (kN)', 'sTblHdr')}${buildCell('Uncorrected Is (MPa)', 'sTblHdr')}${buildCell('Size Factor F = (De/50)^0.45', 'sTblHdr')}${buildCell('Corrected Is(50) (MPa)', 'sTblHdr')}</Row>`
+    );
+    wsRows.push(
+      `<Row ss:Height="18">${buildCell(poTypeLabel, 'sValBold')}${buildCell(`${st.dMm.toFixed(1)} x ${st.wMm.toFixed(1)}`, 'sValMono')}${buildCell(Number(st.deMm.toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(Number(st.loadKn.toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(Number(st.isUncorrMpa.toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(Number(st.fFactor.toFixed(3)), 'sValNum', { type: 'Number' })}${buildCell(Number(st.is50Mpa.toFixed(2)), 'sValBoldNum', { type: 'Number' })}</Row>`
+    );
   } else {
     wsRows.push(
       `<Row ss:Height="20">${buildCell(`Test Results (${meta.worksheetFormCode})`, 'sSecHdr', { mergeAcross: 6 })}</Row>`
@@ -753,10 +782,11 @@ export function buildCompletedExcelWorkbookXml(params: CompletedExcelGeneratorPa
     `<Row ss:Height="22">${buildCell('Tested By', 'sLabel')}${buildCell(params.operatorName, 'sValBold', { mergeAcross: 2 })}${buildCell('Checked By', 'sLabel')}${buildCell(params.approvedSignatory, 'sValBold', { mergeAcross: 1 })}</Row>`
   );
 
-  // Sheet 2: Formal Test Report (GTT-C939-RT / GTT-C940-RT / FDT-TM3-RT / RKT-D5731-RT / PLT-RT)
+  // Sheet 2: Formal Test Report (GTT-C939-RT / GTT-C940-RT / FDT-TM3-RT / RKT-D5731-RT / PLT-RT / INC-RT)
   const repRows: string[] = [];
+  const repScopeTag = meta.accredited ? LABTECH_COMPANY_HEADER.hoklasRegNo : 'LABTECH CONTROLLED (NON-HOKLAS SCOPE)';
   repRows.push(
-    `<Row ss:Height="28">${buildCell(`${LABTECH_COMPANY_HEADER.nameEn} (${LABTECH_COMPANY_HEADER.nameZh}) — ${LABTECH_COMPANY_HEADER.hoklasRegNo}`, 'sBanner', { mergeAcross: 5 })}</Row>`
+    `<Row ss:Height="28">${buildCell(`${LABTECH_COMPANY_HEADER.nameEn} (${LABTECH_COMPANY_HEADER.nameZh}) — ${repScopeTag}`, 'sBanner', { mergeAcross: 5 })}</Row>`
   );
   repRows.push(
     `<Row ss:Height="18">${buildCell(`${LABTECH_COMPANY_HEADER.addressLine1} | ${LABTECH_COMPANY_HEADER.contactLine}`, 'sMetaRow', { mergeAcross: 5 })}</Row>`

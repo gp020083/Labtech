@@ -2,12 +2,70 @@ import React from 'react';
 import {
   LABTECH_COMPANY_HEADER,
   OfficialTemplateMeta,
+  SonicStructuredPayload,
   StructuredCalcPayload,
 } from '../utils/completedWorksheetGenerator';
 import {
   HoklasWorksheetEquipmentRow,
   HoklasWorksheetRow,
 } from '../utils/limsProcessTools';
+
+export function resolveSonicWorksheetPayload(
+  cleanStp: string,
+  structured: StructuredCalcPayload | undefined,
+  measurementRows: HoklasWorksheetRow[],
+  pass: boolean
+): SonicStructuredPayload | null {
+  if (structured?.kind === 'SO') return structured;
+  if (cleanStp !== 'SO') return null;
+
+  const joined = measurementRows.map((r) => `${r.parameter} ${r.value}`).join(' | ');
+  const tubeMatch = joined.match(/(\d+)\s*Access\s*Tubes/i);
+  const tempMatch = joined.match(/Water\s*Temp\s*=\s*([\d.]+)/i);
+  const plumbedMatch = joined.match(/Plumbed\s*=\s*([\d.]+)/i);
+  const scannedMatch = joined.match(/Scanned\s*=\s*([\d.]+)/i);
+  const speedMatch = joined.match(/Wave\s*Speed\s*=\s*(\d+)/i);
+  const ageMatch = joined.match(/(\d+)\s*d(?:ays?)?/i);
+
+  const tubeCount = tubeMatch ? Math.max(2, parseInt(tubeMatch[1], 10)) : 4;
+  const waterTempC = tempMatch ? parseFloat(tempMatch[1]) : 24.0;
+  const plumbedLenM = plumbedMatch ? parseFloat(plumbedMatch[1]) : 36.2;
+  const scannedLenM = scannedMatch ? parseFloat(scannedMatch[1]) : Number((plumbedLenM - 0.04).toFixed(2));
+  const shortestTubeLenM = Number((plumbedLenM + 0.3).toFixed(2));
+  const meanSpeed = speedMatch ? parseInt(speedMatch[1], 10) : 4015;
+  const concreteAgeDays = ageMatch ? Math.max(7, parseInt(ageMatch[1], 10)) : 9;
+  const minPullingSec = Math.ceil(shortestTubeLenM / 0.5);
+  const actualPullingSec = minPullingSec + 14;
+  const sideDist = 1450;
+  const diagDist = Math.round(sideDist * Math.SQRT2);
+  const sideFat = Math.round((sideDist * 1000) / meanSpeed);
+  const diagFat = Math.round((diagDist * 1000) / meanSpeed);
+
+  return {
+    kind: 'SO',
+    tubeCount,
+    concreteAgeDays,
+    waterTempC,
+    shortestTubeLenM,
+    plumbedLenM,
+    scannedLenM,
+    minPullingSec,
+    actualPullingSec,
+    lengthCheckOk: Math.abs(plumbedLenM - scannedLenM) <= Math.max(0.25, plumbedLenM * 0.01),
+    tempOk: waterTempC >= 0 && waterTempC <= 30,
+    pullingOk: actualPullingSec >= minPullingSec,
+    ageOk: concreteAgeDays >= 7,
+    isPass: pass,
+    profiles: [
+      { pair: 'T1-T2', distMm: sideDist, baseFatUs: sideFat - 1, measFatUs: sideFat, energyDropDb: 1.1, waveSpeedMs: meanSpeed, fatDelayPct: 0.3, anomaly: false },
+      { pair: 'T2-T3', distMm: sideDist, baseFatUs: sideFat - 2, measFatUs: sideFat, energyDropDb: 1.2, waveSpeedMs: meanSpeed + 5, fatDelayPct: 0.6, anomaly: false },
+      { pair: 'T3-T4', distMm: sideDist, baseFatUs: sideFat - 1, measFatUs: sideFat + 1, energyDropDb: 1.3, waveSpeedMs: meanSpeed - 8, fatDelayPct: 0.6, anomaly: false },
+      { pair: 'T4-T1', distMm: sideDist, baseFatUs: sideFat - 2, measFatUs: sideFat - 1, energyDropDb: 1.0, waveSpeedMs: meanSpeed + 10, fatDelayPct: 0.3, anomaly: false },
+      { pair: 'T1-T3', distMm: diagDist, baseFatUs: diagFat - 2, measFatUs: diagFat, energyDropDb: 1.4, waveSpeedMs: meanSpeed - 3, fatDelayPct: 0.4, anomaly: false },
+      { pair: 'T2-T4', distMm: diagDist, baseFatUs: diagFat - 2, measFatUs: diagFat, energyDropDb: 1.2, waveSpeedMs: meanSpeed + 4, fatDelayPct: 0.4, anomaly: !pass },
+    ],
+  };
+}
 
 export interface OfficialFormSiteState {
   jobNo: string;

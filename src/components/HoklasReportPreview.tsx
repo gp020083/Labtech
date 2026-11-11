@@ -1,17 +1,18 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { FieldCalcRecord, JobItem } from '../types';
 import {
   buildHoklasFieldWorksheetData,
+  equipmentMatchesStp,
+  stripManualInputPlaceholder,
   HoklasWorksheetEquipmentRow,
   HoklasWorksheetRow,
 } from '../utils/limsProcessTools';
 import {
   StructuredCalcPayload,
   getOfficialTemplateMeta,
-  triggerCompletedExcelDownload,
   toEnglishWorksheetText,
 } from '../utils/completedWorksheetGenerator';
 import { downloadCalcRecordCsv, getHkTodayIso } from '../utils';
@@ -25,7 +26,6 @@ import {
   PenTool,
   Plus,
   Eraser,
-  FileSpreadsheet,
   Award,
   ClipboardList,
 } from 'lucide-react';
@@ -75,10 +75,11 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
   const { jobs, equipment, tests, accounts, pushToast } = useApp();
   const { tx } = usePrefs();
   const [docMode, setDocMode] = useState<'worksheet' | 'formal_report'>(initialDocMode);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setDocMode(initialDocMode);
-  }, [initialDocMode, record?.id]);
+  }, [initialDocMode, record?.id, record?.jobRefNo]);
 
   const resolvedJob = useMemo(() => {
     const jobCode = siteDetails?.jobNo || record?.jobNo;
@@ -93,7 +94,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
         id: `HKL-${Date.now().toString().slice(-4)}`,
         jobNo: siteDetails?.jobNo || resolvedJob?.no || 'LT0001',
         stpCode: propStructuredData?.kind || 'KD',
-        title: 'HOKLAS Field Test Record',
+        title: 'Field Test Record',
         locationNote: siteDetails?.locationNote || 'Standard Field Test Station',
         summary: testValues?.map((r) => `${r.parameter}: ${r.value}`).join('\n') || 'Field Measurement Record',
         pass: true,
@@ -104,6 +105,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     [record, siteDetails, resolvedJob, testValues, propOperatorName, propStructuredData]
   );
 
+  const cleanStp = (fallbackRecord.stpCode || 'KD').trim().toUpperCase();
   const activeStructured = propStructuredData || fallbackRecord.structuredData;
 
   const baseWorksheet = useMemo(
@@ -118,12 +120,14 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
   );
 
   const templateMeta = useMemo(
-    () => getOfficialTemplateMeta(fallbackRecord.stpCode, tests),
-    [fallbackRecord.stpCode, tests]
+    () => getOfficialTemplateMeta(cleanStp, tests),
+    [cleanStp, tests]
   );
+  const isHoklasAccredited = templateMeta.accredited && cleanStp !== 'PLT' && cleanStp !== 'VC';
+
   const stpMethod = useMemo(
-    () => tests.find((t) => t.code === fallbackRecord.stpCode),
-    [fallbackRecord.stpCode, tests]
+    () => tests.find((t) => t.code.toUpperCase() === cleanStp),
+    [cleanStp, tests]
   );
 
   const hasDynamicPayload = Boolean(
@@ -135,15 +139,42 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
       (equipmentItems && equipmentItems.length > 0)
   );
 
+  useEffect(() => {
+    if (!hasDynamicPayload) return;
+    document.body.classList.add('printing-hoklas-sheet');
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const modals = document.querySelectorAll('[data-modal-backdrop="true"]');
+      if (modals.length > 0 && modals[modals.length - 1] === backdropRef.current) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      document.body.classList.remove('printing-hoklas-sheet');
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [hasDynamicPayload, onClose]);
+
   const [siteForm, setSiteForm] = useState<OfficialFormSiteState>({
     jobNo: toEnglishWorksheetText(siteDetails?.jobNo || baseWorksheet.jobNo, 'LT0001'),
-    jobRefNo: toEnglishWorksheetText(siteDetails?.jobRefNo || fallbackRecord.jobRefNo || baseWorksheet.jobRefNo, baseWorksheet.reportRefNo),
-    worksOrderNo: toEnglishWorksheetText(siteDetails?.worksOrderNo ?? fallbackRecord.worksOrderNo ?? baseWorksheet.worksOrderNo, ''),
-    batchNo: toEnglishWorksheetText(fallbackRecord.batchNo ?? baseWorksheet.batchNo, ''),
-    sampleId: toEnglishWorksheetText(fallbackRecord.sampleId ?? baseWorksheet.sampleId, ''),
+    jobRefNo: toEnglishWorksheetText(
+      siteDetails?.jobRefNo || fallbackRecord.jobRefNo || baseWorksheet.jobRefNo,
+      baseWorksheet.reportRefNo
+    ),
+    worksOrderNo: stripManualInputPlaceholder(
+      siteDetails?.worksOrderNo ?? fallbackRecord.worksOrderNo ?? baseWorksheet.worksOrderNo
+    ),
+    batchNo: stripManualInputPlaceholder(fallbackRecord.batchNo ?? baseWorksheet.batchNo),
+    sampleId: stripManualInputPlaceholder(fallbackRecord.sampleId ?? baseWorksheet.sampleId),
     companyProjNo: toEnglishWorksheetText(siteDetails?.companyProjNo || baseWorksheet.companyProjNo, 'LT0001'),
     projectTitle: toEnglishWorksheetText(siteDetails?.projectTitle || baseWorksheet.projectTitle, baseWorksheet.jobNo),
-    clientName: toEnglishWorksheetText(siteDetails?.clientName || fallbackRecord.clientName || baseWorksheet.clientName, 'CEDD'),
+    clientName: toEnglishWorksheetText(
+      siteDetails?.clientName || fallbackRecord.clientName || baseWorksheet.clientName,
+      'CEDD'
+    ),
     siteLocation: toEnglishWorksheetText(siteDetails?.siteLocation || baseWorksheet.siteLocation, baseWorksheet.jobNo),
     locationNote: toEnglishWorksheetText(siteDetails?.locationNote || baseWorksheet.locationNote, 'Field Station'),
     ambientTemp: toEnglishWorksheetText(siteDetails?.ambientTemp || '26.5 °C', '26.5 °C'),
@@ -152,31 +183,43 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
 
   const initialEqRows = useMemo<HoklasWorksheetEquipmentRow[]>(() => {
     if (equipmentItems && equipmentItems.length > 0) {
-      return equipmentItems.map((e) => ({
-        ...e,
-        name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
-        calDue: calibrationDueDates?.[e.code] || e.calDue,
-      }));
+      const filtered = equipmentItems.filter((item) => {
+        const reg = equipment.find((e) => e.code.toUpperCase() === item.code.toUpperCase());
+        return reg ? equipmentMatchesStp(reg, cleanStp) : true;
+      });
+      if (filtered.length > 0) {
+        return filtered.map((e) => ({
+          ...e,
+          name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
+          calDue: calibrationDueDates?.[e.code] || e.calDue,
+        }));
+      }
     }
     if (equipmentIds && equipmentIds.length > 0) {
-      return equipmentIds.map((code) => {
-        const found = equipment.find((e) => e.code.toUpperCase() === code.toUpperCase());
-        return {
-          code: found?.code || code,
-          name: toEnglishWorksheetText(found?.name, 'Calibrated Test Instrument'),
-          model: found?.model || '—',
-          serial: found?.serial || '—',
-          calDue: calibrationDueDates?.[code] || found?.certDue || found?.due || '—',
-          source: found?.currentLoan?.jobNo === baseWorksheet.jobNo ? 'on_site' : 'recommended_lab',
-        };
+      const filteredCodes = equipmentIds.filter((code) => {
+        const reg = equipment.find((e) => e.code.toUpperCase() === code.toUpperCase());
+        return reg ? equipmentMatchesStp(reg, cleanStp) : false;
       });
+      if (filteredCodes.length > 0) {
+        return filteredCodes.map((code) => {
+          const found = equipment.find((e) => e.code.toUpperCase() === code.toUpperCase());
+          return {
+            code: found?.code || code,
+            name: toEnglishWorksheetText(found?.name, 'Calibrated Test Instrument'),
+            model: found?.model || '—',
+            serial: found?.serial || '—',
+            calDue: calibrationDueDates?.[code] || found?.certDue || found?.due || '—',
+            source: found?.currentLoan?.jobNo === baseWorksheet.jobNo ? 'on_site' : 'recommended_lab',
+          };
+        });
+      }
     }
     return baseWorksheet.equipmentList.map((e) => ({
       ...e,
       name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
       calDue: calibrationDueDates?.[e.code] || e.calDue,
     }));
-  }, [equipmentItems, equipmentIds, calibrationDueDates, equipment, baseWorksheet]);
+  }, [equipmentItems, equipmentIds, calibrationDueDates, equipment, baseWorksheet, cleanStp]);
 
   const [eqRows, setEqRows] = useState<HoklasWorksheetEquipmentRow[]>(initialEqRows);
   const [addEqCode, setAddEqCode] = useState<string>('');
@@ -187,20 +230,31 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     toEnglishWorksheetText(propOperatorName || baseWorksheet.operatorName, 'Shih Chak Lung, Ben')
   );
   const [activeSignatory, setActiveSignatory] = useState<string>(
-    toEnglishWorksheetText(propApprovedSignatory || baseWorksheet.approvedSignatory, 'Shih Chak Lung, Ben (HOKLAS AS)')
+    toEnglishWorksheetText(
+      propApprovedSignatory || baseWorksheet.approvedSignatory,
+      isHoklasAccredited ? 'Shih Chak Lung, Ben (HOKLAS AS)' : 'Lam Hoi Fan, James'
+    )
   );
   const [signatoryEndorsed] = useState<boolean>(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setSiteForm({
       jobNo: toEnglishWorksheetText(siteDetails?.jobNo || baseWorksheet.jobNo, 'LT0001'),
-      jobRefNo: toEnglishWorksheetText(siteDetails?.jobRefNo || fallbackRecord.jobRefNo || baseWorksheet.jobRefNo, baseWorksheet.reportRefNo),
-      worksOrderNo: toEnglishWorksheetText(siteDetails?.worksOrderNo ?? fallbackRecord.worksOrderNo ?? baseWorksheet.worksOrderNo, ''),
-      batchNo: toEnglishWorksheetText(fallbackRecord.batchNo ?? baseWorksheet.batchNo, ''),
-      sampleId: toEnglishWorksheetText(fallbackRecord.sampleId ?? baseWorksheet.sampleId, ''),
+      jobRefNo: toEnglishWorksheetText(
+        siteDetails?.jobRefNo || fallbackRecord.jobRefNo || baseWorksheet.jobRefNo,
+        baseWorksheet.reportRefNo
+      ),
+      worksOrderNo: stripManualInputPlaceholder(
+        siteDetails?.worksOrderNo ?? fallbackRecord.worksOrderNo ?? baseWorksheet.worksOrderNo
+      ),
+      batchNo: stripManualInputPlaceholder(fallbackRecord.batchNo ?? baseWorksheet.batchNo),
+      sampleId: stripManualInputPlaceholder(fallbackRecord.sampleId ?? baseWorksheet.sampleId),
       companyProjNo: toEnglishWorksheetText(siteDetails?.companyProjNo || baseWorksheet.companyProjNo, 'LT0001'),
       projectTitle: toEnglishWorksheetText(siteDetails?.projectTitle || baseWorksheet.projectTitle, baseWorksheet.jobNo),
-      clientName: toEnglishWorksheetText(siteDetails?.clientName || fallbackRecord.clientName || baseWorksheet.clientName, 'CEDD'),
+      clientName: toEnglishWorksheetText(
+        siteDetails?.clientName || fallbackRecord.clientName || baseWorksheet.clientName,
+        'CEDD'
+      ),
       siteLocation: toEnglishWorksheetText(siteDetails?.siteLocation || baseWorksheet.siteLocation, baseWorksheet.jobNo),
       locationNote: toEnglishWorksheetText(siteDetails?.locationNote || baseWorksheet.locationNote, 'Field Station'),
       ambientTemp: toEnglishWorksheetText(siteDetails?.ambientTemp || '26.5 °C', '26.5 °C'),
@@ -209,8 +263,13 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     setEqRows(initialEqRows);
     setMeasurementRows(testValues && testValues.length > 0 ? testValues : baseWorksheet.rows);
     setActiveOperator(toEnglishWorksheetText(propOperatorName || baseWorksheet.operatorName, 'Shih Chak Lung, Ben'));
-    setActiveSignatory(toEnglishWorksheetText(propApprovedSignatory || baseWorksheet.approvedSignatory, 'Shih Chak Lung, Ben (HOKLAS AS)'));
-  }, [baseWorksheet, initialEqRows, siteDetails, testValues, propOperatorName, propApprovedSignatory, fallbackRecord]);
+    setActiveSignatory(
+      toEnglishWorksheetText(
+        propApprovedSignatory || baseWorksheet.approvedSignatory,
+        isHoklasAccredited ? 'Shih Chak Lung, Ben (HOKLAS AS)' : 'Lam Hoi Fan, James'
+      )
+    );
+  }, [baseWorksheet, initialEqRows, siteDetails, testValues, propOperatorName, propApprovedSignatory, fallbackRecord, isHoklasAccredited]);
 
   const [activeSignPadTarget, setActiveSignPadTarget] = useState<'operator' | 'signatory' | null>(null);
   const [operatorSigDataUrl, setOperatorSigDataUrl] = useState<string | null>(null);
@@ -218,19 +277,31 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef(false);
 
-  const inUseEquipment = useMemo(() => equipment.filter((e) => e.inUse !== 'N'), [equipment]);
+  const inUseEquipmentOptions = useMemo(
+    () => equipment.filter((e) => e.inUse !== 'N' && equipmentMatchesStp(e, cleanStp)),
+    [equipment, cleanStp]
+  );
+
   const signatoryOptions = useMemo(() => {
     if (stpMethod?.approvedSignatories?.length) {
       return stpMethod.approvedSignatories.map((s) => toEnglishWorksheetText(s, s));
+    }
+    if (!isHoklasAccredited) {
+      return [
+        'Lam Hoi Fan, James',
+        'Tang Man Fu, Edmond',
+        'Chu Kar Wai, Peter',
+        'Shih Chak Lung, Ben',
+      ];
     }
     return [
       'Shih Chak Lung, Ben (Director / HOKLAS AS)',
       'Lam Hoi Fan, James (HOKLAS Approved Signatory)',
       'Tang Man Fu, Edmond (HOKLAS Approved Signatory)',
-      'Yu Wai Chun, Kelvin (HOKLAS Approved Signatory)',
-      'Chu Kar Wai, Peter (Senior Tech / HOKLAS AS)',
+      'Yue Wai Chun (HOKLAS Approved Signatory)',
+      'Chu Kar Wai, Peter (HOKLAS Approved Signatory)',
     ];
-  }, [stpMethod]);
+  }, [stpMethod, isHoklasAccredited]);
 
   const operatorOptions = useMemo(() => {
     const names = accounts.map((a) => toEnglishWorksheetText(a.name, a.name));
@@ -242,7 +313,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
 
   const handleAddEquipmentRow = () => {
     if (!addEqCode) return;
-    const found = inUseEquipment.find((e) => e.code === addEqCode);
+    const found = inUseEquipmentOptions.find((e) => e.code === addEqCode);
     if (!found) return;
     if (eqRows.some((r) => r.code === found.code)) {
       pushToast(tx('此儀器已在記錄表內', 'Equipment already in table'), found.code);
@@ -252,7 +323,7 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
       ...prev,
       {
         code: found.code,
-        name: found.name,
+        name: toEnglishWorksheetText(found.name, 'Calibrated Test Instrument'),
         model: found.model || '—',
         serial: found.serial || '—',
         calDue: found.certDue || found.due || '—',
@@ -314,46 +385,21 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     window.print();
   };
 
-  const handleDownloadCompletedExcel = () => {
-    const downloadedName = triggerCompletedExcelDownload({
-      stpCode: fallbackRecord.stpCode,
-      reportRefNo: siteForm.jobRefNo || baseWorksheet.reportRefNo,
-      jobRefNo: siteForm.jobRefNo || baseWorksheet.jobRefNo,
-      worksOrderNo: siteForm.worksOrderNo ?? '',
-      batchNo: siteForm.batchNo ?? '',
-      sampleId: siteForm.sampleId ?? '',
-      testedAt: baseWorksheet.testedAt,
-      jobNo: siteForm.jobNo,
-      companyProjNo: siteForm.companyProjNo,
-      projectTitle: siteForm.projectTitle,
-      clientName: siteForm.clientName,
-      siteLocation: siteForm.siteLocation,
-      locationNote: siteForm.locationNote,
-      ambientTemp: siteForm.ambientTemp,
-      weatherNote: siteForm.weatherNote,
-      operatorName: activeOperator,
-      approvedSignatory: activeSignatory,
-      pass: baseWorksheet.pass,
-      equipmentRows: eqRows,
-      measurementRows,
-      structured: activeStructured,
-      tests,
-      equipmentRegistry: equipment,
-      job: resolvedJob,
-      record: fallbackRecord,
-    });
-    pushToast(
-      tx('已產生並下載官方 Completed Excel (.xlsx)', 'Generated & Downloaded Official Completed Excel (.xlsx)'),
-      `${downloadedName} (${templateMeta.templateFileCode})`
-    );
-  };
+  const pdfFileNameBadge = templateMeta.pdfTemplateName;
 
   const handleCopyReport = () => {
-    const text = [
+    const headerBanner =
       docMode === 'formal_report'
-        ? `=== LABTECH TESTING LTD · HOKLAS 298 OFFICIAL TEST REPORT ===`
-        : `=== LABTECH TESTING LTD · HOKLAS 298 COMPLETED FIELD WORKSHEET ===`,
-      `Report Ref: ${baseWorksheet.reportRefNo} | Template: ${templateMeta.templateFileCode}`,
+        ? isHoklasAccredited
+          ? '=== LABTECH TESTING LTD · HOKLAS 298 OFFICIAL TEST REPORT ==='
+          : '=== LABTECH TESTING LTD · OFFICIAL TEST REPORT (NON-HOKLAS SCOPE) ==='
+        : isHoklasAccredited
+        ? '=== LABTECH TESTING LTD · HOKLAS 298 COMPLETED FIELD WORKSHEET ==='
+        : '=== LABTECH TESTING LTD · COMPLETED FIELD WORKSHEET ===';
+
+    const text = [
+      headerBanner,
+      `Report Ref: ${siteForm.jobRefNo || baseWorksheet.reportRefNo} | Controlled PDF: ${pdfFileNameBadge}`,
       `Job No.: ${siteForm.jobNo} (${siteForm.companyProjNo}) | Site: ${siteForm.siteLocation}`,
       `Sample / Pile Ref: ${siteForm.locationNote} | Tested At: ${baseWorksheet.testedAt}`,
       `Ambient Temp: ${siteForm.ambientTemp} | Weather: ${siteForm.weatherNote}`,
@@ -368,257 +414,263 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
     navigator.clipboard?.writeText(text);
     pushToast(
       docMode === 'formal_report'
-        ? tx('已複製 HOKLAS 正式測試報告全文', 'Copied HOKLAS Formal Report Text')
-        : tx('已複製 HOKLAS 完成工作紙全文', 'Copied Completed Worksheet Text'),
-      baseWorksheet.reportRefNo
+        ? isHoklasAccredited
+          ? tx('已複製 HOKLAS 正式測試報告全文', 'Copied HOKLAS Formal Report Text')
+          : tx('已複製正式測試報告全文', 'Copied Official Test Report Text')
+        : tx('已複製完成工作紙全文', 'Copied Completed Worksheet Text'),
+      siteForm.jobRefNo || baseWorksheet.reportRefNo
     );
   };
 
+  const activeHeaderTitle =
+    docMode === 'formal_report'
+      ? isHoklasAccredited
+        ? tx(`${templateMeta.formalReportTitleZh} · A4 正式報告`, templateMeta.formalReportTitleEn)
+        : tx(`正式測試報告 · ${templateMeta.reportCode}`, templateMeta.formalReportTitleEn)
+      : tx(`${templateMeta.templateTitleZh} · A4 官方工作紙`, templateMeta.templateTitleEn);
+
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 p-2 sm:p-4 overflow-y-auto print:bg-white print:p-0"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="my-auto flex max-h-[95vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden print:max-h-none print:rounded-none print:border-none print:shadow-none">
-        {/* Top Action Bar (Hidden in Print) */}
-        <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-900 px-4 py-3 text-white print:hidden">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="rounded-lg bg-brand px-2.5 py-1 font-mono text-xs font-extrabold text-white shrink-0">
-                {baseWorksheet.worksheetCode}
-              </span>
-              <div className="min-w-0">
-                <div className="text-sm font-extrabold truncate">
-                  {docMode === 'formal_report'
-                    ? tx(`${templateMeta.formalReportTitleZh} (A4 正式報告)`, templateMeta.formalReportTitleEn)
-                    : tx(`${templateMeta.templateTitleZh} (A4 官方工作紙)`, templateMeta.templateTitleEn)}
+    <div id="hoklas-print-portal">
+      <div
+        ref={backdropRef}
+        data-modal-backdrop="true"
+        className="hoklas-print-shell fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/70 p-2 sm:p-4 overflow-y-auto print:bg-white print:p-0"
+        onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div className="my-auto flex max-h-[95vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden print:max-h-none print:rounded-none print:border-none print:shadow-none">
+          {/* Top Action Bar (Hidden in Print) */}
+          <div className="no-print flex flex-col gap-2 border-b border-slate-700 bg-slate-900 px-4 py-3 text-white print:hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="rounded-lg bg-brand px-2.5 py-1 font-mono text-xs font-extrabold text-white shrink-0">
+                  {pdfFileNameBadge}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-extrabold text-white truncate">
+                    {activeHeaderTitle}
+                  </div>
+                  <div className="text-[11px] text-slate-200 font-mono truncate">
+                    {siteForm.jobRefNo || baseWorksheet.reportRefNo} · {templateMeta.stpDocRef}
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-300 font-mono truncate">
-                  {templateMeta.templateFileCode} · {baseWorksheet.reportRefNo} · {templateMeta.stpDocRef}
-                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handlePrintWorksheet}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-xs font-extrabold text-white hover:bg-brand-deep cursor-pointer whitespace-nowrap shadow-xs"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  {tx('🖨️ 列印 A4 / 另存 PDF', '🖨️ Print A4 / Save PDF')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadCalcRecordCsv(fallbackRecord, resolvedJob || undefined)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-bold text-white hover:bg-slate-700 cursor-pointer whitespace-nowrap"
+                >
+                  <Download className="h-3.5 w-3.5" /> CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyReport}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-bold text-white hover:bg-slate-700 cursor-pointer whitespace-nowrap"
+                >
+                  <Copy className="h-3.5 w-3.5" /> {tx('複製', 'Copy')}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl p-1.5 text-slate-200 hover:bg-slate-800 hover:text-white cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={handleDownloadCompletedExcel}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-emerald-500 cursor-pointer whitespace-nowrap shadow-xs"
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" />
-                {tx('📊 匯出官方 Excel (.xlsx 原生底板含 Logo)', '📊 Export Official Excel (.xlsx)')}
-              </button>
-              <button
-                type="button"
-                onClick={handlePrintWorksheet}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep cursor-pointer whitespace-nowrap"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                {tx('🖨️ 列印 A4 / 另存 PDF', '🖨️ Print A4 / Save PDF')}
-              </button>
-              <button
-                type="button"
-                onClick={() => downloadCalcRecordCsv(fallbackRecord, resolvedJob || undefined)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-100 hover:bg-slate-700 cursor-pointer whitespace-nowrap"
-              >
-                <Download className="h-3.5 w-3.5" /> CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyReport}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-100 hover:bg-slate-700 cursor-pointer whitespace-nowrap"
-              >
-                <Copy className="h-3.5 w-3.5" /> {tx('複製', 'Copy')}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mode Switcher + Quick Sign & Equipment Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-800 text-xs">
-            <div className="inline-flex rounded-xl bg-slate-800 p-1 gap-1">
-              <button
-                type="button"
-                onClick={() => setDocMode('worksheet')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-extrabold transition cursor-pointer ${
-                  docMode === 'worksheet'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <ClipboardList className="h-3.5 w-3.5 text-brand" />
-                {tx(
-                  `1. 官方測試工作紙 (${templateMeta.templateFileCode.replace('_Worksheet_template.xlsx', '')})`,
-                  `1. Official Worksheet (${templateMeta.templateFileCode.replace('_Worksheet_template.xlsx', '')})`
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDocMode('formal_report')}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-extrabold transition cursor-pointer ${
-                  docMode === 'formal_report'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Award className="h-3.5 w-3.5" />
-                {tx('2. HOKLAS 正式測試報告', '2. Formal HOKLAS Test Report')}
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-              <select
-                aria-label="Tested By Operator"
-                value={activeOperator}
-                onChange={(e) => setActiveOperator(e.target.value)}
-                className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] font-bold text-slate-100"
-              >
-                {operatorOptions.map((op) => (
-                  <option key={op} value={op}>
-                    Tested: {op}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Approved Signatory"
-                value={activeSignatory}
-                onChange={(e) => setActiveSignatory(e.target.value)}
-                className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] font-bold text-slate-100"
-              >
-                {signatoryOptions.map((s) => (
-                  <option key={s} value={s}>
-                    Checked: {s}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveSignPadTarget((prev) => (prev === 'operator' ? null : 'operator'))
-                }
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 font-bold text-slate-200 hover:bg-slate-700 cursor-pointer"
-              >
-                <PenTool className="h-3 w-3" /> {tx('手寫簽名', 'Sign Pad')}
-              </button>
-              <div className="inline-flex items-center gap-1">
-                <select
-                  aria-label="Add Calibrated Equipment"
-                  value={addEqCode}
-                  onChange={(e) => setAddEqCode(e.target.value)}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] text-slate-200 max-w-[140px]"
+            {/* Mode Switcher + Quick Sign & Equipment Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-700 text-xs">
+              <div className="inline-flex rounded-xl border border-slate-600 bg-slate-800 p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setDocMode('worksheet')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-extrabold transition cursor-pointer ${
+                    docMode === 'worksheet'
+                      ? 'bg-brand text-white shadow-xs'
+                      : 'text-slate-200 hover:bg-slate-700 hover:text-white'
+                  }`}
                 >
-                  <option value="">{tx('+ 加儀器...', '+ Add Eq...')}</option>
-                  {inUseEquipment.map((e) => (
-                    <option key={e.code} value={e.code}>
-                      {e.code} · {e.name}
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  {tx(
+                    `1. 官方測試工作紙 · ${templateMeta.worksheetFormCode}`,
+                    `1. Official Worksheet · ${templateMeta.worksheetFormCode}`
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDocMode('formal_report')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-extrabold transition cursor-pointer ${
+                    docMode === 'formal_report'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-slate-200 hover:bg-slate-700 hover:text-white'
+                  }`}
+                >
+                  <Award className="h-3.5 w-3.5" />
+                  {isHoklasAccredited
+                    ? tx('2. HOKLAS 正式測試報告', '2. Formal HOKLAS Test Report')
+                    : tx('2. 正式測試報告', '2. Official Test Report')}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <select
+                  aria-label="Tested By Operator"
+                  value={activeOperator}
+                  onChange={(e) => setActiveOperator(e.target.value)}
+                  className="rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-bold text-white"
+                >
+                  {operatorOptions.map((op) => (
+                    <option key={op} value={op}>
+                      Tested: {op}
                     </option>
                   ))}
                 </select>
-                {addEqCode && (
-                  <button
-                    type="button"
-                    onClick={handleAddEquipmentRow}
-                    className="rounded-lg bg-emerald-600 px-2 py-1 font-bold text-white hover:bg-emerald-500 cursor-pointer"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {activeSignPadTarget && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-800 p-2.5 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-amber-300">
-                  {activeSignPadTarget === 'operator'
-                    ? tx('繪製技術員簽名:', 'Draw Operator Signature:')
-                    : tx('繪製核准簽署人簽名:', 'Draw Signatory Signature:')}
-                </span>
+                <select
+                  aria-label="Approved Signatory"
+                  value={activeSignatory}
+                  onChange={(e) => setActiveSignatory(e.target.value)}
+                  className="rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-bold text-white"
+                >
+                  {signatoryOptions.map((s) => (
+                    <option key={s} value={s}>
+                      Checked: {s}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={() =>
-                    setActiveSignPadTarget(
-                      activeSignPadTarget === 'operator' ? 'signatory' : 'operator'
-                    )
+                    setActiveSignPadTarget((prev) => (prev === 'operator' ? null : 'operator'))
                   }
-                  className="rounded bg-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-200 hover:bg-slate-600 cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-600 bg-slate-800 px-2.5 py-1 font-bold text-white hover:bg-slate-700 cursor-pointer"
                 >
-                  {tx('切換簽署角色', 'Switch Role')}
+                  <PenTool className="h-3 w-3" /> {tx('手寫簽名', 'Sign Pad')}
                 </button>
-                <button
-                  type="button"
-                  onClick={clearPadCanvas}
-                  className="inline-flex items-center gap-1 rounded bg-rose-900/70 px-2 py-0.5 text-[10px] font-bold text-rose-200 hover:bg-rose-800 cursor-pointer"
-                >
-                  <Eraser className="h-3 w-3" /> {tx('清除', 'Clear')}
-                </button>
+                <div className="inline-flex items-center gap-1">
+                  <select
+                    aria-label="Add Calibrated Equipment"
+                    value={addEqCode}
+                    onChange={(e) => setAddEqCode(e.target.value)}
+                    className="rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-bold text-white max-w-[160px]"
+                  >
+                    <option value="">{tx(`+ 加儀器 · ${cleanStp}`, `+ Add ${cleanStp} Eq`)}</option>
+                    {inUseEquipmentOptions.map((e) => (
+                      <option key={e.code} value={e.code}>
+                        {e.code} · {e.name}
+                      </option>
+                    ))}
+                  </select>
+                  {addEqCode && (
+                    <button
+                      type="button"
+                      onClick={handleAddEquipmentRow}
+                      className="rounded-lg bg-emerald-600 px-2 py-1 font-bold text-white hover:bg-emerald-500 cursor-pointer"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <canvas
-                ref={canvasRef}
-                width={320}
-                height={70}
-                onPointerDown={startPadDraw}
-                onPointerMove={movePadDraw}
-                onPointerUp={endPadDraw}
-                onPointerLeave={endPadDraw}
-                className="h-14 w-64 rounded-lg bg-white border border-slate-400 cursor-crosshair touch-none"
-              />
             </div>
-          )}
-        </div>
 
-        {/* Printable Official LabTech A4 Sheet Container */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/80 print:bg-white print:p-0 print:overflow-visible">
-          {docMode === 'formal_report' ? (
-            <OfficialFormalReportView
-              stpCode={fallbackRecord.stpCode}
-              baseWorksheet={baseWorksheet}
-              templateMeta={templateMeta}
-              siteForm={siteForm}
-              setSiteForm={setSiteForm}
-              eqRows={eqRows}
-              measurementRows={measurementRows}
-              activeStructured={activeStructured}
-              activeOperator={activeOperator}
-              activeSignatory={activeSignatory}
-              signatoryEndorsed={signatoryEndorsed}
-              operatorSigDataUrl={operatorSigDataUrl}
-              signatorySigDataUrl={signatorySigDataUrl}
-            />
-          ) : (
-            <OfficialWorksheetView
-              stpCode={fallbackRecord.stpCode}
-              reportRefNo={baseWorksheet.reportRefNo}
-              testedAt={baseWorksheet.testedAt}
-              pass={baseWorksheet.pass}
-              siteForm={siteForm}
-              setSiteForm={setSiteForm}
-              templateMeta={templateMeta}
-              eqRows={eqRows}
-              measurementRows={measurementRows}
-              setMeasurementRows={setMeasurementRows}
-              structured={activeStructured}
-              activeOperator={activeOperator}
-              setActiveOperator={setActiveOperator}
-              operatorOptions={operatorOptions}
-              activeSignatory={activeSignatory}
-              setActiveSignatory={setActiveSignatory}
-              signatoryOptions={signatoryOptions}
-              operatorSigDataUrl={operatorSigDataUrl}
-              signatorySigDataUrl={signatorySigDataUrl}
-              witnessSigDataUrl={baseWorksheet.signatureDataUrl}
-              witnessName={baseWorksheet.signedBy}
-              witnessRole={baseWorksheet.signedRole}
-            />
-          )}
+            {activeSignPadTarget && (
+              <div className="no-print flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-600 bg-slate-800 p-2.5 text-xs print:hidden">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-amber-300">
+                    {activeSignPadTarget === 'operator'
+                      ? tx('繪製技術員簽名：', 'Draw Operator Signature:')
+                      : tx('繪製核准簽署人簽名：', 'Draw Signatory Signature:')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveSignPadTarget(
+                        activeSignPadTarget === 'operator' ? 'signatory' : 'operator'
+                      )
+                    }
+                    className="rounded border border-slate-500 bg-slate-700 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-slate-600 cursor-pointer"
+                  >
+                    {tx('切換簽署角色', 'Switch Role')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearPadCanvas}
+                    className="inline-flex items-center gap-1 rounded bg-rose-700 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-rose-600 cursor-pointer"
+                  >
+                    <Eraser className="h-3 w-3" /> {tx('清除', 'Clear')}
+                  </button>
+                </div>
+                <canvas
+                  ref={canvasRef}
+                  width={320}
+                  height={70}
+                  onPointerDown={startPadDraw}
+                  onPointerMove={movePadDraw}
+                  onPointerUp={endPadDraw}
+                  onPointerLeave={endPadDraw}
+                  className="light-island bg-white h-14 w-64 rounded-lg border border-slate-400 cursor-crosshair touch-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Printable Official LabTech A4 Sheet Container */}
+          <div className="hoklas-print-scroll flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-200/80 print:bg-white print:p-0 print:overflow-visible">
+            {docMode === 'formal_report' ? (
+              <OfficialFormalReportView
+                stpCode={cleanStp}
+                baseWorksheet={baseWorksheet}
+                templateMeta={templateMeta}
+                siteForm={siteForm}
+                setSiteForm={setSiteForm}
+                eqRows={eqRows}
+                measurementRows={measurementRows}
+                activeStructured={activeStructured}
+                activeOperator={activeOperator}
+                activeSignatory={activeSignatory}
+                signatoryEndorsed={signatoryEndorsed}
+                operatorSigDataUrl={operatorSigDataUrl}
+                signatorySigDataUrl={signatorySigDataUrl}
+              />
+            ) : (
+              <OfficialWorksheetView
+                stpCode={cleanStp}
+                reportRefNo={baseWorksheet.reportRefNo}
+                testedAt={baseWorksheet.testedAt}
+                pass={baseWorksheet.pass}
+                siteForm={siteForm}
+                setSiteForm={setSiteForm}
+                templateMeta={templateMeta}
+                eqRows={eqRows}
+                measurementRows={measurementRows}
+                setMeasurementRows={setMeasurementRows}
+                structured={activeStructured}
+                activeOperator={activeOperator}
+                setActiveOperator={setActiveOperator}
+                operatorOptions={operatorOptions}
+                activeSignatory={activeSignatory}
+                setActiveSignatory={setActiveSignatory}
+                signatoryOptions={signatoryOptions}
+                operatorSigDataUrl={operatorSigDataUrl}
+                signatorySigDataUrl={signatorySigDataUrl}
+                witnessSigDataUrl={baseWorksheet.signatureDataUrl}
+                witnessName={baseWorksheet.signedBy}
+                witnessRole={baseWorksheet.signedRole}
+                sitePhotos={baseWorksheet.sitePhotos}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>,

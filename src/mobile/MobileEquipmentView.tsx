@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
@@ -26,8 +27,13 @@ import {
 const TEST_TAGS = ['ALL', 'KD', 'SO', 'FC', 'BL', 'PO', 'PLT', 'VC'];
 
 type MobileEqMode = 'loans' | 'calibration';
-type LoanStatusPill = 'all' | 'available' | 'loaned' | 'overdue' | 'history';
+type LoanStatusPill = 'all' | 'available' | 'loaned' | 'cal_alert' | 'overdue' | 'history';
 type CalStatusPill = 'all' | 'valid' | 'due_90' | 'overdue' | 'monthly';
+
+function cleanLocationLabel(raw?: string): string {
+  if (!raw) return '';
+  return raw.replace(/\s*[（(]([^）)]+)[）)]/g, ' · $1').trim();
+}
 
 function getTestChipClass(tag: string): string {
   switch (tag) {
@@ -113,6 +119,7 @@ export const MobileEquipmentView: React.FC = () => {
       if (mode === 'loans') {
         if (loanPill === 'available' && e.currentLoan) return false;
         if (loanPill === 'loaned' && !e.currentLoan) return false;
+        if (loanPill === 'cal_alert' && daysLeft > 90) return false;
         if (loanPill === 'overdue' && !ov.isOverdue) return false;
       } else {
         if (calPill === 'valid' && daysLeft <= 90) return false;
@@ -189,8 +196,19 @@ export const MobileEquipmentView: React.FC = () => {
 
   const activeDetailItem = detailCode ? equipment.find((e) => e.code === detailCode) || null : null;
 
+  const loanPills: [LoanStatusPill, string, number][] = [
+    ['all', tx('全部', 'All'), counts.total],
+    ['available', tx('在庫', 'Available'), counts.available],
+    ['loaned', tx('借出', 'On Loan'), counts.loaned],
+    ['cal_alert', tx('校準預警', 'Cal Alert'), counts.calAlert],
+    ...(counts.overdueLoan > 0
+      ? ([['overdue', tx('逾期', 'Overdue'), counts.overdueLoan]] as [LoanStatusPill, string, number][])
+      : []),
+    ['history', tx('借還紀錄', 'Logs'), loans.length],
+  ];
+
   return (
-    <div className="space-y-2.5 w-full min-w-0">
+    <div className="space-y-2.5 pb-3 w-full min-w-0">
       {/* 1. Clean 2-Tab Segmented Control */}
       <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-200/75 p-1 text-xs font-extrabold">
         <button
@@ -245,7 +263,7 @@ export const MobileEquipmentView: React.FC = () => {
       </div>
 
       {/* 3. Horizontal No-Scrollbar Test Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-4">
         {TEST_TAGS.map((t) => (
           <button
             key={t}
@@ -260,20 +278,13 @@ export const MobileEquipmentView: React.FC = () => {
             {t}
           </button>
         ))}
+        <span aria-hidden="true" className="w-2 shrink-0" />
       </div>
 
-      {/* 4. Clean Status Pills */}
+      {/* 4. Clean Status Pills — shrink-0 + right spacer so trailing pill never clips */}
       {mode === 'loans' ? (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-extrabold">
-          {(
-            [
-              ['all', tx('全部', 'All'), counts.total],
-              ['available', tx('在庫', 'Available'), counts.available],
-              ['loaned', tx('借出中', 'On Loan'), counts.loaned],
-              ['overdue', tx('逾期', 'Overdue'), counts.overdueLoan],
-              ['history', tx('借還紀錄', 'Logs'), loans.length],
-            ] as const
-          ).map(([k, lbl, cnt]) => (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-4 text-xs font-extrabold">
+          {loanPills.map(([k, lbl, cnt]) => (
             <button
               key={k}
               type="button"
@@ -298,9 +309,10 @@ export const MobileEquipmentView: React.FC = () => {
               <span>{tx('新增儀器', 'Add')}</span>
             </button>
           )}
+          <span aria-hidden="true" className="w-2 shrink-0" />
         </div>
       ) : (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-extrabold">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-4 text-xs font-extrabold">
           {(
             [
               ['all', tx('全部', 'All'), counts.total],
@@ -352,6 +364,7 @@ export const MobileEquipmentView: React.FC = () => {
             <FileText className="h-3.5 w-3.5 text-slate-400" />
             <span>FCC01</span>
           </button>
+          <span aria-hidden="true" className="w-2 shrink-0" />
         </div>
       )}
 
@@ -366,24 +379,26 @@ export const MobileEquipmentView: React.FC = () => {
                 <div
                   key={ln.id}
                   onClick={() => setSelectedLoanId(ln.id)}
-                  className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs space-y-2.5 cursor-pointer"
+                  className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs space-y-2.5 overflow-hidden cursor-pointer"
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white shrink-0">
                         {ln.equipmentCode}
                       </span>
                       <span className="font-bold text-slate-900 truncate">{eq?.name || '—'}</span>
                     </div>
-                    <Badge tone={ln.returnedAt ? 'ok' : 'brand'}>
-                      {ln.returnedAt ? tx('已歸還', 'Returned') : tx('借出中', 'On Loan')}
-                    </Badge>
+                    <div className="shrink-0">
+                      <Badge tone={ln.returnedAt ? 'ok' : 'brand'}>
+                        {ln.returnedAt ? tx('已歸還', 'Returned') : tx('借出中', 'On Loan')}
+                      </Badge>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                  <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 min-w-0">
                     <div className="min-w-0 flex-1 space-y-0.5 text-[11px]">
                       <div className="font-bold text-slate-800 truncate">
-                        {ln.siteLocation} · {ln.borrowerName}
+                        {cleanLocationLabel(ln.siteLocation)} · {ln.borrowerName}
                       </div>
                       <div className="font-mono text-slate-500 tabular-nums">
                         {ln.returnedAt
@@ -433,15 +448,15 @@ export const MobileEquipmentView: React.FC = () => {
                   ? eq.currentLoan
                     ? ov.isOverdue
                       ? {
-                          text: ov.label,
+                          text: cleanLocationLabel(ov.label),
                           cls: 'border-rose-200 bg-rose-50 text-rose-700',
                         }
                       : {
-                          text: `${tx('借出', 'Out')} · ${eq.currentLoan.siteLocation}`,
+                          text: `${tx('借出', 'Out')} · ${cleanLocationLabel(eq.currentLoan.siteLocation)}`,
                           cls: 'border-blue-200 bg-blue-50 text-blue-700',
                         }
                     : {
-                        text: `${tx('在庫', 'In Lab')} · ${eq.loc || eq.store || 'Office'}`,
+                        text: `${tx('在庫', 'In Lab')} · ${cleanLocationLabel(eq.loc || eq.store || 'Office')}`,
                         cls: 'border-emerald-200 bg-emerald-50 text-emerald-700',
                       }
                   : {
@@ -453,23 +468,24 @@ export const MobileEquipmentView: React.FC = () => {
                 <div
                   key={eq.code}
                   onClick={() => setDetailCode(eq.code)}
-                  className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs space-y-2.5 active:bg-slate-50/80 transition cursor-pointer"
+                  className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs space-y-2.5 overflow-hidden active:bg-slate-50/80 transition cursor-pointer"
                 >
-                  {/* Top Row: Code + Single Status Pill */}
-                  <div className="flex items-center justify-between gap-2">
+                  {/* Top Row: Code + Single Truncated Status Pill (max-w-[175px] block truncate) */}
+                  <div className="flex items-center justify-between gap-2 min-w-0">
                     <span className="rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white shrink-0">
                       {eq.code}
                     </span>
                     <span
-                      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold truncate max-w-[190px] tabular-nums ${topPill.cls}`}
+                      title={topPill.text}
+                      className={`block max-w-[175px] min-w-0 truncate rounded-md border px-2 py-0.5 text-[11px] font-bold tabular-nums ${topPill.cls}`}
                     >
                       {topPill.text}
                     </span>
                   </div>
 
                   {/* Middle Row: Clean Name + Compact Test Tags */}
-                  <div className="space-y-1.5">
-                    <div className="text-sm font-extrabold text-slate-900 leading-snug">{eq.name}</div>
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="text-sm font-extrabold text-slate-900 leading-snug break-words">{eq.name}</div>
                     <div className="flex flex-wrap items-center gap-1">
                       {tags.map((tg) => (
                         <span
@@ -483,17 +499,17 @@ export const MobileEquipmentView: React.FC = () => {
                   </div>
 
                   {/* Bottom Row: Cal Due / Borrower + 1-Tap 44px Action Button */}
-                  <div className="flex items-center justify-between gap-2.5 border-t border-slate-100 pt-2.5">
+                  <div className="flex items-center justify-between gap-2.5 border-t border-slate-100 pt-2.5 min-w-0">
                     <div className="min-w-0 flex-1">
                       {mode === 'loans' && eq.currentLoan ? (
-                        <div className="space-y-0.5">
+                        <div className="space-y-0.5 min-w-0">
                           <div className="font-bold text-slate-800 truncate">{shortBorrower}</div>
                           <div className="font-mono text-[11px] text-slate-500 tabular-nums">
                             {tx('還期', 'Due')} {eq.currentLoan.expectedReturn}
                           </div>
                         </div>
                       ) : (
-                        <div className="font-mono text-xs font-bold text-slate-600 tabular-nums">
+                        <div className="font-mono text-xs font-bold text-slate-600 tabular-nums truncate">
                           Cal Due · {calDisplay.dateText}
                         </div>
                       )}
@@ -563,41 +579,46 @@ export const MobileEquipmentView: React.FC = () => {
       />
       {(() => {
         const selectedLoan = selectedLoanId ? loans.find((l) => l.id === selectedLoanId) || null : null;
-        const selectedEq = selectedLoan ? eqMap.get(selectedLoan.equipmentCode) || null : null;
-        return (
-          <LoanDetailModal
-            loan={selectedLoan}
-            equipment={selectedEq}
-            onClose={() => setSelectedLoanId(null)}
-            onOpenReturn={
-              selectedLoan && !selectedLoan.returnedAt && selectedEq
-                ? () => setReturnItem(selectedEq)
-                : undefined
-            }
-            onOpenEquipment={
-              selectedLoan
-                ? () => {
-                    setDetailCode(selectedLoan.equipmentCode);
-                    setSelectedLoanId(null);
-                  }
-                : undefined
-            }
-          />
+        if (!selectedLoan || typeof document === 'undefined') return null;
+        const selectedEq = eqMap.get(selectedLoan.equipmentCode) || null;
+        return createPortal(
+          <div className="fixed inset-0 z-[76] pointer-events-none [&>*]:pointer-events-auto">
+            <LoanDetailModal
+              loan={selectedLoan}
+              equipment={selectedEq}
+              onClose={() => setSelectedLoanId(null)}
+              onOpenReturn={
+                !selectedLoan.returnedAt && selectedEq
+                  ? () => setReturnItem(selectedEq)
+                  : undefined
+              }
+              onOpenEquipment={() => {
+                setDetailCode(selectedLoan.equipmentCode);
+                setSelectedLoanId(null);
+              }}
+            />
+          </div>,
+          document.body
         );
       })()}
       <EquipmentCheckoutModal item={checkoutItem} onClose={() => setCheckoutItem(null)} />
       <EquipmentReturnModal item={returnItem} onClose={() => setReturnItem(null)} />
       {newOpen && <NewEquipmentModal onClose={() => setNewOpen(false)} />}
-      {qrModal && (
-        <EquipmentQrModal
-          initialMode={qrModal.mode}
-          initialCode={qrModal.code}
-          onClose={() => setQrModal(null)}
-          onOpenCheckout={(eq) => setCheckoutItem(eq)}
-          onOpenReturn={(eq) => setReturnItem(eq)}
-          onOpenDetail={(code) => setDetailCode(code)}
-        />
-      )}
+      {qrModal &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="fixed inset-0 z-[90] pointer-events-none [&>*]:pointer-events-auto">
+            <EquipmentQrModal
+              initialMode={qrModal.mode}
+              initialCode={qrModal.code}
+              onClose={() => setQrModal(null)}
+              onOpenCheckout={(eq) => setCheckoutItem(eq)}
+              onOpenReturn={(eq) => setReturnItem(eq)}
+              onOpenDetail={(code) => setDetailCode(code)}
+            />
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

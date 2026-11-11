@@ -108,6 +108,26 @@ export function parseCalcSummaryToRows(summary: string): HoklasWorksheetRow[] {
   return rows;
 }
 
+export function stripManualInputPlaceholder(raw?: string | null): string {
+  const clean = toEnglishWorksheetText(raw, '').trim();
+  if (!clean) return '';
+  if (/^manual\s+input\b/i.test(clean)) return '';
+  return clean;
+}
+
+export function equipmentMatchesStp(eq: Pick<EquipmentItem, 'testTags' | 'tests'>, stpCode: string): boolean {
+  const cleanStp = (stpCode || '').trim().toUpperCase();
+  if (!cleanStp) return false;
+  const tags =
+    eq.testTags && eq.testTags.length > 0
+      ? eq.testTags.map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : (eq.tests || '')
+          .split('+')
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean);
+  return tags.includes(cleanStp);
+}
+
 export function buildHoklasFieldWorksheetData(params: {
   record: FieldCalcRecord;
   job?: JobItem | null;
@@ -115,26 +135,29 @@ export function buildHoklasFieldWorksheetData(params: {
   tests: TestMethodItem[];
 }): HoklasWorksheetPayload {
   const { record, job: rawJob, equipment, tests } = params;
+  const cleanStp = (record.stpCode || 'KD').trim().toUpperCase();
+  const isAccredited = cleanStp !== 'PLT' && cleanStp !== 'VC';
   const job = rawJob ? localizeJob(rawJob, 'en') : null;
-  const rawStpMethod = tests.find((t) => t.code === record.stpCode);
+  const rawStpMethod = tests.find((t) => t.code.toUpperCase() === cleanStp);
   const stpMethod = rawStpMethod ? localizeTest(rawStpMethod, 'en') : undefined;
   const inUseEq = equipment.filter((e) => e.inUse !== 'N').map((e) => localizeEquipment(e, 'en'));
 
-  const onSiteEq = inUseEq.filter((e) => {
-    if (e.currentLoan?.jobNo !== record.jobNo) return false;
-    const tags = e.testTags || e.tests.split('+').map((s) => s.trim()).filter(Boolean);
-    return tags.includes(record.stpCode) || tags.length > 0;
-  });
-
-  const matchingTagEq =
-    onSiteEq.length > 0
-      ? onSiteEq
-      : inUseEq
-          .filter((e) => {
-            const tags = e.testTags || e.tests.split('+').map((s) => s.trim()).filter(Boolean);
-            return tags.includes(record.stpCode);
-          })
-          .slice(0, 4);
+  const matchingPool = inUseEq.filter((e) => equipmentMatchesStp(e, cleanStp));
+  const onSiteEq = matchingPool.filter((e) => e.currentLoan?.jobNo === record.jobNo);
+  const onSiteCodes = new Set(onSiteEq.map((e) => e.code));
+  const seenFamily = new Set(
+    onSiteEq.map((e) => e.code.replace(/-\d+$/, ''))
+  );
+  const supplementalLabEq: EquipmentItem[] = [];
+  for (const e of matchingPool) {
+    if (onSiteCodes.has(e.code)) continue;
+    const family = e.code.replace(/-\d+$/, '');
+    if (seenFamily.has(family) && onSiteEq.length + supplementalLabEq.length >= 4) continue;
+    seenFamily.add(family);
+    supplementalLabEq.push(e);
+    if (onSiteEq.length + supplementalLabEq.length >= 5) break;
+  }
+  const matchingTagEq = [...onSiteEq, ...supplementalLabEq];
 
   const equipmentList: HoklasWorksheetEquipmentRow[] = matchingTagEq.map((e) => ({
     code: e.code,
@@ -146,7 +169,8 @@ export function buildHoklasFieldWorksheetData(params: {
   }));
 
   const defaultSignatory =
-    stpMethod?.approvedSignatories?.[0] || 'Shih Chak Lung, Ben (HOKLAS Approved Signatory)';
+    stpMethod?.approvedSignatories?.[0] ||
+    (isAccredited ? 'Shih Chak Lung, Ben (HOKLAS Approved Signatory)' : 'Lam Hoi Fan, James');
   const fallbackRefNo = record.jobRefNo || `HKL-${record.jobNo}-${record.id}`;
   const stBatchNo =
     record.structuredData?.kind === 'FC' || record.structuredData?.kind === 'BL'
@@ -160,24 +184,27 @@ export function buildHoklasFieldWorksheetData(params: {
   return {
     reportRefNo: toEnglishWorksheetText(fallbackRefNo, `HKL-${record.jobNo}-${record.id}`),
     jobRefNo: toEnglishWorksheetText(fallbackRefNo, `HKL-${record.jobNo}-${record.id}`),
-    worksOrderNo: toEnglishWorksheetText(record.worksOrderNo, ''),
-    batchNo: toEnglishWorksheetText(record.batchNo ?? stBatchNo, ''),
-    sampleId: toEnglishWorksheetText(record.sampleId ?? stSampleId, ''),
+    worksOrderNo: stripManualInputPlaceholder(record.worksOrderNo),
+    batchNo: stripManualInputPlaceholder(record.batchNo ?? stBatchNo),
+    sampleId: stripManualInputPlaceholder(record.sampleId ?? stSampleId),
     jobNo: toEnglishWorksheetText(record.jobNo, 'LT0001'),
     companyProjNo: toEnglishWorksheetText(job?.companyProjNo || record.jobNo, record.jobNo),
     projectTitle: toEnglishWorksheetText(record.projectTitle || job?.project || job?.shortName || record.jobNo, record.jobNo),
     clientName: toEnglishWorksheetText(record.clientName || job?.client, 'Main Contractor / Resident Site Staff'),
     siteLocation: toEnglishWorksheetText(job?.mapAddress || job?.site || record.jobNo, record.jobNo),
     locationNote: toEnglishWorksheetText(record.locationNote, 'Standard Field Station'),
-    stpCode: record.stpCode,
+    stpCode: cleanStp,
     testName: toEnglishWorksheetText(stpMethod?.name || record.title, record.title),
     standardMethod: toEnglishWorksheetText(stpMethod?.std || record.title, record.title),
-    stpDocCode: stpMethod?.stpDocCode || `STP-${record.stpCode}`,
+    stpDocCode: stpMethod?.stpDocCode || `STP-${cleanStp}`,
     stpRev: stpMethod?.stpRev || 'Rev.4',
-    worksheetCode: stpMethod?.worksheetCode || `F${record.stpCode}01`,
+    worksheetCode: stpMethod?.worksheetCode || `F${cleanStp}01`,
     testedAt: record.testedAt,
     operatorName: toEnglishWorksheetText(record.operatorName, 'Shih Chak Lung, Ben'),
-    approvedSignatory: toEnglishWorksheetText(defaultSignatory, 'Shih Chak Lung, Ben (HOKLAS AS)'),
+    approvedSignatory: toEnglishWorksheetText(
+      defaultSignatory,
+      isAccredited ? 'Shih Chak Lung, Ben (HOKLAS AS)' : 'Lam Hoi Fan, James'
+    ),
     pass: record.pass,
     rows: parseCalcSummaryToRows(record.summary).map((r) => ({
       parameter: toEnglishWorksheetText(r.parameter, r.parameter),

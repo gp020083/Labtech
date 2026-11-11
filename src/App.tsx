@@ -77,7 +77,9 @@ const FieldShellContent: React.FC = () => {
             onClose={() => clearEquipmentCertRoute()}
           />
         )}
+        <StpPreviewModal />
         <DocumentPreviewModal doc={previewDoc} onClose={closePreviewDoc} />
+        <DriveSyncModal open={driveModalOpen} onClose={() => setDriveModalOpen(false)} />
         <ToastHost />
       </>
     );
@@ -136,7 +138,6 @@ const FieldShellContent: React.FC = () => {
               {activeTab === 'calendar' && <CalendarPage />}
             </main>
           </div>
-          <StpPreviewModal />
         </div>
       )}
 
@@ -156,6 +157,8 @@ const FieldShellContent: React.FC = () => {
           setActiveTab(tab);
         }}
       />
+      {/* MobileAppShell mounts MobileStpSheet (z-[75] portal) when isMobileApp is true */}
+      {!isMobileApp && <StpPreviewModal />}
       <DocumentPreviewModal doc={previewDoc} onClose={closePreviewDoc} />
       <DriveSyncModal open={driveModalOpen} onClose={() => setDriveModalOpen(false)} />
       <OfflineIndicator />

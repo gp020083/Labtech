@@ -6,7 +6,6 @@ import { CalendarEvent } from '../types';
 import { REF_TODAY, daysBetween } from '../utils';
 import { CalendarEventModal } from '../components/CalendarEventModal';
 import { DailyDispatchModal } from '../components/DailyDispatchModal';
-import { SERVER_MASTER_SCHEDULES } from '../data/serverScheduleEvents';
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,7 +17,6 @@ import {
   Edit3,
   MessageSquareShare,
   FileText,
-  FolderOpen,
 } from 'lucide-react';
 
 const WEEKDAYS_ZH = ['日', '一', '二', '三', '四', '五', '六'];
@@ -97,7 +95,7 @@ export const MobileCalendarView: React.FC = () => {
   const weekdays = lang === 'en' ? WEEKDAYS_EN : WEEKDAYS_ZH;
 
   return (
-    <div className="space-y-2.5 w-full min-w-0 text-xs">
+    <div className="space-y-2.5 pb-3 w-full min-w-0 text-xs">
       {/* Header Card */}
       <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs">
         <div className="min-w-0">
@@ -139,8 +137,8 @@ export const MobileCalendarView: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      {/* Filter Pills — sized & padded so all 5 pills fit cleanly on 390px without clipping */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pr-4">
         {(
           [
             ['all', tx('全部', 'All')],
@@ -153,7 +151,7 @@ export const MobileCalendarView: React.FC = () => {
             key={k}
             type="button"
             onClick={() => setTypeFilter(k)}
-            className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-3.5 font-extrabold shrink-0 whitespace-nowrap transition cursor-pointer ${
+            className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-2.5 font-extrabold shrink-0 whitespace-nowrap transition cursor-pointer ${
               typeFilter === k
                 ? 'bg-slate-900 text-white shadow-2xs'
                 : 'border border-slate-200 bg-white text-slate-700'
@@ -165,7 +163,7 @@ export const MobileCalendarView: React.FC = () => {
         <button
           type="button"
           onClick={() => setMyOnly(!myOnly)}
-          className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-3.5 font-extrabold shrink-0 whitespace-nowrap transition cursor-pointer ${
+          className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-2.5 font-extrabold shrink-0 whitespace-nowrap transition cursor-pointer ${
             myOnly
               ? 'bg-brand text-white shadow-2xs'
               : 'border border-slate-200 bg-white text-slate-700'
@@ -173,39 +171,7 @@ export const MobileCalendarView: React.FC = () => {
         >
           {tx('我的排程', 'Mine')}
         </button>
-      </div>
-
-      {/* Server Master Schedules */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs space-y-2 overflow-hidden">
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-900 truncate">
-            <FolderOpen className="h-3.5 w-3.5 shrink-0 text-violet-600" />
-            <span className="truncate">{tx('伺服器排程總表及會議紀錄', 'Server Master Schedules')}</span>
-          </span>
-          <span className="text-[10px] font-bold text-slate-400 shrink-0">LTData</span>
-        </div>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {SERVER_MASTER_SCHEDULES.map((doc) => (
-            <button
-              key={doc.id}
-              type="button"
-              onClick={() =>
-                openPreviewDoc({
-                  title: lang === 'en' ? doc.titleEn : doc.titleZh,
-                  url: doc.url,
-                  fileName: doc.fileName,
-                  subtitle: `${lang === 'en' ? doc.subtitleEn : doc.subtitleZh} · ${doc.fileSize}`,
-                })
-              }
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left shrink-0 active:bg-slate-100 cursor-pointer"
-            >
-              <FileText className="h-3.5 w-3.5 shrink-0 text-violet-600" />
-              <span className="text-[11px] font-bold text-slate-800 whitespace-nowrap">
-                {lang === 'en' ? doc.titleEn : doc.titleZh}
-              </span>
-            </button>
-          ))}
-        </div>
+        <span aria-hidden="true" className="w-2 shrink-0" />
       </div>
 
       {/* Month Grid Card */}

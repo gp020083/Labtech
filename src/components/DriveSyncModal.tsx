@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { DRIVE_FOLDERS, DRIVE_FILE_MAP } from '../data/driveFileMap';
@@ -188,8 +189,43 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
 
   const sessionElapsedMs = Math.max(1000, sessionNowMs - sessionStartMs);
   const sessionElapsedFormatted = formatSessionDuration(sessionElapsedMs);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const target = backdropRef.current;
+      if (!target) return;
+      const backdrops = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+      );
+      const getZ = (el: HTMLElement) => {
+        const attrZ = Number(el.dataset.modalZ);
+        if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+        const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+        return Number.isNaN(computed) ? 0 : computed;
+      };
+      let topEl = backdrops[0];
+      let topZ = topEl ? getZ(topEl) : 0;
+      for (let i = 1; i < backdrops.length; i++) {
+        const z = getZ(backdrops[i]);
+        if (z >= topZ) {
+          topEl = backdrops[i];
+          topZ = z;
+        }
+      }
+      if (!topEl || topEl === target) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [open, onClose]);
+
+  if (!open || typeof document === 'undefined') return null;
 
   const readFilesIntoStaged = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList);
@@ -634,9 +670,12 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
   const uploadsFolderUrl = `https://drive.google.com/drive/folders/${DRIVE_FOLDERS.uploads}?authuser=bentktk2024@gmail.com`;
   const sheetUrl = `https://docs.google.com/spreadsheets/d/${DRIVE_FOLDERS.spreadsheetId}/edit?authuser=bentktk2024@gmail.com`;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4"
+      ref={backdropRef}
+      data-modal-backdrop="true"
+      data-modal-z="85"
+      className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-900/55 p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-3xl max-h-[92dvh] overflow-y-auto rounded-3xl bg-white p-5 sm:p-6 shadow-2xl space-y-4 text-xs">
@@ -1569,6 +1608,7 @@ export const DriveSyncModal: React.FC<{ open: boolean; onClose: () => void }> = 
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

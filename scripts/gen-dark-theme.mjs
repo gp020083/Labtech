@@ -25,7 +25,7 @@ function walk(dir, out = []) {
 
 // ---- colour mapping (returns CSS colour or null = leave untouched) ----
 const N_BG = { 50: 'var(--d-surface-2)', 100: 'var(--d-surface-3)', 200: 'var(--d-surface-4)', 300: 'var(--d-surface-5)', 400: '#4b5871', 700: '#46566f', 800: '#3b4a63', 900: '#2f3c54', 950: '#27324a' };
-const N_TEXT = { 950: 'var(--d-text)', 900: 'var(--d-text)', 800: 'var(--d-text)', 700: 'var(--d-text-2)', 600: 'var(--d-text-3)', 500: '#8a96ab', 400: 'var(--d-text-4)', 300: 'var(--d-text-5)', 200: '#3a4660', 100: '#2e3a50' };
+const N_TEXT = { 950: 'var(--d-text)', 900: 'var(--d-text)', 800: 'var(--d-text)', 700: 'var(--d-text-2)', 600: 'var(--d-text-3)', 500: '#8a96ab', 400: 'var(--d-text-4)', 300: '#cbd5e1', 200: '#e2e8f0', 100: '#f1f5f9' };
 const N_BORDER = { 50: 'var(--d-line)', 100: 'var(--d-line)', 200: 'var(--d-line)', 300: 'var(--d-line-strong)', 400: '#44516b', 700: '#5b6884', 800: '#5b6884', 900: '#6b7894', 950: '#6b7894' };
 
 function mapColor(prop, family, shade) {

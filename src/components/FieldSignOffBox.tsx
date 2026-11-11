@@ -191,7 +191,7 @@ export const FieldSignOffBox: React.FC<{
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
-              className="w-full h-24 rounded-xl border border-dashed border-slate-300 bg-slate-50/70 touch-none cursor-crosshair"
+              className="light-island bg-white w-full h-24 rounded-xl border border-dashed border-slate-300 touch-none cursor-crosshair"
             />
           </div>
         </div>

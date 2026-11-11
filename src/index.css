@@ -325,6 +325,9 @@ html[data-shell="mobile"] .lt-floating-bottom {
 }
 
 @media print {
+  .no-print {
+    display: none !important;
+  }
   [data-draggable-dialog="true"] {
     transform: none !important;
     max-height: none !important;
@@ -332,6 +335,31 @@ html[data-shell="mobile"] .lt-floating-bottom {
   }
   [data-draggable-dialog="true"]::before {
     display: none !important;
+  }
+  body.printing-hoklas-sheet > *:not(#hoklas-print-portal) {
+    display: none !important;
+  }
+  body.printing-hoklas-sheet {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.printing-hoklas-sheet #hoklas-print-portal,
+  body.printing-hoklas-sheet #hoklas-print-portal .hoklas-print-shell,
+  body.printing-hoklas-sheet #hoklas-print-portal .hoklas-print-scroll {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 }
 
