@@ -41,6 +41,76 @@ function mergeById<T extends { id: string }>(remoteArr?: T[], localArr?: T[]): {
   return { list: Array.from(map.values()), added };
 }
 
+function isLegacyOfficePath(val?: string): boolean {
+  return !!val && /\.(doc|docx|xls|xlsx)$/i.test(val.trim());
+}
+
+function isStaleControlledValue(candidate?: string, reference?: string): boolean {
+  if (!reference) return false;
+  if (!candidate) return true;
+  if (isLegacyOfficePath(candidate) && !isLegacyOfficePath(reference)) return true;
+  if (/rev2_260417/i.test(candidate) && !/rev2_260417/i.test(reference)) return true;
+  return false;
+}
+
+function pickControlledTestField(
+  remoteVal: string | undefined,
+  localVal: string | undefined,
+  remoteHasUpdatedAt: boolean
+): { value: string | undefined; upgradedFromLocal: boolean } {
+  if (isStaleControlledValue(remoteVal, localVal)) {
+    return { value: localVal, upgradedFromLocal: true };
+  }
+  if (isStaleControlledValue(localVal, remoteVal)) {
+    return { value: remoteVal, upgradedFromLocal: false };
+  }
+  if (!remoteHasUpdatedAt && localVal && localVal !== remoteVal) {
+    return { value: localVal, upgradedFromLocal: true };
+  }
+  return { value: remoteVal ?? localVal, upgradedFromLocal: false };
+}
+
+function parseEqTags(eq: EquipmentItem): string[] {
+  return eq.testTags && eq.testTags.length > 0
+    ? eq.testTags
+    : (eq.tests || '')
+        .split('+')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+function mergeStpFilesList(
+  remoteFiles?: SharedDocAttachment[],
+  localFiles?: SharedDocAttachment[]
+): { list: SharedDocAttachment[]; changed: boolean } {
+  const map = new Map<string, SharedDocAttachment>();
+  let changed = false;
+
+  for (const r of remoteFiles || []) {
+    if (r.id.startsWith('doc-') && isLegacyOfficePath(r.dataUrl)) {
+      changed = true;
+      continue;
+    }
+    map.set(r.id, r);
+  }
+
+  for (const l of localFiles || []) {
+    if (l.id.startsWith('doc-') && isLegacyOfficePath(l.dataUrl)) {
+      continue;
+    }
+    const existing = map.get(l.id);
+    if (!existing) {
+      map.set(l.id, l);
+      changed = true;
+    } else if (l.id.startsWith('doc-') && isStaleControlledValue(existing.dataUrl, l.dataUrl)) {
+      map.set(l.id, l);
+      changed = true;
+    }
+  }
+
+  return { list: Array.from(map.values()), changed };
+}
+
 export function mergeUnsyncedLocalIntoRemote(
   local: AppPersistedState,
   remote: AppPersistedState
@@ -65,7 +135,7 @@ export function mergeUnsyncedLocalIntoRemote(
   }
   const loans = Array.from(loanMap.values()).sort((a, b) => b.checkoutAt.localeCompare(a.checkoutAt));
 
-  // 2. Merge Equipment by Code, unioning calCerts and respecting updatedAt
+  // 2. Merge Equipment by Code, unioning calCerts, propagating LT-TD-01 / seed testTags, and respecting updatedAt
   const eqMap = new Map<string, EquipmentItem>();
   for (const rEq of remote.equipment || []) eqMap.set(rEq.code, rEq);
   for (const lEq of local.equipment || []) {
@@ -76,10 +146,39 @@ export function mergeUnsyncedLocalIntoRemote(
     } else {
       const certsMerge = mergeById<CalCertAttachment>(rEq.calCerts, lEq.calCerts);
       if (certsMerge.added) hasLocalAdditions = true;
-      const base = isNewer(lEq.updatedAt, rEq.updatedAt) ? { ...rEq, ...lEq } : rEq;
-      if (isNewer(lEq.updatedAt, rEq.updatedAt)) hasLocalAdditions = true;
+      const localNewer = isNewer(lEq.updatedAt, rEq.updatedAt);
+      const base = localNewer ? { ...rEq, ...lEq } : rEq;
+      if (localNewer) hasLocalAdditions = true;
+
+      const rTags = parseEqTags(rEq);
+      const lTags = parseEqTags(lEq);
+      let resolvedTags = parseEqTags(base);
+      let resolvedTests = base.tests;
+
+      if (lEq.code === 'LT-TD-01') {
+        const remoteMissingStopwatchTags =
+          (lTags.includes('SO') && !rTags.includes('SO')) ||
+          (lTags.includes('BL') && !rTags.includes('BL'));
+        const localMissingStopwatchTags =
+          (rTags.includes('SO') && !lTags.includes('SO')) ||
+          (rTags.includes('BL') && !lTags.includes('BL'));
+        if (remoteMissingStopwatchTags || localMissingStopwatchTags) {
+          resolvedTags = Array.from(
+            new Set(remoteMissingStopwatchTags ? [...lTags, ...rTags] : [...rTags, ...lTags])
+          );
+          resolvedTests = resolvedTags.join(' + ');
+          if (remoteMissingStopwatchTags) hasLocalAdditions = true;
+        }
+      } else if (!localNewer && !rEq.updatedAt && lTags.some((t) => !rTags.includes(t))) {
+        resolvedTags = Array.from(new Set([...lTags, ...rTags]));
+        resolvedTests = resolvedTags.join(' + ');
+        hasLocalAdditions = true;
+      }
+
       eqMap.set(lEq.code, {
         ...base,
+        tests: resolvedTests,
+        testTags: resolvedTags.length > 0 ? resolvedTags : base.testTags,
         calCerts: certsMerge.list.length > 0 ? certsMerge.list : base.calCerts,
       });
     }

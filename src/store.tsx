@@ -872,6 +872,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }),
             ...seedEvents.filter((s) => !evIds.has(s.id)),
           ].sort((a, b) => a.date.localeCompare(b.date));
+          const isLegacyOfficeFileUrl = (url?: string) =>
+            !!url && /\.(doc|docx|xls|xlsx)$/i.test(url.trim());
+
+          const seedEquipment = buildInitialEquipment(mergedLoans);
+          const existingEquipment: EquipmentItem[] = Array.isArray(parsed.equipment) ? parsed.equipment : [];
+          const eqCodes = new Set(existingEquipment.map((eq) => eq.code));
+          const mergedEquipment = [
+            ...existingEquipment.map((eq) => {
+              const seedEq = seedEquipment.find((s) => s.code === eq.code);
+              if (!seedEq) return eq;
+              const seedCertMap = new Map((seedEq.calCerts || []).map((sc) => [sc.id, sc]));
+              const existingCertIds = new Set((eq.calCerts || []).map((c) => c.id));
+              const mergedEqCerts = [
+                ...(eq.calCerts || []).map((c) =>
+                  c.id.startsWith('cert-srv-') ? seedCertMap.get(c.id) || c : c
+                ),
+                ...(seedEq.calCerts || []).filter((sc) => !existingCertIds.has(sc.id)),
+              ];
+              const seedTags =
+                seedEq.testTags || seedEq.tests.split('+').map((s) => s.trim()).filter(Boolean);
+              const currTags =
+                eq.testTags || (eq.tests || '').split('+').map((s) => s.trim()).filter(Boolean);
+              const mergedTags = eq.updatedAt
+                ? Array.from(new Set([...seedTags, ...currTags]))
+                : seedTags;
+              const mergedTestsStr = mergedTags.join(' + ') || seedEq.tests || eq.tests;
+              const activeLoan = mergedLoans.find(
+                (l) => l.equipmentCode === eq.code && !l.returnedAt
+              );
+              const wasReturned =
+                !!eq.currentLoan?.loanId &&
+                mergedLoans.some((l) => l.id === eq.currentLoan?.loanId && !!l.returnedAt);
+              const resolvedLoan = activeLoan
+                ? {
+                    loanId: activeLoan.id,
+                    borrowerName: activeLoan.borrowerName,
+                    borrowerStaffId: activeLoan.borrowerStaffId,
+                    jobNo: activeLoan.jobNo,
+                    siteLocation: activeLoan.siteLocation,
+                    checkoutAt: activeLoan.checkoutAt,
+                    expectedReturn: activeLoan.expectedReturn,
+                    remark: activeLoan.remark,
+                  }
+                : wasReturned
+                  ? null
+                  : eq.currentLoan ?? seedEq.currentLoan ?? null;
+              const resolvedLoc = resolvedLoan
+                ? resolvedLoan.siteLocation
+                : wasReturned
+                  ? eq.store || seedEq.store || 'Office'
+                  : eq.loc || seedEq.loc;
+              return {
+                ...seedEq,
+                ...eq,
+                tests: mergedTestsStr,
+                testTags: mergedTags,
+                calCerts: mergedEqCerts,
+                currentLoan: resolvedLoan,
+                loc: resolvedLoc,
+              };
+            }),
+            ...seedEquipment.filter((s) => !eqCodes.has(s.code)),
+          ];
+
           const seedTests = buildInitialTests();
           const existingTests: TestMethodItem[] = Array.isArray(parsed.tests) ? parsed.tests : [];
           const testCodes = new Set(existingTests.map((t) => t.code));
@@ -879,27 +943,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...existingTests.map((t) => {
               const seedT = seedTests.find((s) => s.code === t.code);
               if (!seedT) return t;
-              const seedDocIds = new Set((seedT.stpFiles || []).map((f) => f.id));
-              const cleanedExisting = (t.stpFiles || []).filter(
-                (f) => !f.id.startsWith('doc-') || seedDocIds.has(f.id)
-              );
+              const seedDocMap = new Map((seedT.stpFiles || []).map((f) => [f.id, f]));
+              const cleanedExisting = (t.stpFiles || []).filter((f) => {
+                if (!f.id.startsWith('doc-')) return true;
+                if (!seedDocMap.has(f.id)) return false;
+                const resolved = seedDocMap.get(f.id) || f;
+                return !isLegacyOfficeFileUrl(resolved.dataUrl);
+              });
               const existingDocIds = new Set(cleanedExisting.map((f) => f.id));
               const mergedDocs = [
-                ...cleanedExisting.map((f) => seedT.stpFiles?.find((sf) => sf.id === f.id) || f),
-                ...(seedT.stpFiles || []).filter((sf) => !existingDocIds.has(sf.id)),
+                ...cleanedExisting.map((f) =>
+                  f.id.startsWith('doc-') ? seedDocMap.get(f.id) || f : f
+                ),
+                ...(seedT.stpFiles || []).filter(
+                  (sf) => !existingDocIds.has(sf.id) && !isLegacyOfficeFileUrl(sf.dataUrl)
+                ),
+              ];
+              const existingCertIds = new Set((t.calCerts || []).map((c) => c.id));
+              const mergedTestCerts = [
+                ...(t.calCerts || []),
+                ...(seedT.calCerts || []).filter((sc) => !existingCertIds.has(sc.id)),
               ];
               return {
                 ...t,
+                stpPdfUrl: seedT.stpPdfUrl || t.stpPdfUrl,
+                stpRev: seedT.stpRev || t.stpRev,
+                stpEffectiveDate: seedT.stpEffectiveDate || t.stpEffectiveDate,
                 worksheetCode: seedT.worksheetCode || t.worksheetCode,
                 worksheetPdfUrl: seedT.worksheetPdfUrl || t.worksheetPdfUrl,
                 worksheetUrl: seedT.worksheetUrl || t.worksheetUrl,
                 orderFormUrl: seedT.orderFormUrl || t.orderFormUrl,
+                dailyRecordUrl: seedT.dailyRecordUrl || t.dailyRecordUrl,
+                muTemplateUrl: seedT.muTemplateUrl || t.muTemplateUrl,
+                keyParams: seedT.keyParams,
+                versions: seedT.versions,
+                equipmentTypes: seedT.equipmentTypes || t.equipmentTypes,
                 stpFiles: mergedDocs,
+                calCerts: mergedTestCerts,
               };
             }),
             ...seedTests.filter((s) => !testCodes.has(s.code)),
           ];
-          return { ...parsed, tests: mergedTests, loans: mergedLoans, calcRecords: mergedCalcs, events: mergedEvents } as ReturnType<typeof createFreshState>;
+          return {
+            ...parsed,
+            equipment: mergedEquipment,
+            tests: mergedTests,
+            loans: mergedLoans,
+            calcRecords: mergedCalcs,
+            events: mergedEvents,
+          } as ReturnType<typeof createFreshState>;
         }
       }
     } catch {}
