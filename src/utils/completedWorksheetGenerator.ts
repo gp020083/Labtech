@@ -1,4 +1,6 @@
 import { EquipmentItem, FieldCalcRecord, JobItem, TestMethodItem } from '../types';
+import { getHkTodayIso } from '../utils';
+import { roundToNearestStep } from './limsRules';
 import { HoklasWorksheetEquipmentRow, HoklasWorksheetRow } from './limsProcessTools';
 import {
   buildOfficialTemplateSheetCellMaps,
@@ -52,6 +54,7 @@ export interface BleedingIntervalItem {
   bleedAmt: number;
   bleedPct: number;
   expPct: number;
+  groutExpPct?: number;
 }
 
 export interface BleedingStructuredPayload {
@@ -63,6 +66,8 @@ export interface BleedingStructuredPayload {
   finalBleedAmt: number;
   finalBleedPct: number;
   finalExpPct: number;
+  groutExpPctFinal?: number;
+  specimenCount?: number;
   isPass: boolean;
   intervals: BleedingIntervalItem[];
   cementBrand?: string;
@@ -125,6 +130,8 @@ export interface PointLoadStructuredPayload {
   mode: 'diametral' | 'axial';
   dMm: number;
   wMm: number;
+  dPrimeMm?: number;
+  freeEndMm?: number;
   loadKn: number;
   failSec: number;
   deMm: number;
@@ -132,6 +139,8 @@ export interface PointLoadStructuredPayload {
   fFactor: number;
   is50Mpa: number;
   estUcsMpa: number;
+  batchTrimmedMeanMpa?: number;
+  batchCount?: number;
   timeOk: boolean;
 }
 
@@ -139,6 +148,12 @@ export interface KodenStructuredPayload {
   kind: 'KD';
   pileDiaMm: number;
   depthM: number;
+  d1M?: number;
+  d2M?: number;
+  scaleFactorSh?: number;
+  tapeDepthM?: number;
+  uesDepthM?: number;
+  depthCheckOk?: boolean;
   dxMm: number;
   dyMm: number;
   offsetMm: number;
@@ -162,6 +177,8 @@ export interface InclinometerRowItem {
 
 export interface InclinometerStructuredPayload {
   kind: 'VC';
+  surveyMode?: 'inclinometer' | 'peewee';
+  gaugeLengthM?: number;
   limitN: number;
   maxDepthM: number;
   maxDriftMm: number;
@@ -170,13 +187,43 @@ export interface InclinometerStructuredPayload {
   rows: InclinometerRowItem[];
 }
 
+export interface SonicProfileRow {
+  pair: string;
+  distMm: number;
+  baseFatUs: number;
+  measFatUs: number;
+  energyDropDb: number;
+  waveSpeedMs: number;
+  fatDelayPct: number;
+  anomaly: boolean;
+}
+
+export interface SonicStructuredPayload {
+  kind: 'SO';
+  tubeCount: number;
+  concreteAgeDays: number;
+  waterTempC: number;
+  shortestTubeLenM: number;
+  plumbedLenM: number;
+  scannedLenM: number;
+  minPullingSec: number;
+  actualPullingSec: number;
+  lengthCheckOk: boolean;
+  tempOk: boolean;
+  pullingOk: boolean;
+  ageOk: boolean;
+  isPass: boolean;
+  profiles: SonicProfileRow[];
+}
+
 export type StructuredCalcPayload =
   | FlowConeStructuredPayload
   | BleedingStructuredPayload
   | PltStructuredPayload
   | PointLoadStructuredPayload
   | KodenStructuredPayload
-  | InclinometerStructuredPayload;
+  | InclinometerStructuredPayload
+  | SonicStructuredPayload;
 
 export interface OfficialTemplateMeta {
   stpCode: string;
@@ -205,11 +252,12 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'FC',
         worksheetFormCode: 'FST05-GTT-C939-2-260417',
         formalReportFormCode: 'GTT-C939-RT',
+        formalReportFileUrl: '/server-docs/reports/GTT-C939-RT_Report_template.pdf',
         templateFileCode: 'FST05-GTT-C939-2-260417_Worksheet_template.xlsx',
         templateTitleEn: 'Flow of Grout for Preplaced-Aggregate Concrete (Flow Cone Method)',
-        templateTitleZh: '水泥漿流動度（流錐法）現場完成工作紙 (FST05-GTT-C939-2-260417)',
+        templateTitleZh: '水泥漿流動度流錐法現場完成工作紙 · FST05-GTT-C939-2-260417',
         formalReportTitleEn: 'TEST REPORT — FLOW OF GROUT FOR PREPLACED-AGGREGATE CONCRETE BY FLOW CONE METHOD',
-        formalReportTitleZh: 'HOKLAS 認可水泥漿流錐流動度測試正式報告 (GTT-C939-RT)',
+        formalReportTitleZh: 'HOKLAS 認可水泥漿流錐流動度測試正式報告 · GTT-C939-RT',
         testStandard: matched?.std || 'ASTM C939M - 22',
         stpDocRef: `${matched?.stpDocCode || 'STP05-GTT-C939'} (${matched?.stpRev || 'rev 2'})`,
         muRefCode: 'MU-GTT-C939-1 (260421)',
@@ -221,11 +269,12 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'BL',
         worksheetFormCode: 'FST04-GTT-C940-3-261001',
         formalReportFormCode: 'GTT-C940-RT',
+        formalReportFileUrl: '/server-docs/reports/GTT-C940-RT_Report_template.pdf',
         templateFileCode: 'FST04-GTT-C940-3-261001_Worksheet_template.xlsx',
         templateTitleEn: 'Bleeding and free expansion of grout',
-        templateTitleZh: '新拌水泥漿自由膨脹率及泌水率完成工作紙 (FST04-GTT-C940-3-261001)',
+        templateTitleZh: '新拌水泥漿自由膨脹率及泌水率完成工作紙 · FST04-GTT-C940-3-261001',
         formalReportTitleEn: 'TEST REPORT — BLEEDING AND FREE EXPANSION OF GROUT',
-        formalReportTitleZh: 'HOKLAS 認可水泥漿泌水率及自由膨脹率正式報告 (GTT-C940-RT)',
+        formalReportTitleZh: 'HOKLAS 認可水泥漿泌水率及自由膨脹率正式報告 · GTT-C940-RT',
         testStandard: matched?.std || 'ASTM C940 - 22',
         stpDocRef: `${matched?.stpDocCode || 'STP04-GTT-C940'} (${matched?.stpRev || 'rev 2'})`,
         muRefCode: 'MU-GTT-C940-1 (260421)',
@@ -237,14 +286,14 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'PLT',
         worksheetFormCode: 'FST07-FDT-PLT-1-261028',
         formalReportFormCode: 'FDT-PLT-RT-1-261028',
-        formalReportFileUrl: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx',
+        formalReportFileUrl: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.pdf',
         templateFileCode: 'FST07-FDT-PLT-1-261028_Worksheet_template.xlsx',
         templateTitleEn:
           'WORKSHEET FOR DETERMINATION OF VERTICAL DEFORMATION AND STRENGTH CHARACTERISTICS OF SOIL BY PLATE LOADING TEST (INCREMENTAL LOADING METHOD)',
-        templateTitleZh: '平板載荷試驗現場工作紙 (FST07-FDT-PLT-1-261028)',
+        templateTitleZh: '平板載荷試驗現場工作紙 · FST07-FDT-PLT-1-261028',
         formalReportTitleEn:
           'TEST REPORT — DETERMINATION OF VERTICAL DEFORMATION AND STRENGTH CHARACTERISTICS OF SOIL BY PLATE LOADING TEST (INCREMENTAL LOADING METHOD)',
-        formalReportTitleZh: '平板載荷試驗 23 頁主控正式報告範本 (FDT-PLT-RT-1-261028 Report_template.xlsx)',
+        formalReportTitleZh: '平板載荷試驗 23 頁主控正式報告範本 · FDT-PLT-RT-1-261028',
         testStandard: matched?.std || 'BS 1377: Part 9: 1990 Cl. 4.1 / Geoguide 7 / CoP Foundations',
         stpDocRef: `${matched?.stpDocCode || 'STP07-PLT'} (${matched?.stpRev || 'Issue 0'})`,
         muRefCode: 'PLT_Setup_Checking_750kPa (v20261021)',
@@ -256,15 +305,17 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'PO',
         worksheetFormCode: 'FST06-RKT-D5731-2-260421',
         formalReportFormCode: 'RKT-D5731-RT',
+        formalReportFileUrl: '/server-docs/reports/RKT-D5731-RT_Report_template.pdf',
         templateFileCode: 'FST06-RKT-D5731-2-260421_Worksheet_template.xlsx',
         templateTitleEn: 'On Determination of Point Load Strength Index of Rock',
-        templateTitleZh: '岩石點荷載強度指數 Is(50) 完成工作紙 (FST06-RKT-D5731-2-260421)',
+        templateTitleZh: '岩石點荷載強度指數 Is(50) 完成工作紙 · FST06-RKT-D5731-2-260421',
         formalReportTitleEn: 'TEST REPORT — POINT LOAD STRENGTH INDEX OF ROCK BY DIAMETRAL AND AXIAL TESTS',
-        formalReportTitleZh: 'HOKLAS 認可岩石點荷載強度指數 Is(50) 正式測試報告 (RKT-D5731-RT)',
+        formalReportTitleZh: 'HOKLAS 認可岩石點荷載強度指數 Is(50) 正式測試報告 · RKT-D5731-RT',
         testStandard: matched?.std || 'ASTM D5731-16',
         stpDocRef: `${matched?.stpDocCode || 'STP06-RKT-D5731'} (${matched?.stpRev || 'rev 2'})`,
         muRefCode: 'MU-RKT-D5731-1 (260421)',
-        uncertaintyStatement: 'Expanded Measurement Uncertainty U95 = ± 0.18 MPa on Is(50) (Coverage factor k = 2, ~95% confidence)',
+        uncertaintyStatement:
+          'Pressure Uncertainty = ± 0.000886 MPa (STP06 Cl. 8.2); Specimen-specific U95 on Is(50) per MU-RKT-D5731-1 (k = 2)',
         accredited: true,
       };
     case 'SO':
@@ -272,13 +323,14 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'SO',
         worksheetFormCode: 'FST03-FDT-D6760-2-260417',
         formalReportFormCode: 'FDT-D6760-RT',
+        formalReportFileUrl: '/server-docs/reports/FDT-D6760-RT_Report_template.pdf',
         templateFileCode: 'FST03-FDT-D6760-2-260417_Worksheet_template.xlsx',
         templateTitleEn: 'ULTRASONIC LOGGING TESTING',
-        templateTitleZh: '跨孔超聲波測井 (Crosshole Sonic Logging) 完成工作紙 (FST03-FDT-D6760-2-260417)',
+        templateTitleZh: '跨孔超聲波測井完成工作紙 · FST03-FDT-D6760-2-260417',
         formalReportTitleEn: 'TEST REPORT — INTEGRITY TESTING OF CONCRETE DEEP FOUNDATION BY CROSSHOLE SONIC LOGGING TEST',
-        formalReportTitleZh: 'HOKLAS 認可跨孔超聲波測井正式測試報告 (FDT-D6760-RT)',
+        formalReportTitleZh: 'HOKLAS 認可跨孔超聲波測井正式測試報告 · FDT-D6760-RT',
         testStandard: matched?.std || 'ASTM D6760-16',
-        stpDocRef: `${matched?.stpDocCode || 'STP03-FDT-D6760'} (${matched?.stpRev || 'rev 2'})`,
+        stpDocRef: `${matched?.stpDocCode || 'STP03-FDT-D6760'} (${matched?.stpRev || 'Rev. 3'})`,
         muRefCode: 'STP03-FDT-D6760 Cl. 11',
         uncertaintyStatement: 'Expanded Measurement Uncertainty U95: Depth ± 1% or 0.25m; Ultrasonic Pulse Time Base Verified (k = 2)',
         accredited: true,
@@ -288,12 +340,13 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: 'VC',
         worksheetFormCode: 'FST08-INC-Draft',
         formalReportFormCode: 'INC-RT',
+        formalReportFileUrl: '/server-docs/reports/INC-RT_Report_template.pdf',
         templateFileCode: 'STP07-PLT_Worksheet_template.xlsx',
         templateTitleEn: 'WORKSHEET FOR BIAXIAL INCLINOMETER VERTICALITY PROFILE CHECK (A0/A180 & B0/B180)',
-        templateTitleZh: '雙軸測斜儀鑽孔／樁身垂直度完成工作紙',
+        templateTitleZh: '雙軸測斜儀鑽孔及樁身垂直度完成工作紙',
         formalReportTitleEn: 'TEST REPORT — VERTICALITY CHECK BY BIAXIAL INCLINOMETER',
-        formalReportTitleZh: '雙軸測斜儀樁身垂直度測試正式報告',
-        testStandard: matched?.std || 'BD CoP Foundations / Geospec 3 Inclinometer Survey',
+        formalReportTitleZh: '雙軸測斜儀樁身垂直度測試正式報告 · INC-RT',
+        testStandard: matched?.std || 'BD CoP Foundations / PeeWee & Inclinometer Verticality Survey',
         stpDocRef: `${matched?.stpDocCode || 'STP08-INC-DRAFT'} (${matched?.stpRev || 'Draft'})`,
         muRefCode: 'MU-INC-01',
         uncertaintyStatement: 'Expanded Uncertainty U95 = ± 1.5 mm per 10 m depth (A0/A180 zero-bias compensated, k = 2)',
@@ -305,15 +358,17 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         stpCode: clean,
         worksheetFormCode: 'FST02-FDT-TM3-6-260612',
         formalReportFormCode: 'FDT-TM3-RT',
+        formalReportFileUrl: '/server-docs/reports/FDT-TM3-RT_Report_template.pdf',
         templateFileCode: 'FST02-FDT-TM3-6-260612_Worksheet_template.xlsx',
         templateTitleEn: 'ULTRASONIC ECHO SOUNDER TEST',
-        templateTitleZh: 'Koden 超聲波鑽孔垂直度及孔徑剖面完成工作紙 (FST02-FDT-TM3-6-260612)',
+        templateTitleZh: 'Koden 超聲波鑽孔垂直度及孔徑剖面完成工作紙 · FST02-FDT-TM3-6-260612',
         formalReportTitleEn: 'TEST REPORT — ULTRASONIC ECHO SOUNDER TEST (DETERMINATION OF GEOMETRY OF VERTICAL SHAFT EXCAVATION)',
-        formalReportTitleZh: 'HOKLAS 認可 Koden 超聲波鑽孔垂直度正式測試報告 (FDT-TM3-RT)',
+        formalReportTitleZh: 'HOKLAS 認可 Koden 超聲波鑽孔垂直度正式測試報告 · FDT-TM3-RT',
         testStandard: matched?.std || 'Hong Kong Concrete Institute TM3 Issue 2 (2024)',
         stpDocRef: `${matched?.stpDocCode || 'STP02-FDT-TM3'} (${matched?.stpRev || 'rev 7'})`,
         muRefCode: 'FC03-TM3-MU (250804)',
-        uncertaintyStatement: 'Expanded Measurement Uncertainty U95 = ± 12 mm on resultant displacement (k = 2, ~95% confidence)',
+        uncertaintyStatement:
+          'Expanded Measurement Uncertainty U95 = ± 0.001 m (± 1 mm) at 95% confidence level (STP02-FDT-TM3 Cl. 9.2, k = 2)',
         accredited: true,
       };
   }
@@ -406,23 +461,108 @@ export function toEnglishWorksheetText(input?: string | null, fallback = ''): st
   return s || fallback;
 }
 
+export const OFFICIAL_JOB_REF_RE = /^[A-Z]{2,4}-\d{6}(?:-\d+)?$/i;
+
+export function isOfficialJobRefNo(ref?: string | null): boolean {
+  return !!ref && OFFICIAL_JOB_REF_RE.test(ref.trim());
+}
+
 /**
- * Generates the next sequential Job Reference No. for a given Job and Test Method.
+ * Generates the next sequential Job Reference No. by Test Type (<TEST>-<YY><NNNN>),
+ * matching LabTech_Job_Register.xlsx (e.g. KD-260001, SO-260004, FC-260018, PO-260004).
  */
 export function generateSequentialJobRefNo(
-  jobNo: string,
+  _jobNo: string,
   stpCode: string,
-  existingRecords: FieldCalcRecord[] = [],
+  existingRecords: Array<Partial<FieldCalcRecord>> = [],
   dateIso?: string
 ): string {
-  const cleanJob = toEnglishWorksheetText(jobNo, 'LT0001').toUpperCase();
-  const cleanStp = toEnglishWorksheetText(stpCode, 'KD').toUpperCase();
-  const ymd = (dateIso || new Date().toISOString().slice(0, 10)).replace(/-/g, '').slice(2, 8);
-  const matchingCount = existingRecords.filter(
-    (r) => r.jobNo.toUpperCase() === cleanJob && r.stpCode.toUpperCase() === cleanStp
-  ).length;
-  const nextSeq = String(matchingCount + 1).padStart(3, '0');
-  return `${cleanJob}-${cleanStp}-${ymd}-${nextSeq}`;
+  const cleanStp = (stpCode || 'KD').trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || 'KD';
+  const rawDate = (dateIso && dateIso.trim()) || getHkTodayIso();
+  const yearMatch = rawDate.match(/^(\d{4})/);
+  const yy = yearMatch
+    ? yearMatch[1].slice(2, 4)
+    : rawDate.replace(/\D/g, '').slice(0, 2) || getHkTodayIso().slice(2, 4);
+
+  const seqRe = new RegExp('^' + cleanStp + '-' + yy + '(\\d{4})(?:-\\d+)?$', 'i');
+  let maxSeq = 0;
+  for (const r of existingRecords) {
+    if (!r) continue;
+    const rStp = r.stpCode ? r.stpCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+    if (rStp && rStp !== cleanStp) continue;
+    const mRef = r.jobRefNo ? seqRe.exec(r.jobRefNo.trim()) : null;
+    if (mRef) {
+      const n = parseInt(mRef[1], 10);
+      if (n > maxSeq) maxSeq = n;
+    }
+    const mId = r.id ? seqRe.exec(r.id.trim()) : null;
+    if (mId) {
+      const n = parseInt(mId[1], 10);
+      if (n > maxSeq) maxSeq = n;
+    }
+  }
+  return `${cleanStp}-${yy}${String(maxSeq + 1).padStart(4, '0')}`;
+}
+
+/**
+ * Deterministically normalizes legacy or missing jobRefNo values onto the official
+ * <TEST>-<YY><NNNN> Test-Type register sequence while preserving each record's id.
+ */
+export function normalizeCalcRecordsJobRef(records: FieldCalcRecord[]): FieldCalcRecord[] {
+  if (!Array.isArray(records) || records.length === 0) return [];
+
+  const normalized = new Array<FieldCalcRecord>(records.length);
+  const assigned: FieldCalcRecord[] = [];
+  const pendingIndices: number[] = [];
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const cleanStp = (r.stpCode || 'KD').trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || 'KD';
+    const stpRefRe = new RegExp('^' + cleanStp + '-\\d{6}(?:-\\d+)?$', 'i');
+    const refTrim = (r.jobRefNo || '').trim();
+    const idTrim = (r.id || '').trim();
+
+    if (isOfficialJobRefNo(refTrim)) {
+      const canonical = refTrim.toUpperCase();
+      const nextRec = r.jobRefNo === canonical ? r : { ...r, jobRefNo: canonical };
+      normalized[i] = nextRec;
+      assigned.push(nextRec);
+    } else if (stpRefRe.test(idTrim)) {
+      const canonical = idTrim.toUpperCase();
+      const nextRec = r.jobRefNo === canonical ? r : { ...r, jobRefNo: canonical };
+      normalized[i] = nextRec;
+      assigned.push(nextRec);
+    } else {
+      pendingIndices.push(i);
+    }
+  }
+
+  if (pendingIndices.length === 0) return normalized;
+
+  pendingIndices.sort((ia, ib) => {
+    const a = records[ia];
+    const b = records[ib];
+    const ta = a.testedAt || '';
+    const tb = b.testedAt || '';
+    if (ta !== tb) return ta.localeCompare(tb);
+    return (a.id || '').localeCompare(b.id || '');
+  });
+
+  for (const idx of pendingIndices) {
+    const r = records[idx];
+    const dateMatch = (r.testedAt || '').match(/^(\d{4}-\d{2}-\d{2})/);
+    const nextRef = generateSequentialJobRefNo(
+      r.jobNo,
+      r.stpCode,
+      assigned,
+      dateMatch ? dateMatch[1] : undefined
+    );
+    const nextRec: FieldCalcRecord = { ...r, jobRefNo: nextRef };
+    normalized[idx] = nextRec;
+    assigned.push(nextRec);
+  }
+
+  return normalized;
 }
 
 const DEFAULT_HK_CLIENTS = [

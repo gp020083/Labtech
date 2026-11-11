@@ -4,12 +4,31 @@ import { usePrefs } from '../prefs';
 import { BleedingCalcTool } from '../components/tools/BleedingCalcTool';
 import { PlateLoadCalcTool } from '../components/tools/PlateLoadCalcTool';
 import { KodenVerticalityTool, FlowConeCalcTool, PointLoadCalcTool } from '../components/tools/KodenFlowPointTools';
+import { SonicCalcTool } from '../components/tools/SonicCalcTool';
 import { InclinometerCalcTool } from '../components/tools/InclinometerCalcTool';
 import { GovSpecMatrixView } from '../components/tools/GovSpecMatrixView';
 import { JobRefSummaryView } from '../components/tools/JobRefSummaryView';
-import { Calculator, Landmark, FolderKanban, Droplets, Timer, Radio, Layers, Hammer, Compass } from 'lucide-react';
+import {
+  Calculator,
+  Landmark,
+  FolderKanban,
+  Droplets,
+  Timer,
+  Radio,
+  Activity,
+  Layers,
+  Hammer,
+  Compass,
+} from 'lucide-react';
 
-export type CalcToolId = 'bleeding' | 'plt' | 'koden' | 'flowcone' | 'pointload' | 'inclinometer';
+export type CalcToolId =
+  | 'bleeding'
+  | 'plt'
+  | 'koden'
+  | 'sonic'
+  | 'flowcone'
+  | 'pointload'
+  | 'inclinometer';
 
 export const ToolsPage: React.FC<{
   forcedMode?: 'calc' | 'registry' | 'specs' | null;
@@ -28,19 +47,20 @@ export const ToolsPage: React.FC<{
   }, [forcedMode, forcedTool, onConsumeJump]);
 
   const calcTools: { id: CalcToolId; Icon: React.ElementType; title: string; sub: string; code: string }[] = [
-    { id: 'bleeding', Icon: Droplets, title: 'Grout Bleeding', sub: 'ASTM C940 · FST04', code: 'BL' },
-    { id: 'flowcone', Icon: Timer, title: 'Flow Cone', sub: 'ASTM C939 · FST05', code: 'FC' },
-    { id: 'koden', Icon: Radio, title: 'Koden Test', sub: 'HKCI TM3 · FST02', code: 'KD' },
-    { id: 'plt', Icon: Layers, title: 'Plate Load Test', sub: 'STP07-PLT · App. B/C', code: 'PLT' },
-    { id: 'pointload', Icon: Hammer, title: 'Point Load', sub: 'ASTM D5731 · FST06', code: 'PO' },
-    { id: 'inclinometer', Icon: Compass, title: 'Inclinometer', sub: 'A0/A180 Drift · 1:N', code: 'VC' },
+    { id: 'koden', Icon: Radio, title: 'Koden Test', sub: 'HKCI TM3 · STP02', code: 'KD' },
+    { id: 'sonic', Icon: Activity, title: 'Sonic Logging', sub: 'ASTM D6760 · STP03', code: 'SO' },
+    { id: 'flowcone', Icon: Timer, title: 'Flow Cone', sub: 'ASTM C939 · STP05', code: 'FC' },
+    { id: 'bleeding', Icon: Droplets, title: 'Grout Bleeding', sub: 'ASTM C940 · STP04', code: 'BL' },
+    { id: 'pointload', Icon: Hammer, title: 'Point Load', sub: 'ASTM D5731 · STP06', code: 'PO' },
+    { id: 'plt', Icon: Layers, title: 'Plate Load', sub: 'STP07-PLT · 4 Gauges', code: 'PLT' },
+    { id: 'inclinometer', Icon: Compass, title: 'Verticality', sub: 'PeeWee · Biaxial', code: 'VC' },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 sm:px-5 shadow-xs">
         <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
-          {tx('現場測試計算及報告生成', 'Field Test Calculators & Report Generator')}
+          {tx('現場測試計算及報告生成 · 全 7 項測試', 'Field Test Calculators & Report Generator · All 7 Tests')}
         </h1>
 
         <div className="inline-flex flex-wrap rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/80 shrink-0 gap-1">
@@ -84,7 +104,7 @@ export const ToolsPage: React.FC<{
         <GovSpecMatrixView onJumpCalc={(cid) => { setActiveTool(cid); setMode('calc'); }} />
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
             {calcTools.map((t) => {
               const active = activeTool === t.id;
               const ToolIcon = t.Icon;
@@ -93,7 +113,7 @@ export const ToolsPage: React.FC<{
                   key={t.id}
                   type="button"
                   onClick={() => setActiveTool(t.id)}
-                  className={`flex flex-col items-start rounded-2xl border p-3.5 text-left transition cursor-pointer ${
+                  className={`flex flex-col items-start rounded-2xl border p-3 text-left transition cursor-pointer ${
                     active ? 'border-brand bg-brand-wash/75 ring-2 ring-brand/25 shadow-xs' : 'border-slate-200/85 bg-white hover:bg-slate-50'
                   }`}
                 >
@@ -113,6 +133,7 @@ export const ToolsPage: React.FC<{
           {activeTool === 'bleeding' && <BleedingCalcTool onViewAllSpecs={() => setMode('specs')} />}
           {activeTool === 'plt' && <PlateLoadCalcTool onViewAllSpecs={() => setMode('specs')} />}
           {activeTool === 'koden' && <KodenVerticalityTool onViewAllSpecs={() => setMode('specs')} />}
+          {activeTool === 'sonic' && <SonicCalcTool onViewAllSpecs={() => setMode('specs')} />}
           {activeTool === 'flowcone' && <FlowConeCalcTool onViewAllSpecs={() => setMode('specs')} />}
           {activeTool === 'pointload' && <PointLoadCalcTool onViewAllSpecs={() => setMode('specs')} />}
           {activeTool === 'inclinometer' && <InclinometerCalcTool onViewAllSpecs={() => setMode('specs')} />}

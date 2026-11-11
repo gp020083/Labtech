@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../store';
 import { usePrefs } from '../../prefs';
+import { PltStructuredPayload } from '../../utils/completedWorksheetGenerator';
 import { ToolGuideCard } from './ToolGuideCard';
 import { Plus, RotateCcw, Eye, Sparkles } from 'lucide-react';
 
-interface PltStepRow {
+export interface PltStepRow {
   stepName: string;
   loadKn: string;
   g1: string;
@@ -13,43 +14,90 @@ interface PltStepRow {
   g4: string;
 }
 
-const DEFAULT_PLT_STEPS: PltStepRow[] = [
-  { stepName: '25% Design Load', loadKn: '50', g1: '1.12', g2: '1.18', g3: '1.15', g4: '1.11' },
-  { stepName: '50% Design Load', loadKn: '100', g1: '2.45', g2: '2.56', g3: '2.50', g4: '2.41' },
-  { stepName: '100% Design (1.0x)', loadKn: '200', g1: '5.18', g2: '5.42', g3: '5.30', g4: '5.10' },
-  { stepName: '150% Test (1.5x)', loadKn: '300', g1: '8.35', g2: '8.72', g3: '8.55', g4: '8.26' },
-  { stepName: 'Unload (0 kN)', loadKn: '0', g1: '2.10', g2: '2.22', g3: '2.16', g4: '2.08' },
-];
+export function buildStandard3CycleSteps(workingKpa: number, areaM2: number, z0 = 0.5): PltStepRow[] {
+  const stages: [string, number, number][] = [
+    ['C1 · 0.5W', 0.5, 1.35],
+    ['C1 · 1.0W Working', 1.0, 2.85],
+    ['C1 · 0.5W Unload', 0.5, 2.15],
+    ['C1 · 0W Unload', 0, 0.95],
+    ['C2 · 1.0W Reload', 1.0, 3.05],
+    ['C2 · 1.5W', 1.5, 4.65],
+    ['C2 · 2.0W', 2.0, 6.45],
+    ['C2 · 1.0W Unload', 1.0, 4.85],
+    ['C2 · 0W Unload', 0, 1.85],
+    ['C3 · 1.5W Reload', 1.5, 5.10],
+    ['C3 · 2.0W', 2.0, 6.75],
+    ['C3 · 2.5W', 2.5, 8.60],
+    ['C3 · 3.0W ≥72h Hold', 3.0, 10.80],
+    ['C3 · Final 0W Unload', 0, 3.20],
+  ];
+
+  return stages.map(([stepName, mult, nominalSettleMm]) => {
+    const loadKn = (mult * workingKpa * areaM2).toFixed(2);
+    return {
+      stepName,
+      loadKn: mult === 0 ? '0' : Number(loadKn).toFixed(1),
+      g1: (z0 + nominalSettleMm * 0.98).toFixed(2),
+      g2: (z0 + nominalSettleMm * 1.03).toFixed(2),
+      g3: (z0 + nominalSettleMm * 1.01).toFixed(2),
+      g4: (z0 + nominalSettleMm * 0.98).toFixed(2),
+    };
+  });
+}
 
 export const PlateLoadCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ onViewAllSpecs }) => {
   const { openPreviewDoc } = useApp();
   const { tx } = usePrefs();
-  const [plateShape, setPlateShape] = useState<'circular' | 'square'>('circular');
+  const [plateShape, setPlateShape] = useState<'square' | 'circular'>('square');
   const [plateSizeMm, setPlateSizeMm] = useState('300');
-  const [gaugeCount, setGaugeCount] = useState<3 | 4>(4);
   const [zeroG, setZeroG] = useState({ g1: '0.50', g2: '0.50', g3: '0.50', g4: '0.50' });
-  const [prev15mAvg, setPrev15mAvg] = useState('8.44');
-  const [curr15mAvg, setCurr15mAvg] = useState('8.47');
+  const [prev10mAvg, setPrev10mAvg] = useState('11.27');
+  const [curr10mAvg, setCurr10mAvg] = useState('11.30');
   const [workingKpa, setWorkingKpa] = useState('250');
   const [poissonNu, setPoissonNu] = useState('0.30');
-  const [steps, setSteps] = useState<PltStepRow[]>(DEFAULT_PLT_STEPS);
+  const [limitMode, setLimitMode] = useState<'015B' | 'asd25' | 'custom'>('015B');
+  const [customLimitMm, setCustomLimitMm] = useState('45.0');
+  const [steps, setSteps] = useState<PltStepRow[]>(() => buildStandard3CycleSteps(250, 0.09, 0.5));
 
-  const sizeM = Math.max(0.05, (parseFloat(plateSizeMm) || 300) / 1000);
-  const areaM2 = plateShape === 'circular' ? Math.PI * Math.pow(sizeM / 2, 2) : sizeM * sizeM;
+  const sizeMmNum = Math.max(50, parseFloat(plateSizeMm) || 300);
+  const sizeM = sizeMmNum / 1000;
+  const areaM2 = plateShape === 'circular' ? (Math.PI * sizeM * sizeM) / 4 : sizeM * sizeM;
+  const workKpaNum = Math.max(10, parseFloat(workingKpa) || 250);
 
-  const apply3CycleSchedule = () => {
-    const w = Math.max(10, parseFloat(workingKpa) || 250);
-    const z = (parseFloat(zeroG.g1) || 0.5).toFixed(2);
-    const mults: [string, number][] = [
-      ['C1: 0.5W', 0.5], ['C1: 1.0W', 1.0], ['C1: Unload 0', 0],
-      ['C2: 1.0W', 1.0], ['C2: 1.5W', 1.5], ['C2: 2.0W', 2.0], ['C2: Unload 0', 0],
-      ['C3: 1.5W', 1.5], ['C3: 2.0W', 2.0], ['C3: 2.5W', 2.5], ['C3: 3.0W (≥72h)', 3.0], ['C3: Final 0', 0],
-    ];
-    setSteps(mults.map(([name, m]) => ({
-      stepName: name,
-      loadKn: (m * w * areaM2).toFixed(1),
-      g1: z, g2: z, g3: z, g4: z,
-    })));
+  const apply3CycleSchedule = (nextShape = plateShape, nextSizeMm = sizeMmNum, nextWorkKpa = workKpaNum) => {
+    const sM = Math.max(0.05, nextSizeMm / 1000);
+    const nextArea = nextShape === 'circular' ? (Math.PI * sM * sM) / 4 : sM * sM;
+    const z0 = parseFloat(zeroG.g1) || 0.5;
+    setSteps(buildStandard3CycleSteps(nextWorkKpa, nextArea, z0));
+  };
+
+  const zeroAllStepGauges = () => {
+    setSteps((prev) =>
+      prev.map((s) => ({
+        ...s,
+        g1: zeroG.g1,
+        g2: zeroG.g2,
+        g3: zeroG.g3,
+        g4: zeroG.g4,
+      }))
+    );
+  };
+
+  const handleShapeSwitch = (nextShape: 'square' | 'circular') => {
+    if (nextShape === plateShape) return;
+    const sM = sizeMmNum / 1000;
+    const nextArea = nextShape === 'circular' ? (Math.PI * sM * sM) / 4 : sM * sM;
+    const ratio = nextArea / areaM2;
+    setPlateShape(nextShape);
+    setSteps((prev) =>
+      prev.map((st) => {
+        const curKn = parseFloat(st.loadKn) || 0;
+        return {
+          ...st,
+          loadKn: curKn > 0 ? (curKn * ratio).toFixed(1) : '0',
+        };
+      })
+    );
   };
 
   const computed = useMemo(() => {
@@ -58,237 +106,503 @@ export const PlateLoadCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ o
     const z3 = parseFloat(zeroG.g3) || 0;
     const z4 = parseFloat(zeroG.g4) || 0;
 
-    return steps.map((st) => {
-      const pKn = parseFloat(st.loadKn) || 0;
-      const pressureKpa = pKn / areaM2;
+    return steps.map((st, idx) => {
+      const pKn = Math.max(0, parseFloat(st.loadKn) || 0);
+      const pressureKpa = areaM2 > 0 ? pKn / areaM2 : 0;
+      const prevKn = idx > 0 ? Math.max(0, parseFloat(steps[idx - 1].loadKn) || 0) : 0;
+      const isLoadingOrPeak = pKn > 0 && pKn >= prevKn - 1e-6;
       const d1 = (parseFloat(st.g1) || 0) - z1;
       const d2 = (parseFloat(st.g2) || 0) - z2;
       const d3 = (parseFloat(st.g3) || 0) - z3;
       const d4 = (parseFloat(st.g4) || 0) - z4;
-      const arr = gaugeCount === 4 ? [d1, d2, d3, d4] : [d1, d2, d3];
-      const meanMm = arr.reduce((a, b) => a + b, 0) / arr.length;
+      const arr = [d1, d2, d3, d4];
+      const meanMm = (d1 + d2 + d3 + d4) / 4;
       const spreadMm = Math.max(...arr) - Math.min(...arr);
       const tiltWarn = meanMm > 1.0 && spreadMm / meanMm > 0.35;
       const ks = meanMm > 0.05 && pKn > 0 ? pressureKpa / meanMm : null;
-      return { ...st, pKn, pressureKpa, d1, d2, d3, d4, meanMm, spreadMm, tiltWarn, ks };
+      return { ...st, idx, pKn, pressureKpa, isLoadingOrPeak, d1, d2, d3, d4, meanMm, spreadMm, tiltWarn, ks };
     });
-  }, [steps, zeroG, gaugeCount, areaM2]);
+  }, [steps, zeroG, areaM2]);
 
-  const maxLoadRow = useMemo(() => {
-    const pos = computed.filter((c) => c.pKn > 0);
-    return pos.length ? pos.reduce((a, b) => (b.pKn >= a.pKn ? b : a), pos[0]) : computed[0];
+  const peakLoadRow = useMemo(() => {
+    const pos = computed.filter((c) => c.pressureKpa > 0);
+    return pos.length ? pos.reduce((a, b) => (b.pressureKpa >= a.pressureKpa ? b : a), pos[0]) : computed[0];
   }, [computed]);
 
-  const rate15m = Math.abs((parseFloat(curr15mAvg) || 0) - (parseFloat(prev15mAvg) || 0));
-  const rateStable = rate15m <= 0.05;
-  const nu = Math.min(0.49, Math.max(0, parseFloat(poissonNu) || 0.30));
-  const limit015BMm = 0.15 * (parseFloat(plateSizeMm) || 300);
-  const pass015B = (maxLoadRow?.meanMm ?? 0) <= limit015BMm;
+  const maxSettleMm = useMemo(() => {
+    return computed.length ? Math.max(0, ...computed.map((c) => c.meanMm)) : 0;
+  }, [computed]);
+
+  const workRow = useMemo(() => {
+    const loadingPos = computed.filter((c) => c.pressureKpa > 0 && c.isLoadingOrPeak && c.meanMm > 0);
+    const pool = loadingPos.length > 0 ? loadingPos : computed.filter((c) => c.pressureKpa > 0);
+    if (pool.length === 0) return null;
+    return pool.reduce((best, cur) =>
+      Math.abs(cur.pressureKpa - workKpaNum) < Math.abs(best.pressureKpa - workKpaNum) ? cur : best
+    );
+  }, [computed, workKpaNum]);
+
+  const rate10m = Math.abs((parseFloat(curr10mAvg) || 0) - (parseFloat(prev10mAvg) || 0));
+  const rateStable = rate10m < 0.05 - 1e-9 || Math.abs(rate10m - 0.05) < 1e-9 && rate10m < 0.05;
+  const nu = Math.min(0.49, Math.max(0, parseFloat(poissonNu) || 0.3));
+
+  const allowLimitMm =
+    limitMode === '015B'
+      ? 0.15 * sizeMmNum
+      : limitMode === 'asd25'
+      ? 25.0
+      : Math.max(1, parseFloat(customLimitMm) || 45.0);
+
+  const passSettlement = maxSettleMm <= allowLimitMm + 1e-9;
+
   const esMpa = useMemo(() => {
-    if (!maxLoadRow || maxLoadRow.meanMm <= 0.05 || maxLoadRow.pKn <= 0) return null;
+    if (!workRow || workRow.meanMm <= 0.02 || workRow.pKn <= 0) return null;
     const shapeFactor = plateShape === 'circular' ? 1.0 : 1.13;
-    return (maxLoadRow.pKn * (1 - nu * nu)) / (shapeFactor * maxLoadRow.meanMm * sizeM);
-  }, [maxLoadRow, nu, plateShape, sizeM]);
+    return (workRow.pKn * (1 - nu * nu)) / (shapeFactor * workRow.meanMm * sizeM);
+  }, [workRow, nu, plateShape, sizeM]);
 
   const updateStep = (idx: number, field: keyof PltStepRow, val: string) =>
     setSteps((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: val } : s)));
 
   const platePresets = plateShape === 'circular' ? ['300', '450', '600', '762'] : ['300', '450', '500', '600', '1000'];
-  const plateDesc = plateShape === 'circular'
-    ? `Circular Steel Plate ØD = ${plateSizeMm} mm (Area A = ${areaM2.toFixed(4)} m²)`
-    : `Square Steel Plate B × B = ${plateSizeMm} × ${plateSizeMm} mm (Area A = ${areaM2.toFixed(4)} m²)`;
+  const plateDesc =
+    plateShape === 'square'
+      ? `Square Plate B×B = ${sizeMmNum}×${sizeMmNum} mm · A = ${areaM2.toFixed(4)} m²`
+      : `Circular Plate ØB = ${sizeMmNum} mm · A = ${areaM2.toFixed(4)} m²`;
 
-  const copySummary = `[Labtech Calc — Plate Load Test (BS 1377-9 / BD CoP Cl. 8.2(2))]
-${plateDesc}
-Peak Load P = ${maxLoadRow?.pKn.toFixed(1)} kN (Bearing Pressure q = ${maxLoadRow?.pressureKpa.toFixed(1)} kPa)
-Mean Settlement S = ${maxLoadRow?.meanMm.toFixed(2)} mm (Limit 0.15B = ${limit015BMm.toFixed(1)} mm → ${pass015B ? 'PASS' : 'EXCEED'})
-Modulus ks = ${maxLoadRow?.ks ? maxLoadRow.ks.toFixed(1) : '—'} MN/m³ ｜ BD Cl. 8.2(2)(g) Es (ν=${nu.toFixed(2)}) = ${esMpa ? esMpa.toFixed(2) : '—'} MPa
-Stage Stability Δs = ${rate15m.toFixed(2)} mm (${rateStable ? 'STABLE ≤0.05mm' : 'HOLD LOAD'})`;
+  const copySummary = [
+    `[PLT Plate Load Test — STP07-PLT · BD Cl. 8.2 · HA EXC.T910.1 · 4 Orthogonal Gauges]`,
+    `${plateDesc} ｜ Working W = ${workKpaNum.toFixed(0)} kPa`,
+    `Peak Test Load = ${peakLoadRow?.pKn.toFixed(1) ?? '0'} kN · q_max = ${peakLoadRow?.pressureKpa.toFixed(1) ?? '0'} kPa`,
+    `Max Settlement S_max = ${maxSettleMm.toFixed(2)} mm vs Limit ${allowLimitMm.toFixed(1)} mm → ${passSettlement ? 'PASS' : 'EXCEED'}`,
+    `Working Step ${workRow?.stepName || '1.0W'}: Wt = ${workRow?.pKn.toFixed(1) ?? '0'} kN, Sw = ${workRow?.meanMm.toFixed(2) ?? '0'} mm → Es = ${esMpa ? esMpa.toFixed(2) : '—'} MPa · ks = ${workRow?.ks ? workRow.ks.toFixed(1) : '—'} MN/m³`,
+    `10-min Settlement Rate = ${rate10m.toFixed(3)} mm / 10 min → ${rateStable ? 'STABLE <0.05mm/10min' : 'HOLD LOAD'}`,
+  ].join('\n');
+
+  const pltPayload: PltStructuredPayload = {
+    kind: 'PLT',
+    plateShape,
+    plateSizeMm: sizeMmNum,
+    areaM2,
+    gaugeCount: 4,
+    workingKpa: workKpaNum,
+    poissonNu: nu,
+    zeroG: {
+      g1: parseFloat(zeroG.g1) || 0,
+      g2: parseFloat(zeroG.g2) || 0,
+      g3: parseFloat(zeroG.g3) || 0,
+      g4: parseFloat(zeroG.g4) || 0,
+    },
+    prev15mAvg: parseFloat(prev10mAvg) || 0,
+    curr15mAvg: parseFloat(curr10mAvg) || 0,
+    rate15m: rate10m,
+    rateStable,
+    peakLoadKn: peakLoadRow?.pKn ?? 0,
+    peakPressureKpa: peakLoadRow?.pressureKpa ?? 0,
+    peakSettlementMm: maxSettleMm,
+    limit015BMm: allowLimitMm,
+    ksPeak: workRow?.ks ?? peakLoadRow?.ks ?? null,
+    esMpa,
+    pass015B: passSettlement,
+    steps: computed.map((c) => ({
+      stepName: c.stepName,
+      loadKn: c.pKn,
+      pressureKpa: c.pressureKpa,
+      g1: parseFloat(c.g1) || 0,
+      g2: parseFloat(c.g2) || 0,
+      g3: parseFloat(c.g3) || 0,
+      g4: parseFloat(c.g4) || 0,
+      d1: c.d1,
+      d2: c.d2,
+      d3: c.d3,
+      d4: c.d4,
+      meanMm: c.meanMm,
+      spreadMm: c.spreadMm,
+      ks: c.ks,
+      tiltWarn: c.tiltWarn,
+    })),
+  };
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
       <div className="xl:col-span-7 rounded-3xl border border-slate-200/85 bg-white p-4 sm:p-5 shadow-sm space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3.5">
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-              {tx('🏗️ Plate Load Test — Settlement 自動計算工具', '🏗️ Plate Load Test — Settlement & Modulus Calculator')}
+              {tx(
+                '🏗️ Step 1 · 平板載荷試驗計算器 · STP07-PLT · 4 正交錶標準',
+                '🏗️ Step 1 · Plate Load Test Calculator · STP07-PLT · 4 Orthogonal Gauges'
+              )}
             </h2>
-            <p className="text-xs text-slate-500">
-              {tx('支援圓形及正方形 Steel Plate，自動扣減 Dial Gauge 零位 G0，計算承載應力 q (kPa)、平均沉降量及地基反力模量 ks。', 'Supports Circular & Square Steel Plates; computes Bearing Pressure (kPa), Mean Settlement (mm), Subgrade Modulus ks, and 15-min stability.')}
+            <p className="text-xs text-slate-500 mt-0.5">
+              {tx(
+                '全面採用 DG1–DG4 四正交千分錶，支援方形板 B×B 與圓形板 πB²/4 面積及 1.13 形狀修正模量 Es。',
+                'Uses 4 orthogonal dial gauges DG1–DG4 with Square B×B vs Circular πB²/4 area and 1.13 Es shape factor.'
+              )}
             </p>
           </div>
-          <button type="button" onClick={() => { setPlateShape('circular'); setPlateSizeMm('300'); setSteps(DEFAULT_PLT_STEPS); }} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"><RotateCcw className="h-3.5 w-3.5" /> {tx('重設範例數據', 'Reset Sample')}</button>
+          <button
+            type="button"
+            onClick={() => {
+              setPlateShape('square');
+              setPlateSizeMm('300');
+              setLimitMode('015B');
+              setSteps(buildStandard3CycleSteps(250, 0.09, 0.5));
+            }}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> {tx('重設範例', 'Reset')}
+          </button>
         </div>
 
+        {/* Setup Boxes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           <div className="rounded-2xl bg-slate-50 p-3 border border-slate-200/70 space-y-2">
-            <div className="flex items-center justify-between gap-1">
-              <label className="font-bold text-slate-700">{tx('1. Steel Plate 形狀及尺寸', '1. Steel Plate Shape & Size')}</label>
-              <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-[11px] font-extrabold">
-                <button type="button" onClick={() => setPlateShape('circular')} className={`rounded-md px-2 py-0.5 cursor-pointer ${plateShape === 'circular' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>⭕ {tx('圓形', 'Round')}</button>
-                <button type="button" onClick={() => { setPlateShape('square'); setGaugeCount(4); }} className={`rounded-md px-2 py-0.5 cursor-pointer ${plateShape === 'square' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>⬜ {tx('正方形', 'Square')}</button>
-              </div>
+            <label className="font-extrabold text-slate-700 block">
+              {tx('1. 承載板形狀及尺寸 B · mm', '1. Plate Shape & Size B · mm')}
+            </label>
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 text-[11px] font-extrabold">
+              <button
+                type="button"
+                onClick={() => handleShapeSwitch('square')}
+                className={`rounded-lg py-1.5 cursor-pointer ${plateShape === 'square' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}
+              >
+                ⬜ {tx('方形板 B×B', 'Square B×B')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleShapeSwitch('circular')}
+                className={`rounded-lg py-1.5 cursor-pointer ${plateShape === 'circular' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}
+              >
+                ⭕ {tx('圓形板 πB²/4', 'Circular πB²/4')}
+              </button>
             </div>
             <div className="flex flex-wrap gap-1">
               {platePresets.map((d) => (
-                <button key={d} type="button" onClick={() => setPlateSizeMm(d)} className={`rounded-lg px-2 py-1 font-mono text-[11px] font-bold cursor-pointer ${plateSizeMm === d ? 'bg-brand text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
-                  {plateShape === 'circular' ? `Ø${d}` : `${d}×${d}`}
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setPlateSizeMm(d)}
+                  className={`rounded-lg px-2 py-1 font-mono text-[11px] font-bold cursor-pointer ${plateSizeMm === d ? 'bg-brand text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
+                >
+                  {plateShape === 'square' ? `${d}×${d}` : `Ø${d}`}
                 </button>
               ))}
-              <input type="number" min="50" step="10" value={plateSizeMm} onChange={(e) => setPlateSizeMm(e.target.value)} title={tx('自訂尺寸 (mm)', 'Custom size (mm)')} className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] font-bold" />
+              <input
+                type="number"
+                min="50"
+                step="10"
+                value={plateSizeMm}
+                onChange={(e) => setPlateSizeMm(e.target.value)}
+                className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] font-bold"
+              />
             </div>
-            <div className="flex items-center justify-between pt-0.5">
-              <span className="font-mono text-[11px] text-slate-600">Area A = <b>{areaM2.toFixed(4)} m²</b></span>
-              <select value={gaugeCount} onChange={(e) => setGaugeCount(Number(e.target.value) as 3 | 4)} className="rounded-lg border border-slate-200 bg-white px-2 py-1 font-bold"><option value={4}>{plateShape === 'square' ? tx('4 Gauges (四角)', '4 Gauges (Corners)') : '4 Gauges (90°)'}</option><option value={3}>3 Gauges (120°)</option></select>
+            <div className="flex items-center justify-between pt-0.5 font-mono text-[11px] text-slate-700">
+              <span>Area A = <b>{areaM2.toFixed(4)} m²</b></span>
+              <span className="rounded bg-brand/15 px-1.5 py-0.5 text-[10px] font-extrabold text-brand-deep">4 Gauges DG1–DG4</span>
             </div>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-3 border border-slate-200/70 space-y-1.5">
-            <label className="font-bold text-slate-700">{tx('2. Seating Zero Reading G0 (mm)', '2. Initial Zero Reading G0 (mm)')}</label>
+          <div className="rounded-2xl bg-slate-50 p-3 border border-slate-200/70 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-extrabold text-slate-700">{tx('2. 四正交錶初始零位 DG0 · mm', '2. Datum Zero DG0 · mm')}</label>
+              <button type="button" onClick={zeroAllStepGauges} className="text-[10px] font-bold text-brand-deep hover:underline cursor-pointer">
+                {tx('清空階段讀數', 'Zero Steps')}
+              </button>
+            </div>
             <div className="grid grid-cols-4 gap-1.5 font-mono">
-              {(['g1', 'g2', 'g3', 'g4'] as const).slice(0, gaugeCount).map((k, idx) => (
-                <div key={k}><span className="text-[10px] text-slate-400">G{idx + 1},0</span><input type="number" step="0.01" value={zeroG[k]} onChange={(e) => setZeroG({ ...zeroG, [k]: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs font-bold" /></div>
+              {(['g1', 'g2', 'g3', 'g4'] as const).map((k, idx) => (
+                <div key={k}>
+                  <span className="text-[10px] font-bold text-slate-500">DG{idx + 1},0</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={zeroG[k]}
+                    onChange={(e) => setZeroG({ ...zeroG, [k]: e.target.value })}
+                    className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs font-bold"
+                  />
+                </div>
               ))}
+            </div>
+            <div className="space-y-1 pt-0.5">
+              <span className="text-[10px] font-bold text-slate-500 block">{tx('最大容許沉降上限 S_allow', 'Settlement Limit S_allow')}</span>
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setLimitMode('015B')}
+                  className={`rounded-lg px-2 py-0.5 font-mono text-[10px] font-extrabold cursor-pointer ${limitMode === '015B' ? 'bg-emerald-700 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}
+                >
+                  0.15B · {(0.15 * sizeMmNum).toFixed(1)}mm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLimitMode('asd25')}
+                  className={`rounded-lg px-2 py-0.5 font-mono text-[10px] font-extrabold cursor-pointer ${limitMode === 'asd25' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}
+                >
+                  ASD · 25.0mm
+                </button>
+                {limitMode === 'custom' && (
+                  <input type="number" step="0.5" value={customLimitMm} onChange={(e) => setCustomLimitMm(e.target.value)} className="w-16 rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold" />
+                )}
+              </div>
             </div>
           </div>
 
           <div className={`rounded-2xl p-3 border space-y-1.5 ${rateStable ? 'border-emerald-200 bg-emerald-50/70' : 'border-amber-200 bg-amber-50/70'}`}>
-            <label className="font-bold text-slate-700">{tx('3. 10/15-min Settlement Stability', '3. 10/15-min Settlement Stability')}</label>
+            <label className="font-extrabold text-slate-700 block">
+              {tx('3. 10 分鐘沉降穩定率 STP07 Cl. 4.3', '3. 10-Min Settlement Rate Cl. 4.3')}
+            </label>
             <div className="grid grid-cols-2 gap-2 font-mono">
-              <div><span className="text-[10px] text-slate-500">{tx('前次 Avg (mm)', 'Prev Avg (mm)')}</span><input type="number" step="0.01" value={prev15mAvg} onChange={(e) => setPrev15mAvg(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold" /></div>
-              <div><span className="text-[10px] text-slate-500">{tx('現時 Avg (mm)', 'Current (mm)')}</span><input type="number" step="0.01" value={curr15mAvg} onChange={(e) => setCurr15mAvg(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold" /></div>
+              <div>
+                <span className="text-[10px] text-slate-500">{tx('10m 前均值 · mm', '10m Ago · mm')}</span>
+                <input type="number" step="0.01" value={prev10mAvg} onChange={(e) => setPrev10mAvg(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500">{tx('當前均值 · mm', 'Current · mm')}</span>
+                <input type="number" step="0.01" value={curr10mAvg} onChange={(e) => setCurr10mAvg(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold" />
+              </div>
             </div>
-            <div className={`text-[11px] font-extrabold ${rateStable ? 'text-emerald-800' : 'text-amber-800'}`}>Δs = {rate15m.toFixed(2)} mm → {rateStable ? tx('✓ 已達穩定 (≤0.05mm)，可進下一級', '✓ STABLE (≤0.05mm)') : tx('⏳ 未達穩定 (>0.05mm，維持荷載)', '⏳ HOLD LOAD (>0.05mm)')}</div>
+            <div className={`text-[11px] font-extrabold ${rateStable ? 'text-emerald-800' : 'text-amber-900'}`}>
+              Δs = {rate10m.toFixed(2)} mm / 10 min →{' '}
+              {rateStable
+                ? tx('✓ 穩定 < 0.05 mm / 10 min', '✓ STABLE < 0.05 mm / 10 min')
+                : tx('⏳ 維持荷載 ≥ 0.05 mm / 10 min', '⏳ HOLD LOAD ≥ 0.05 mm / 10 min')}
+            </div>
+            <div className="text-[10px] text-slate-600">
+              {tx('每級維持 ≥ 10 分鐘；3W 頂載維持 ≥ 72 小時', 'Hold each step ≥ 10 min; hold 3W peak ≥ 72 hrs')}
+            </div>
           </div>
         </div>
 
+        {/* 3-Cycle Preset & Document Links */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-extrabold text-indigo-950">{tx('3-Cycle 加載表生成器 (STP07-PLT)：', '3-Cycle Schedule (STP07-PLT):')}</span>
-            <label className="inline-flex items-center gap-1 font-mono font-bold text-slate-700">
-              W (kPa)
-              <input type="number" min="20" step="10" value={workingKpa} onChange={(e) => setWorkingKpa(e.target.value)} className="w-18 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-extrabold" />
+            <label className="inline-flex items-center gap-1.5 font-mono font-bold text-slate-700">
+              <span>Working W · kPa</span>
+              <input
+                type="number"
+                min="20"
+                step="10"
+                value={workingKpa}
+                onChange={(e) => setWorkingKpa(e.target.value)}
+                className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-extrabold"
+              />
             </label>
-            <button type="button" onClick={apply3CycleSchedule} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-3 py-1.5 font-extrabold text-white hover:bg-indigo-700 cursor-pointer">
-              <Sparkles className="h-3.5 w-3.5" /> {tx(`套用 3-Cycle (3W=${((parseFloat(workingKpa) || 250) * 3).toFixed(0)}kPa)`, 'Generate 3-Cycle')}
+            <label className="inline-flex items-center gap-1 font-mono font-bold text-slate-700">
+              <span>ν</span>
+              <input
+                type="number"
+                min="0.1"
+                max="0.49"
+                step="0.05"
+                value={poissonNu}
+                onChange={(e) => setPoissonNu(e.target.value)}
+                className="w-15 rounded-lg border border-slate-300 bg-white px-1.5 py-1 text-xs font-extrabold"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => apply3CycleSchedule()}
+              className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-3 py-1.5 font-extrabold text-white hover:bg-indigo-700 cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {tx(
+                `載入 3 循環標準階段 · 1W / 2W / 3W=${(workKpaNum * 3).toFixed(0)}kPa`,
+                `Load 3-Cycle Schedule · 1W / 2W / 3W=${(workKpaNum * 3).toFixed(0)}kPa`
+              )}
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <label className="inline-flex items-center gap-1 font-mono font-bold text-slate-700">
-              ν
-              <input type="number" min="0.1" max="0.49" step="0.05" value={poissonNu} onChange={(e) => setPoissonNu(e.target.value)} className="w-14 rounded-lg border border-slate-300 bg-white px-1.5 py-1 text-xs font-extrabold" />
-            </label>
             <button type="button" onClick={() => openPreviewDoc({ title: 'FQS08-FDT-PLT-1 — Plate Load Test Order Form', url: '/server-docs/forms/FQS08-FDT-PLT_Test_Order_Form_261028.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 font-bold text-emerald-900 hover:bg-emerald-50 cursor-pointer">
-              <Eye className="h-3 w-3" /> {tx('FQS08 委託單', 'FQS08 Order Form')}
+              <Eye className="h-3 w-3" /> {tx('FQS08 委託單', 'FQS08 Order')}
             </button>
             <button type="button" onClick={() => openPreviewDoc({ title: 'FST07-FDT-PLT-1-261028 — Plate Load Test Worksheet', url: '/server-docs/worksheets/FST07-FDT-PLT-1-261028_Worksheet_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-brand/40 bg-white px-2.5 py-1 font-bold text-brand-deep hover:bg-brand-wash/40 cursor-pointer">
-              <Eye className="h-3 w-3" /> {tx('FST07 工作紙 XLSX', 'FST07 Worksheet')}
+              <Eye className="h-3 w-3" /> FST07 XLSX
             </button>
-            <button type="button" onClick={() => openPreviewDoc({ title: 'FDT-PLT-RT-1-261028 — Plate Load Test Report Master Template (23 Sheets)', url: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-amber-400 bg-white px-2.5 py-1 font-bold text-amber-900 hover:bg-amber-50 cursor-pointer">
-              <Eye className="h-3 w-3" /> {tx('23頁報告範本 XLSX', 'Report Master XLSX')}
+            <button type="button" onClick={() => openPreviewDoc({ title: 'FDT-PLT-RT-1-261028 — Plate Load Test Report Master Template', url: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-amber-400 bg-white px-2.5 py-1 font-bold text-amber-900 hover:bg-amber-50 cursor-pointer">
+              <Eye className="h-3 w-3" /> {tx('報告範本 XLSX', 'Report XLSX')}
             </button>
             <button type="button" onClick={() => openPreviewDoc({ title: 'STP07-PLT — Plate Load Test Draft STP', url: '/server-docs/stp/STP07-PLT_Draft_rev0_261027.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 bg-white px-2.5 py-1 font-bold text-indigo-900 hover:bg-indigo-50 cursor-pointer">
-              <Eye className="h-3 w-3" /> STP07-PLT PDF
+              <Eye className="h-3 w-3" /> STP07 PDF
             </button>
             <button type="button" onClick={() => openPreviewDoc({ title: tx('Plate Load Test 750 kPa 反力架結構驗算書', 'Plate Load Test 750 kPa Reaction Frame Check'), url: '/server-docs/stp/PLT_Setup_Checking_750kPa_261021.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 bg-white px-2.5 py-1 font-bold text-indigo-900 hover:bg-indigo-50 cursor-pointer">
-              <Eye className="h-3 w-3" /> {tx('750kPa 架設計算書', '750kPa Setup PDF')}
+              <Eye className="h-3 w-3" /> 750kPa PDF
             </button>
           </div>
         </div>
 
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-2xl border border-brand/25 bg-brand-wash/40 p-3.5"><div className="text-xs font-bold text-slate-600">Peak Bearing Pressure (q)</div><div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-brand-deep">{maxLoadRow?.pressureKpa.toFixed(1)} kPa</div><div className="text-[11px] text-slate-500">Load Wt = {maxLoadRow?.pKn.toFixed(1)} kN</div></div>
-          <div className={`rounded-2xl border p-3.5 ${pass015B ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'}`}><div className="text-xs font-bold text-slate-600">Mean Settlement (S)</div><div className={`mt-1 font-mono text-xl sm:text-2xl font-extrabold ${pass015B ? 'text-emerald-800' : 'text-rose-800'}`}>{maxLoadRow?.meanMm.toFixed(2)} mm</div><div className="text-[11px] font-bold text-slate-600">BD ≤0.15B ({limit015BMm.toFixed(0)}mm): {pass015B ? '✓ PASS' : '✗ EXCEED'}</div></div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5"><div className="text-xs font-bold text-slate-600">Subgrade Modulus ks</div><div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-slate-900">{maxLoadRow?.ks ? maxLoadRow.ks.toFixed(1) : '—'} MN/m³</div><div className="text-[11px] text-slate-500">q / S (kPa / mm)</div></div>
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3.5"><div className="text-xs font-bold text-indigo-900">BD Cl. 8.2(2) Es</div><div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-indigo-950">{esMpa ? esMpa.toFixed(1) : '—'} MPa</div><div className="text-[11px] text-indigo-700">{plateShape === 'circular' ? 'Wt(1-ν²)/(S·B)' : 'Wt(1-ν²)/(1.13·S·B)'}</div></div>
+          <div className="rounded-2xl border border-brand/25 bg-brand-wash/40 p-3.5">
+            <div className="text-xs font-bold text-slate-600">{tx('最高測試應力 q_max', 'Peak Bearing Pressure')}</div>
+            <div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-brand-deep">
+              {peakLoadRow?.pressureKpa.toFixed(1) ?? '0.0'} kPa
+            </div>
+            <div className="text-[11px] font-mono text-slate-600">
+              P_max = {peakLoadRow?.pKn.toFixed(1) ?? '0.0'} kN
+            </div>
+          </div>
+
+          <div className={`rounded-2xl border p-3.5 ${passSettlement ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'}`}>
+            <div className="text-xs font-bold text-slate-600">{tx('最大平均沉降 S_max', 'Max Settlement S_max')}</div>
+            <div className={`mt-1 font-mono text-xl sm:text-2xl font-extrabold ${passSettlement ? 'text-emerald-800' : 'text-rose-800'}`}>
+              {maxSettleMm.toFixed(2)} mm
+            </div>
+            <div className="text-[11px] font-bold text-slate-600">
+              ≤ {allowLimitMm.toFixed(1)} mm: {passSettlement ? '✓ PASS' : '✗ EXCEED'}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-3.5">
+            <div className="text-xs font-bold text-indigo-900">{tx('土壤楊氏模量 Es · 1W', 'Soil Modulus Es · 1W')}</div>
+            <div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-indigo-950">
+              {esMpa ? `${esMpa.toFixed(2)} MPa` : '—'}
+            </div>
+            <div className="text-[10px] font-mono text-indigo-800">
+              {plateShape === 'square' ? 'Wt(1−ν²)/(1.13·S·B)' : 'Wt(1−ν²)/(S·B)'} · Sw={workRow?.meanMm.toFixed(2) ?? '—'}mm
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
+            <div className="text-xs font-bold text-slate-600">{tx('基床反力模量 ks · 1W', 'Subgrade Modulus ks')}</div>
+            <div className="mt-1 font-mono text-xl sm:text-2xl font-extrabold text-slate-900">
+              {workRow?.ks ? `${workRow.ks.toFixed(1)} MN/m³` : '—'}
+            </div>
+            <div className="text-[10px] font-mono text-slate-600">
+              {workRow ? `${workRow.stepName} · ${workRow.pressureKpa.toFixed(0)} kPa` : 'q / S'}
+            </div>
+          </div>
         </div>
 
+        {/* 4-Gauge Table */}
         <div className="overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-              <tr><th className="px-2.5 py-2">Load Step</th><th className="px-2 py-2">Load (kN)</th><th className="px-2 py-2">q (kPa)</th><th className="px-2 py-2">G1</th><th className="px-2 py-2">G2</th><th className="px-2 py-2">G3</th>{gaugeCount === 4 && <th className="px-2 py-2">G4</th>}<th className="px-2.5 py-2">Mean Settlement (mm)</th><th className="px-2.5 py-2">ks (MN/m³)</th></tr>
+            <thead className="bg-slate-50 text-slate-600 font-extrabold border-b border-slate-200 whitespace-nowrap">
+              <tr>
+                <th className="px-2.5 py-2">{tx('荷載階段 Stage', 'Load Stage')}</th>
+                <th className="px-2 py-2">P · kN</th>
+                <th className="px-2 py-2">q · kPa</th>
+                <th className="px-2 py-2">DG1</th>
+                <th className="px-2 py-2">DG2</th>
+                <th className="px-2 py-2">DG3</th>
+                <th className="px-2 py-2">DG4</th>
+                <th className="px-2.5 py-2">{tx('平均沉降 S · mm', 'Mean S · mm')}</th>
+                <th className="px-2.5 py-2">ks · MN/m³</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-mono">
-              {computed.map((r, i) => (
-                <tr key={i} className={r.tiltWarn ? 'bg-amber-50/60' : 'hover:bg-slate-50/70'}>
-                  <td className="px-2.5 py-1.5"><input value={r.stepName} onChange={(e) => updateStep(i, 'stepName', e.target.value)} className="w-32 rounded border border-slate-200 px-1.5 py-1 font-sans text-xs font-bold" /></td>
-                  <td className="px-2 py-1.5"><input type="number" value={r.loadKn} onChange={(e) => updateStep(i, 'loadKn', e.target.value)} className="w-16 rounded border border-slate-200 px-1.5 py-1 text-xs" /></td>
-                  <td className="px-2 py-1.5 font-bold text-slate-700">{r.pressureKpa.toFixed(0)}</td>
-                  <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g1} onChange={(e) => updateStep(i, 'g1', e.target.value)} className="w-14 rounded border border-slate-200 px-1 py-1 text-xs" /></td>
-                  <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g2} onChange={(e) => updateStep(i, 'g2', e.target.value)} className="w-14 rounded border border-slate-200 px-1 py-1 text-xs" /></td>
-                  <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g3} onChange={(e) => updateStep(i, 'g3', e.target.value)} className="w-14 rounded border border-slate-200 px-1 py-1 text-xs" /></td>
-                  {gaugeCount === 4 && <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g4} onChange={(e) => updateStep(i, 'g4', e.target.value)} className="w-14 rounded border border-slate-200 px-1 py-1 text-xs" /></td>}
-                  <td className="px-2.5 py-1.5 font-extrabold text-brand-deep">{r.meanMm.toFixed(2)} {r.tiltWarn && <span title="Excessive eccentric tilt across gauges">⚠️Tilt</span>}</td>
-                  <td className="px-2.5 py-1.5 font-bold text-slate-700">{r.ks ? r.ks.toFixed(1) : '—'}</td>
-                </tr>
-              ))}
+              {computed.map((r, i) => {
+                const isWork = workRow?.idx === i;
+                return (
+                  <tr
+                    key={i}
+                    className={
+                      r.tiltWarn
+                        ? 'bg-amber-50/65'
+                        : isWork
+                        ? 'bg-indigo-50/45'
+                        : 'hover:bg-slate-50/70'
+                    }
+                  >
+                    <td className="px-2.5 py-1.5">
+                      <input
+                        value={r.stepName}
+                        onChange={(e) => updateStep(i, 'stepName', e.target.value)}
+                        className="w-36 rounded border border-slate-200 bg-white px-1.5 py-1 font-sans text-xs font-bold"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={r.loadKn}
+                        onChange={(e) => updateStep(i, 'loadKn', e.target.value)}
+                        className="w-16 rounded border border-slate-200 bg-white px-1.5 py-1 text-xs font-bold"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5 font-bold text-slate-700">{r.pressureKpa.toFixed(0)}</td>
+                    <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g1} onChange={(e) => updateStep(i, 'g1', e.target.value)} className="w-15 rounded border border-slate-200 bg-white px-1 py-1 text-xs" /></td>
+                    <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g2} onChange={(e) => updateStep(i, 'g2', e.target.value)} className="w-15 rounded border border-slate-200 bg-white px-1 py-1 text-xs" /></td>
+                    <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g3} onChange={(e) => updateStep(i, 'g3', e.target.value)} className="w-15 rounded border border-slate-200 bg-white px-1 py-1 text-xs" /></td>
+                    <td className="px-2 py-1.5"><input type="number" step="0.01" value={r.g4} onChange={(e) => updateStep(i, 'g4', e.target.value)} className="w-15 rounded border border-slate-200 bg-white px-1 py-1 text-xs" /></td>
+                    <td className="px-2.5 py-1.5 font-extrabold text-brand-deep whitespace-nowrap">
+                      {r.meanMm.toFixed(2)} {r.tiltWarn && <span title="Gauge spread > 35% of mean">⚠️Tilt</span>}
+                      {isWork && <span className="ml-1 rounded bg-indigo-600 px-1 py-0.5 font-sans text-[9px] text-white">Es</span>}
+                    </td>
+                    <td className="px-2.5 py-1.5 font-bold text-slate-700">{r.ks ? r.ks.toFixed(1) : '—'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <button type="button" onClick={() => setSteps([...steps, { stepName: `Step ${steps.length + 1}`, loadKn: '250', g1: '6.50', g2: '6.60', g3: '6.55', g4: '6.48' }])} className="inline-flex items-center gap-1 rounded-xl border border-dashed border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-brand hover:text-brand cursor-pointer"><Plus className="h-3.5 w-3.5" /> {tx('新增荷載級別 Load Step', 'Add Load Step')}</button>
+
+        <button
+          type="button"
+          onClick={() =>
+            setSteps([
+              ...steps,
+              {
+                stepName: `Stage ${steps.length + 1}`,
+                loadKn: (workKpaNum * areaM2).toFixed(1),
+                g1: '4.20',
+                g2: '4.28',
+                g3: '4.24',
+                g4: '4.20',
+              },
+            ])
+          }
+          className="inline-flex items-center gap-1 rounded-xl border border-dashed border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-brand hover:text-brand cursor-pointer"
+        >
+          <Plus className="h-3.5 w-3.5" /> {tx('新增荷載級別', 'Add Load Stage')}
+        </button>
       </div>
 
       <div className="xl:col-span-5 xl:sticky xl:top-20">
         <ToolGuideCard
           stpCode="PLT"
-          standardRef="BS 1377-9 / Geospec 3 · STP07-PLT"
-          formulaText={plateShape === 'circular' ? 'q = P / (π × (D/2)²) ｜ Δsi = Gi - Gi,0 ｜ savg = ΣΔsi / n ｜ ks = q / savg' : 'q = P / (B × B) ｜ Δsi = Gi - Gi,0 ｜ savg = ΣΔsi / n ｜ ks = q / savg'}
+          standardRef="BS 1377: Part 9: 1990 Cl. 4.1 · BD CoP Cl. 8.2 · HA EXC.T910.1 · STP07-PLT"
+          formulaText={
+            plateShape === 'square'
+              ? 'A = B² ｜ S = Σ(DGi − DGi,0)/4 ｜ Es = Wt(1−ν²) / (1.13 · S · B) ｜ S_max ≤ 0.15B'
+              : 'A = πB²/4 ｜ S = Σ(DGi − DGi,0)/4 ｜ Es = Wt(1−ν²) / (S · B) ｜ S_max ≤ 0.15B'
+          }
           copyText={copySummary}
-          structuredData={{
-            kind: 'PLT',
-            plateShape,
-            plateSizeMm: parseFloat(plateSizeMm) || 300,
-            areaM2,
-            gaugeCount,
-            workingKpa: parseFloat(workingKpa) || 250,
-            poissonNu: nu,
-            zeroG: {
-              g1: parseFloat(zeroG.g1) || 0,
-              g2: parseFloat(zeroG.g2) || 0,
-              g3: parseFloat(zeroG.g3) || 0,
-              g4: parseFloat(zeroG.g4) || 0,
-            },
-            prev15mAvg: parseFloat(prev15mAvg) || 0,
-            curr15mAvg: parseFloat(curr15mAvg) || 0,
-            rate15m,
-            rateStable,
-            peakLoadKn: maxLoadRow?.pKn ?? 0,
-            peakPressureKpa: maxLoadRow?.pressureKpa ?? 0,
-            peakSettlementMm: maxLoadRow?.meanMm ?? 0,
-            limit015BMm,
-            ksPeak: maxLoadRow?.ks ?? null,
-            esMpa,
-            pass015B,
-            steps: computed.map((c) => ({
-              stepName: c.stepName,
-              loadKn: c.pKn,
-              pressureKpa: c.pressureKpa,
-              g1: parseFloat(c.g1) || 0,
-              g2: parseFloat(c.g2) || 0,
-              g3: parseFloat(c.g3) || 0,
-              g4: parseFloat(c.g4) || 0,
-              d1: c.d1,
-              d2: c.d2,
-              d3: c.d3,
-              d4: c.d4,
-              meanMm: c.meanMm,
-              spreadMm: c.spreadMm,
-              ks: c.ks,
-              tiltWarn: c.tiltWarn,
-            })),
-          }}
+          structuredData={pltPayload}
           onViewAllSpecs={onViewAllSpecs}
           steps={[
-          { title: tx('整平測試面及安放承載鋼板', 'Prepare Ground & Set Steel Bearing Plate'), detail: tx('清除表面鬆散泥土並鋪設薄層乾燥細砂找平，安放剛性圓形（ØD）或正方形（B × B）Steel Bearing Plate，Hydraulic Jack 及 Load Cell 必須對準鋼板正中心垂直架設。', 'Trim loose soil, level with thin dry sand layer, and center the Hydraulic Jack and Load Cell vertically on the rigid Circular or Square Steel Bearing Plate.') },
-          { title: tx('架設獨立 Reference Beam 及 Dial Gauges', 'Set Reference Beam & Dial Gauges'), detail: tx('Reference Beam 兩端支點距離鋼板邊緣須 ≥ 2.5D（或 ≥ 2.5B）；正方形板於四角對稱安裝 4 隻 Dial Gauges，圓形板按 90° / 120° 對稱安裝 4 或 3 隻錶。', 'Reference Beam supports must be ≥ 2.5D (or 2.5B) away from plate edge; mount 4 Dial Gauges at corners for Square plates or 3/4 symmetrically for Circular plates.') },
-          { title: tx('施加預壓 Seating Load 及記錄零位', 'Seating Load & Zeroing'), detail: tx('先施加預壓荷載使承載板底部緊密貼合，待讀數穩定後記錄初始讀數 G1,0 至 G4,0 並填入第 2 欄。', 'Apply seating load to ensure full contact, then record initial zero readings G1,0 ~ G4,0 in Box 2.') },
-          { title: tx('分級加載及沉降穩定核對', 'Incremental Loading & Stability'), detail: tx('每級加載後於 1, 2, 4, 8, 15, 30, 60 min 記錄讀數並維持油壓恆定；確認連續 15 min 沉降變化 Δs ≤ 0.05 mm 方可施加下一級荷載。', 'Record readings at 1, 2, 4, 8, 15, 30, 60 min while maintaining load; verify Δs ≤ 0.05 mm per 15 min before next increment.') },
-        ]}
-        pitfalls={[
-          tx('若出現「⚠️Tilt」（各錶讀數差距超過 35%），表示千斤頂偏心或地層不均勻，應暫停加載並檢查架設安全。', 'If ⚠️Tilt appears (>35% spread across gauges), stop and check jack eccentricity or uneven ground before increasing load!'),
-          tx('陽光直射會導致鋼製 Reference Beam 熱脹變形影響讀數，現場必須架設遮陽帆布。', 'Direct sunlight causes thermal expansion of steel Reference Beams—always erect sunshades over the setup!'),
-          tx('嚴禁人員或重型機械靠近 Reference Beam 支點 2m 範圍內，並隨時留意油壓有否下降以便即時補壓。', 'Keep personnel and heavy machinery >2m away from Reference Beam supports, and maintain constant Load Cell pressure.'),
-        ]}
+            {
+              title: tx('鋪設薄層細砂及安裝剛性承載板', 'Prepare Sand Bedding & Rigid Bearing Plate'),
+              detail: tx(
+                '整平土面並鋪設 ≤ 15 mm 乾燥細砂找平，安放厚度 ≥ 25 mm 之方形或圓形剛性承載鋼板；千斤頂與鋼板之間嚴禁使用球鉸座，Load Cell 須按 HOKLAS SC-16 於每次工地測試系列前完成校準。',
+                'Level with ≤ 15 mm dry sand bedding, place ≥ 25 mm rigid square or circular steel plate with NO ball seating at jack-to-plate connection, and verify Load Cell calibration per HOKLAS SC-16.'
+              ),
+            },
+            {
+              title: tx('架設獨立基準樑及四角正交 DG1–DG4', 'Set Reference Beam & 4 Orthogonal Dial Gauges'),
+              detail: tx(
+                '基準樑支座距承載板邊緣須 ≥ 2.5B 並架設防曬防風棚；於四正交方位對稱安裝 4 隻 0.01 mm 精度千分錶 DG1–DG4，初始預壓應力 ≤ 25% 原有覆土壓力並記錄零位。',
+                'Keep reference beam supports ≥ 2.5B from plate edge under sun/wind shelter; mount 4 orthogonal 0.01 mm dial gauges DG1–DG4 and apply seating pressure ≤ 25% initial overburden.'
+              ),
+            },
+            {
+              title: tx('3 循環分級維持及 3W 頂載 72 小時保壓', '3-Cycle Holding & 72-Hour Peak Hold at 3W'),
+              detail: tx(
+                '按 0.5W 級距執行 1W、2W、3W 三循環加卸載：每級維持 ≥ 10 分鐘且沉降率 < 0.05 mm / 10 min；3W 頂載維持 ≥ 72 小時，全過程最大沉降 S_max ≤ 0.15B。',
+                'Run 3 loading cycles to 1W, 2W, and 3W in 0.5W increments: hold each step ≥ 10 min until settlement rate < 0.05 mm / 10 min; hold 3W peak load ≥ 72 hours, verifying S_max ≤ 0.15B.'
+              ),
+            },
+          ]}
+          pitfalls={[
+            tx(
+              '方形承載板之模量計算必須除以 1.13 形狀係數，而 300×300 mm 方板面積為 0.0900 m²，切勿誤套圓板 0.0707 m² 面積導致千斤頂推力偏差 27%。',
+              'Square plates require the 1.13 denominator in Es and A = 0.0900 m² for 300×300 mm — never apply circular area 0.0707 m² to a square plate.'
+            ),
+            tx(
+              '若四錶讀數差超過平均沉降 35% 觸發 ⚠️Tilt，代表反力偏心或土層軟硬不均，須立即暫停增壓檢查架設安全。',
+              'If gauge spread exceeds 35% of mean settlement (⚠️Tilt), pause loading immediately and inspect reaction eccentricity.'
+            ),
+          ]}
         />
       </div>
     </div>

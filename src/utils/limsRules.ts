@@ -220,9 +220,65 @@ export function checkFqs49AndConflicts(params: {
   };
 }
 
-export function detectCalcPassStatus(copyText: string): boolean {
-  const upper = copyText.toUpperCase();
-  if (upper.includes('EXCEED') || upper.includes('RE-TEST') || upper.includes('RETEST') || upper.includes('HOLD LOAD')) {
+export function roundToNearestStep(value: number, step = 0.2): number {
+  if (!Number.isFinite(value) || step <= 0) return 0;
+  const inv = 1 / step;
+  return Math.round((value + Number.EPSILON) * inv) / inv;
+}
+
+export function formatNearest02(value: number): string {
+  return roundToNearestStep(value, 0.2).toFixed(1);
+}
+
+export function computePointLoadTrimmedMean(values: number[]): {
+  mean: number;
+  usedValues: number[];
+  droppedLow: number[];
+  droppedHigh: number[];
+  trimmed: boolean;
+} {
+  const sorted = values.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
+  if (sorted.length === 0) {
+    return {
+      mean: 0,
+      usedValues: [],
+      droppedLow: [],
+      droppedHigh: [],
+      trimmed: false,
+    };
+  }
+  if (sorted.length >= 10) {
+    const droppedLow = sorted.slice(0, 2);
+    const droppedHigh = sorted.slice(sorted.length - 2);
+    const usedValues = sorted.slice(2, sorted.length - 2);
+    const mean = usedValues.reduce((sum, val) => sum + val, 0) / usedValues.length;
+    return {
+      mean,
+      usedValues,
+      droppedLow,
+      droppedHigh,
+      trimmed: true,
+    };
+  }
+  const mean = sorted.reduce((sum, val) => sum + val, 0) / sorted.length;
+  return {
+    mean,
+    usedValues: sorted,
+    droppedLow: [],
+    droppedHigh: [],
+    trimmed: false,
+  };
+}
+
+export function detectCalcPassStatus(summary: string): boolean {
+  const cleaned = (summary || '')
+    .toUpperCase()
+    .replace(/\b(?:NO|0|ZERO)\s+ANOMAL(?:Y|IES)\b/g, '');
+  if (
+    /\b(?:EXCEED(?:ED|S)?|RE-TEST|RETEST|HOLD\s+LOAD|RE-CHECK|CHECK\s+TIME|INVALID|NON-COMPLIANT|ANOMALY|FAIL(?:ED)?)\b/.test(
+      cleaned
+    )
+  ) {
     return false;
   }
   return true;
