@@ -6,6 +6,9 @@ import {
   evaluateCheckoutCompliance,
   checkFqs49AndConflicts,
   detectCalcPassStatus,
+  roundToNearestStep,
+  formatNearest02,
+  computePointLoadTrimmedMean,
 } from './limsRules';
 import { mergeUnsyncedLocalIntoRemote, AppPersistedState } from '../cloudMerge';
 import {
@@ -54,8 +57,10 @@ import {
   buildCompletedExcelWorkbookXml,
   toEnglishWorksheetText,
   generateSequentialJobRefNo,
+  normalizeCalcRecordsJobRef,
   collectPreviousClientOptions,
 } from './completedWorksheetGenerator';
+import { HK_GOV_SPECS, GOV_DEPTS, BD_ROCK_TABLE_2_1 } from '../data/hkGovSpecs';
 import {
   buildOfficialTemplateSheetCellMaps,
   injectCellsIntoSheetXml,
@@ -761,7 +766,16 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   assert.equal(blMeta.templateFileCode, 'FST04-GTT-C940-3-261001_Worksheet_template.xlsx');
 
   const pltMeta = getOfficialTemplateMeta('PLT');
-  assert.equal(pltMeta.templateFileCode, 'STP07-PLT_Worksheet_template.xlsx');
+  assert.equal(pltMeta.templateFileCode, 'FST07-FDT-PLT-1-261028_Worksheet_template.xlsx');
+  assert.equal(pltMeta.formalReportFileUrl, '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.pdf');
+
+  for (const code of ['KD', 'SO', 'FC', 'BL', 'PO', 'PLT', 'VC']) {
+    const m = getOfficialTemplateMeta(code);
+    assert.ok(m.formalReportFileUrl?.endsWith('.pdf'), `${code} formalReportFileUrl must be .pdf`);
+  }
+  assert.ok(getOfficialTemplateMeta('SO').stpDocRef.includes('Rev. 3'));
+  assert.ok(getOfficialTemplateMeta('KD').uncertaintyStatement.includes('± 0.001 m'));
+  assert.ok(getOfficialTemplateMeta('PO').uncertaintyStatement.includes('± 0.000886 MPa'));
 
   const blExcel = buildCompletedExcelWorkbookXml({
     stpCode: 'BL',
@@ -844,17 +858,31 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   assert.ok(injectedXml.includes('<f>Sheet1!H9</f><v>LT0001</v>'));
   assert.ok(injectedXml.includes('<is><t xml:space="preserve">CEDD</t></is>'));
 
-  // All-English sanitizer & Sequential Job Reference No. Dispatch + Manual Works Order No. + FC/BL Sample Information
+  // All-English sanitizer & Official <TEST>-<YY><NNNN> Job Reference No. Dispatch
   assert.equal(toEnglishWorksheetText('總工程師陳大文 Ch.E. T.M. Chan', 'Fallback'), 'Ch.E. T.M. Chan');
   const nextRef1 = generateSequentialJobRefNo('LT0001', 'FC', [], '2026-11-08');
-  assert.equal(nextRef1, 'LT0001-FC-261108-001');
+  assert.equal(nextRef1, 'FC-260001');
   const nextRef2 = generateSequentialJobRefNo(
-    'LT0001',
+    'LT0002',
     'FC',
-    [{ jobNo: 'LT0001', stpCode: 'FC', jobRefNo: 'LT0001-FC-261108-001' }],
+    [{ jobNo: 'LT0001', stpCode: 'FC', jobRefNo: 'FC-260001' }],
     '2026-11-08'
   );
-  assert.equal(nextRef2, 'LT0001-FC-261108-002');
+  assert.equal(nextRef2, 'FC-260002');
+  const nextRefBl = generateSequentialJobRefNo(
+    'LT0002',
+    'BL',
+    [{ jobNo: 'LT0001', stpCode: 'FC', jobRefNo: 'FC-260001' }],
+    '2026-11-08'
+  );
+  assert.equal(nextRefBl, 'BL-260001');
+  const nextRefAfter18 = generateSequentialJobRefNo(
+    'KW-STS',
+    'FC',
+    [{ id: 'FC-260018', jobNo: 'LT0002', stpCode: 'FC' }],
+    '2026-11-11'
+  );
+  assert.equal(nextRefAfter18, 'FC-260019');
 
   const fcMaps = buildOfficialTemplateSheetCellMaps({
     stpCode: 'FC',
@@ -897,7 +925,7 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
       testDateIso: '2026-11-08',
     },
   });
-  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AF4, 'LT0001-FC-261108-002');
+  assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AF4, 'FC-260002');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.AG11, 'WO/CEDD/2026/088');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I11, '');
   assert.equal(fcMaps['xl/worksheets/sheet1.xml']?.I13, '');
@@ -926,5 +954,156 @@ test('buildHoklasFieldWorksheetData, QR code matrix/lookup, 30/60/90d calibratio
   );
   assert.equal(clientOpts[0], 'Dragages Hong Kong Limited');
   assert.ok(clientOpts.includes('CEDD'));
+});
+
+test('Workstream 3A: STP04/05 nearest 0.2 rounding, STP06 trimmed mean, detectCalcPassStatus, JobRef normalization & HK Gov Specs audit', () => {
+  // 1. roundToNearestStep & formatNearest02 (STP04 & STP05 nearest 0.2)
+  assert.equal(roundToNearestStep(16.49, 0.2), 16.4);
+  assert.equal(roundToNearestStep(16.51, 0.2), 16.6);
+  assert.equal(formatNearest02(1.38), '1.4');
+  assert.equal(formatNearest02(0.75), '0.8');
+  assert.equal(formatNearest02(16.0), '16.0');
+  assert.equal(roundToNearestStep(NaN, 0.2), 0);
+
+  // 2. computePointLoadTrimmedMean (STP06 Cl. 6.4.2 / ASTM D5731)
+  const smallBatch = computePointLoadTrimmedMean([4.0, 5.0, 6.0, 0, -2, NaN]);
+  assert.equal(smallBatch.trimmed, false);
+  assert.deepEqual(smallBatch.usedValues, [4.0, 5.0, 6.0]);
+  assert.deepEqual(smallBatch.droppedLow, []);
+  assert.deepEqual(smallBatch.droppedHigh, []);
+  assert.equal(smallBatch.mean, 5.0);
+
+  const fullBatch = computePointLoadTrimmedMean([9.8, 1.1, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 1.3, 9.5]);
+  assert.equal(fullBatch.trimmed, true);
+  assert.deepEqual(fullBatch.droppedLow, [1.1, 1.3]);
+  assert.deepEqual(fullBatch.droppedHigh, [9.5, 9.8]);
+  assert.deepEqual(fullBatch.usedValues, [4.2, 4.4, 4.6, 4.8, 5.0, 5.2]);
+  assert.ok(Math.abs(fullBatch.mean - 4.7) < 1e-9);
+
+  // 3. detectCalcPassStatus strict failure tokens vs benign substrings
+  for (const bad of [
+    'Water Check = 8.5 s (RE-CHECK)',
+    'Failure Time = 7s (CHECK TIME)',
+    'Profile T1-T3 ANOMALY detected',
+    'Result: INVALID fracture mode',
+    'Status: NON-COMPLIANT with Table 7.4',
+    'Overall Verdict: FAIL',
+    'Settlement EXCEED 0.15B',
+    'Repeatability > 1.8s -> RE-TEST',
+    'Repeatability RETEST required',
+    'Rate unstable -> HOLD LOAD',
+  ]) {
+    assert.equal(detectCalcPassStatus(bad), false, `Expected false for: ${bad}`);
+  }
+  assert.equal(detectCalcPassStatus('De = 52 mm | Failure Load P = 12.4 kN (26s) -> PASS'), true);
+  assert.equal(detectCalcPassStatus('Mean Wave Speed = 4020 m/s | No Anomaly -> PASS'), true);
+
+  // 4. normalizeCalcRecordsJobRef preserves id while upgrading legacy refs
+  const normalized = normalizeCalcRecordsJobRef([
+    {
+      id: 'BL-260018',
+      jobNo: 'LT0002',
+      stpCode: 'BL',
+      title: 'BL',
+      summary: 'PASS',
+      pass: true,
+      testedAt: '2026-10-30 17:25',
+      operatorName: 'Ben',
+    },
+    {
+      id: 'legacy-bl-6',
+      jobNo: 'LT0002',
+      jobRefNo: 'LT0002-BL-261108-006',
+      stpCode: 'BL',
+      title: 'BL',
+      summary: 'PASS',
+      pass: true,
+      testedAt: '2026-11-08 11:00',
+      operatorName: 'Ben',
+    },
+    {
+      id: 'legacy-po-1',
+      jobNo: 'KW-STS',
+      jobRefNo: 'HKL-KW-STS-legacy-po-1',
+      stpCode: 'PO',
+      title: 'PO',
+      summary: 'PASS',
+      pass: true,
+      testedAt: '2026-11-10 09:00',
+      operatorName: 'Peter',
+    },
+  ]);
+  assert.equal(normalized[0].jobRefNo, 'BL-260018');
+  assert.equal(normalized[1].id, 'legacy-bl-6');
+  assert.equal(normalized[1].jobRefNo, 'BL-260019');
+  assert.equal(normalized[2].id, 'legacy-po-1');
+  assert.equal(normalized[2].jobRefNo, 'PO-260001');
+
+  // 5. SonicStructuredPayload & FC nearest 0.2s in buildCompletedExcelWorkbookXml
+  const soExcel = buildCompletedExcelWorkbookXml({
+    stpCode: 'SO',
+    reportRefNo: 'SO-260004',
+    jobRefNo: 'SO-260004',
+    testedAt: '2026-05-07 10:00',
+    jobNo: 'SO-LCK',
+    companyProjNo: 'LCKRC',
+    projectTitle: 'Lai Chi Kok Reception Centre',
+    clientName: 'Shui On Construction Company Limited',
+    siteLocation: 'Lai Chi Kok',
+    locationNote: 'Pile SBP03',
+    ambientTemp: '25.0 °C',
+    weatherNote: 'Fine',
+    operatorName: 'Shih Chak Lung, Ben',
+    approvedSignatory: 'Shih Chak Lung, Ben',
+    pass: true,
+    equipmentRows: [],
+    measurementRows: [],
+    structured: {
+      kind: 'SO',
+      tubeCount: 4,
+      concreteAgeDays: 10,
+      waterTempC: 24.5,
+      shortestTubeLenM: 36.5,
+      plumbedLenM: 36.2,
+      scannedLenM: 36.15,
+      minPullingSec: 73,
+      actualPullingSec: 88,
+      lengthCheckOk: true,
+      tempOk: true,
+      pullingOk: true,
+      ageOk: true,
+      isPass: true,
+      profiles: [
+        { pair: 'T1-T2', distMm: 1450, baseFatUs: 360, measFatUs: 362, energyDropDb: 1.2, waveSpeedMs: 4006, fatDelayPct: 0.6, anomaly: false },
+      ],
+    },
+  });
+  assert.ok(soExcel.xmlContent.includes('Crosshole Sonic Logging Summary'));
+  assert.ok(soExcel.xmlContent.includes('T1-T2'));
+  assert.ok(soExcel.xmlContent.includes('4006'));
+
+  // 6. HK_GOV_SPECS ground-truth checks (7 LabTech tests, no CONC/SRT, VC & SO calcId, exact clauses)
+  assert.equal(HK_GOV_SPECS.length, 7);
+  const specCodes = HK_GOV_SPECS.map((s) => s.stpCode);
+  assert.deepEqual(specCodes, ['BL', 'FC', 'KD', 'SO', 'PO', 'PLT', 'VC']);
+  assert.equal(HK_GOV_SPECS.some((s) => s.id === 'conc' || s.id === 'srt'), false);
+  const soSpec = HK_GOV_SPECS.find((s) => s.stpCode === 'SO')!;
+  assert.equal(soSpec.calcId, 'sonic');
+  assert.ok(soSpec.depts.BD.clauseEn.includes('Cl. 8.6'));
+  assert.ok(soSpec.depts.ASD.clauseEn.includes('Sec. 5 Cl. 5.36'));
+  const kdSpec = HK_GOV_SPECS.find((s) => s.stpCode === 'KD')!;
+  assert.ok(kdSpec.depts.BD.clauseEn.includes('Table 7.4'));
+  const pltSpec = HK_GOV_SPECS.find((s) => s.stpCode === 'PLT')!;
+  assert.ok(pltSpec.depts.HOUSING.clauseEn.includes('EXC.T910.1'));
+  assert.ok(GOV_DEPTS.find((d) => d.id === 'CEDD')?.fullZh.includes('GS 2020 Ed.'));
+  assert.equal(BD_ROCK_TABLE_2_1[1].tcr, '> 95%');
+  assert.equal(BD_ROCK_TABLE_2_1[3].tcr, '> 50%');
+  for (const item of HK_GOV_SPECS) {
+    for (const d of GOV_DEPTS) {
+      const req = item.depts[d.id];
+      assert.ok(req.highlightBadge && req.highlightBadge.length > 0, `${item.stpCode}.${d.id} missing highlightBadge`);
+      assert.equal(req.metrics?.length, 3, `${item.stpCode}.${d.id} must have 3 structured metrics`);
+    }
+  }
 });
 
