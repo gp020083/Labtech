@@ -265,7 +265,7 @@ export function mergeUnsyncedLocalIntoRemote(
   }
   const events = Array.from(evMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
-  // 5. Merge Tests (STPs) by Code, unioning stpFiles and calCerts
+  // 5. Merge Tests (STPs) by Code, unioning stpFiles and calCerts and refreshing stale controlled metadata
   const testMap = new Map<string, TestMethodItem>();
   for (const rT of remote.tests || []) testMap.set(rT.code, rT);
   for (const lT of local.tests || []) {
@@ -274,18 +274,81 @@ export function mergeUnsyncedLocalIntoRemote(
       testMap.set(lT.code, lT);
       hasLocalAdditions = true;
     } else {
-      const filesMerge = mergeById<SharedDocAttachment>(rT.stpFiles, lT.stpFiles);
+      const filesMerge = mergeStpFilesList(rT.stpFiles, lT.stpFiles);
       const certsMerge = mergeById<CalCertAttachment>(rT.calCerts, lT.calCerts);
+      const remoteHasUpdatedAt = !!rT.updatedAt;
+
       const preferLocalTestMeta =
-        !rT.updatedAt &&
-        (lT.worksheetCode !== rT.worksheetCode ||
+        !remoteHasUpdatedAt &&
+        (lT.stpPdfUrl !== rT.stpPdfUrl ||
+          lT.stpRev !== rT.stpRev ||
+          lT.stpEffectiveDate !== rT.stpEffectiveDate ||
+          lT.worksheetCode !== rT.worksheetCode ||
+          lT.worksheetPdfUrl !== rT.worksheetPdfUrl ||
           lT.worksheetUrl !== rT.worksheetUrl ||
-          lT.orderFormUrl !== rT.orderFormUrl);
-      if (filesMerge.added || certsMerge.added || preferLocalTestMeta) hasLocalAdditions = true;
-      const base = isNewer(lT.updatedAt, rT.updatedAt) || preferLocalTestMeta ? { ...rT, ...lT } : rT;
-      if (isNewer(lT.updatedAt, rT.updatedAt)) hasLocalAdditions = true;
+          lT.orderFormUrl !== rT.orderFormUrl ||
+          lT.dailyRecordUrl !== rT.dailyRecordUrl ||
+          lT.muTemplateUrl !== rT.muTemplateUrl ||
+          JSON.stringify(lT.keyParams) !== JSON.stringify(rT.keyParams) ||
+          JSON.stringify(lT.versions) !== JSON.stringify(rT.versions));
+
+      const stpPdfPick = pickControlledTestField(rT.stpPdfUrl, lT.stpPdfUrl, remoteHasUpdatedAt);
+      const wsCodePick = pickControlledTestField(rT.worksheetCode, lT.worksheetCode, remoteHasUpdatedAt);
+      const wsPdfPick = pickControlledTestField(rT.worksheetPdfUrl, lT.worksheetPdfUrl, remoteHasUpdatedAt);
+      const wsUrlPick = pickControlledTestField(rT.worksheetUrl, lT.worksheetUrl, remoteHasUpdatedAt);
+      const orderPick = pickControlledTestField(rT.orderFormUrl, lT.orderFormUrl, remoteHasUpdatedAt);
+      const dailyPick = pickControlledTestField(rT.dailyRecordUrl, lT.dailyRecordUrl, remoteHasUpdatedAt);
+      const muPick = pickControlledTestField(rT.muTemplateUrl, lT.muTemplateUrl, remoteHasUpdatedAt);
+
+      const staleRevOnRemote =
+        (!rT.stpRev && !!lT.stpRev) ||
+        (/^rev\.?\s*2$/i.test((rT.stpRev || '').trim()) && /^rev\.?\s*3$/i.test((lT.stpRev || '').trim()));
+      const staleDateOnRemote =
+        (!rT.stpEffectiveDate && !!lT.stpEffectiveDate) ||
+        (staleRevOnRemote && !!lT.stpEffectiveDate && lT.stpEffectiveDate !== rT.stpEffectiveDate);
+
+      const anyControlledUpgraded =
+        stpPdfPick.upgradedFromLocal ||
+        wsCodePick.upgradedFromLocal ||
+        wsPdfPick.upgradedFromLocal ||
+        wsUrlPick.upgradedFromLocal ||
+        orderPick.upgradedFromLocal ||
+        dailyPick.upgradedFromLocal ||
+        muPick.upgradedFromLocal ||
+        staleRevOnRemote ||
+        staleDateOnRemote;
+
+      const localNewer = isNewer(lT.updatedAt, rT.updatedAt);
+      if (filesMerge.changed || certsMerge.added || preferLocalTestMeta || anyControlledUpgraded || localNewer) {
+        hasLocalAdditions = true;
+      }
+
+      const base = localNewer || preferLocalTestMeta ? { ...rT, ...lT } : rT;
+      const preferLocalArrays =
+        localNewer ||
+        preferLocalTestMeta ||
+        anyControlledUpgraded ||
+        (!rT.keyParams?.length && !!lT.keyParams?.length) ||
+        (!rT.versions?.length && !!lT.versions?.length);
+
       testMap.set(lT.code, {
         ...base,
+        stpPdfUrl: stpPdfPick.value,
+        stpRev: staleRevOnRemote || localNewer || preferLocalTestMeta ? lT.stpRev || rT.stpRev : base.stpRev,
+        stpEffectiveDate:
+          staleDateOnRemote || localNewer || preferLocalTestMeta
+            ? lT.stpEffectiveDate || rT.stpEffectiveDate
+            : base.stpEffectiveDate,
+        worksheetCode: wsCodePick.value || base.worksheetCode,
+        worksheetPdfUrl: wsPdfPick.value,
+        worksheetUrl: wsUrlPick.value,
+        orderFormUrl: orderPick.value,
+        dailyRecordUrl: dailyPick.value,
+        muTemplateUrl: muPick.value,
+        keyParams: preferLocalArrays && lT.keyParams?.length ? lT.keyParams : base.keyParams,
+        versions: preferLocalArrays && lT.versions?.length ? lT.versions : base.versions,
+        equipmentTypes:
+          preferLocalArrays && lT.equipmentTypes?.length ? lT.equipmentTypes : base.equipmentTypes,
         stpFiles: filesMerge.list.length > 0 ? filesMerge.list : base.stpFiles,
         calCerts: certsMerge.list.length > 0 ? certsMerge.list : base.calCerts,
       });
