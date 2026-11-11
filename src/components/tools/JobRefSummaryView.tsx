@@ -339,7 +339,7 @@ export const JobRefSummaryView: React.FC<{
             onClick={() => handleSelectTestCard('ALL')}
             className={`flex flex-col justify-between rounded-2xl border p-3 text-left transition cursor-pointer ${
               filterStp === 'ALL'
-                ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                ? 'border-brand bg-brand-wash/80 text-brand-deep ring-2 ring-brand/20'
                 : 'border-slate-200 bg-slate-50/70 text-slate-800 hover:border-slate-300 hover:bg-white'
             }`}
           >
@@ -349,7 +349,7 @@ export const JobRefSummaryView: React.FC<{
               </span>
               <span
                 className={`rounded-lg px-1.5 py-0.5 font-mono text-[10px] font-extrabold tabular-nums ${
-                  filterStp === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                  filterStp === 'ALL' ? 'bg-brand text-white' : 'bg-slate-200 text-slate-700'
                 }`}
               >
                 {tx(`${calcRecords.length} 份`, `${calcRecords.length}`)}
@@ -357,7 +357,7 @@ export const JobRefSummaryView: React.FC<{
             </div>
             <div
               className={`mt-2 font-mono text-[11px] font-bold ${
-                filterStp === 'ALL' ? 'text-slate-200' : 'text-slate-500'
+                filterStp === 'ALL' ? 'text-brand-deep' : 'text-slate-500'
               }`}
             >
               {tx('7 項測試獨立順號', '7 Test Registers')}
@@ -379,19 +379,24 @@ export const JobRefSummaryView: React.FC<{
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
                 }`}
               >
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-mono text-xs font-black text-slate-900 truncate">
-                    {t.code} · {t.shortEn}
-                  </span>
-                  <span className="shrink-0 rounded-lg bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-slate-700 tabular-nums">
-                    {tx(`${stat.count} 份`, `${stat.count}`)}
-                  </span>
+                <div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="rounded-md bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] font-black text-white">
+                      {t.code}
+                    </span>
+                    <span className="shrink-0 rounded-lg bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-slate-700 tabular-nums">
+                      {tx(`${stat.count} 份`, `${stat.count}`)}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-xs font-extrabold text-slate-900 leading-tight">
+                    {t.shortEn}
+                  </div>
                 </div>
                 <div className="mt-2 pt-1.5 border-t border-slate-200/70">
                   <div className="text-[10px] font-semibold text-slate-500">
                     {tx('下一個', 'Next Ref')}
                   </div>
-                  <div className="font-mono text-xs font-black text-indigo-950 tabular-nums truncate">
+                  <div className="font-mono text-xs font-black text-indigo-950 tabular-nums">
                     {stat.nextRef}
                   </div>
                 </div>

@@ -33,6 +33,7 @@ export const TestRecordDetailModal: React.FC<{
   if (!record) return null;
   const liveRecord = calcRecords.find((r) => r.id === record.id) || record;
   const matchedJob = propJob || jobs.find((j) => j.no === liveRecord.jobNo) || null;
+  const matchedTest = tests.find((t) => t.code === liveRecord.stpCode);
   const refNo = liveRecord.jobRefNo || liveRecord.id;
 
   const handleUploadDoc = async (kind: 'worksOrder' | 'worksheet', file: File) => {
@@ -309,8 +310,11 @@ export const TestRecordDetailModal: React.FC<{
                         openPreviewDoc({
                           title: `FQS08 · Works Order / Test Request Form (${refNo})`,
                           subtitle: `${liveRecord.jobNo} · WO: ${liveRecord.worksOrderNo || '—'} · Client: ${liveRecord.clientName || matchedJob?.client || '—'}`,
-                          url: '/server-docs/forms/FQS08_Order_Form_Test_Request.doc',
-                          fileName: 'FQS08_Order_Form_Test_Request.doc',
+                          url: matchedTest?.orderFormUrl || '/server-docs/forms/FQS08_Order_Form_Test_Request.pdf',
+                          fileName:
+                            (matchedTest?.orderFormUrl || '/server-docs/forms/FQS08_Order_Form_Test_Request.pdf')
+                              .split('/')
+                              .pop() || 'FQS08_Order_Form.pdf',
                         })
                       }
                       className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-bold text-slate-800 hover:bg-slate-100 cursor-pointer"

@@ -416,11 +416,11 @@ export const PlateLoadCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ o
             <button type="button" onClick={() => openPreviewDoc({ title: 'FQS08-FDT-PLT-1 — Plate Load Test Order Form', url: '/server-docs/forms/FQS08-FDT-PLT_Test_Order_Form_261028.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 font-bold text-emerald-900 hover:bg-emerald-50 cursor-pointer">
               <Eye className="h-3 w-3" /> {tx('FQS08 委託單', 'FQS08 Order')}
             </button>
-            <button type="button" onClick={() => openPreviewDoc({ title: 'FST07-FDT-PLT-1-261028 — Plate Load Test Worksheet', url: '/server-docs/worksheets/FST07-FDT-PLT-1-261028_Worksheet_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-brand/40 bg-white px-2.5 py-1 font-bold text-brand-deep hover:bg-brand-wash/40 cursor-pointer">
-              <Eye className="h-3 w-3" /> FST07 XLSX
+            <button type="button" onClick={() => openPreviewDoc({ title: 'FST07-FDT-PLT-1-261028 — Plate Load Test Worksheet', url: '/server-docs/worksheets/FST07-FDT-PLT-1-261028_Worksheet_template.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-brand/40 bg-white px-2.5 py-1 font-bold text-brand-deep hover:bg-brand-wash/40 cursor-pointer">
+              <Eye className="h-3 w-3" /> {tx('FST07 工作紙 PDF', 'FST07 PDF')}
             </button>
-            <button type="button" onClick={() => openPreviewDoc({ title: 'FDT-PLT-RT-1-261028 — Plate Load Test Report Master Template', url: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.xlsx' })} className="inline-flex items-center gap-1 rounded-lg border border-amber-400 bg-white px-2.5 py-1 font-bold text-amber-900 hover:bg-amber-50 cursor-pointer">
-              <Eye className="h-3 w-3" /> {tx('報告範本 XLSX', 'Report XLSX')}
+            <button type="button" onClick={() => openPreviewDoc({ title: 'FDT-PLT-RT-1-261028 — Plate Load Test Report Master Template', url: '/server-docs/reports/FDT-PLT-RT-1-261028_Report_template.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-amber-400 bg-white px-2.5 py-1 font-bold text-amber-900 hover:bg-amber-50 cursor-pointer">
+              <Eye className="h-3 w-3" /> {tx('報告範本 PDF', 'Report PDF')}
             </button>
             <button type="button" onClick={() => openPreviewDoc({ title: 'STP07-PLT — Plate Load Test Draft STP', url: '/server-docs/stp/STP07-PLT_Draft_rev0_261027.pdf' })} className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 bg-white px-2.5 py-1 font-bold text-indigo-900 hover:bg-indigo-50 cursor-pointer">
               <Eye className="h-3 w-3" /> STP07 PDF

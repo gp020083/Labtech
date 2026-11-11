@@ -252,7 +252,7 @@ export const MobileToolsView: React.FC<{
                           </span>
                         </div>
 
-                        {metrics.length > 0 && (
+                        {metrics.length > 0 ? (
                           <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                             {metrics.map((m, mIdx) => {
                               const toneCls =
@@ -272,11 +272,11 @@ export const MobileToolsView: React.FC<{
                               );
                             })}
                           </div>
+                        ) : (
+                          <div className="text-[11px] font-semibold text-slate-800 whitespace-pre-line leading-relaxed">
+                            {lang === 'en' ? req.criteriaEn : req.criteriaZh}
+                          </div>
                         )}
-
-                        <div className="text-[11px] font-semibold text-slate-800 whitespace-pre-line leading-relaxed">
-                          {lang === 'en' ? req.criteriaEn : req.criteriaZh}
-                        </div>
                       </div>
                     );
                   })}

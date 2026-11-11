@@ -324,7 +324,7 @@ export const ToolGuideCard: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
             <Save className="h-4 w-4 text-brand" />
-            {tx('儲存計算紀錄、Completed Worksheet (.xls) & HOKLAS 正式報告', 'Save Calc, Completed Worksheet (.xls) & Formal Report')}
+            {tx('儲存計算紀錄、Completed Worksheet 及 HOKLAS 正式報告', 'Save Calc, Completed Worksheet & Formal Report')}
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -352,8 +352,8 @@ export const ToolGuideCard: React.FC<{
 
         <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/80 px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
           <span className="font-bold text-emerald-950">
-            📋 {tx('對應上載 Excel 底板：', 'Mapped Excel Template: ')}
-            <code className="font-mono font-extrabold text-emerald-800">{templateMeta.templateFileCode}</code>
+            📋 {tx('對應受控工作紙 PDF：', 'Controlled Worksheet PDF: ')}
+            <code className="font-mono font-extrabold text-emerald-800">{templateMeta.templateFileCode.replace(/\.xlsx?$/i, '.pdf')}</code>
           </span>
           <span className="font-mono text-[10px] font-bold text-emerald-700">
             {templateMeta.muRefCode}
