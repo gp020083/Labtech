@@ -214,15 +214,29 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
             </tr>
           </thead>
           <tbody>
-            {eqRows.map((eq) => (
-              <tr key={eq.code}>
-                <td className="border border-slate-950 px-2 py-1 font-mono font-bold">{eq.code}</td>
-                <td className="border border-slate-950 px-2 py-1">{eq.name}</td>
-                <td className="border border-slate-950 px-2 py-1 font-mono">{eq.model}</td>
-                <td className="border border-slate-950 px-2 py-1 font-mono">{eq.serial}</td>
-                <td className="border border-slate-950 px-2 py-1 font-mono font-semibold">{eq.calDue}</td>
+            {eqRows.length > 0 ? (
+              eqRows.map((eq) => (
+                <tr key={eq.code}>
+                  <td className="border border-slate-950 px-2 py-1 font-mono font-bold">{eq.code}</td>
+                  <td className="border border-slate-950 px-2 py-1">{eq.name}</td>
+                  <td className="border border-slate-950 px-2 py-1 font-mono">{eq.model}</td>
+                  <td className="border border-slate-950 px-2 py-1 font-mono">{eq.serial}</td>
+                  <td className="border border-slate-950 px-2 py-1 font-mono font-semibold">{eq.calDue}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td className="border border-slate-950 px-2 py-1 font-mono font-bold">LT-INC-01</td>
+                <td className="border border-slate-950 px-2 py-1">
+                  PeeWee Optical-Gyro / Biaxial Inclinometer Probe
+                </td>
+                <td className="border border-slate-950 px-2 py-1 font-mono">PeeWee / Digitilt</td>
+                <td className="border border-slate-950 px-2 py-1 font-mono">Factory Cert.</td>
+                <td className="border border-slate-950 px-2 py-1 font-mono font-semibold">
+                  Pre-Survey Verified
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -143,7 +143,7 @@ export const GlobalTableSortController: React.FC = () => {
       try {
         const tables = document.querySelectorAll<HTMLTableElement>('table');
         tables.forEach((table) => {
-          if (table.closest('.hoklas-sheet')) return;
+          if (table.closest('.hoklas-sheet, #hoklas-print-portal, .light-island')) return;
           const theadRow = table.tHead?.rows[0];
           const tbody = table.tBodies[0];
           if (!theadRow || !tbody || theadRow.cells.length === 0) return;
@@ -180,7 +180,7 @@ export const GlobalTableSortController: React.FC = () => {
       const th = target.closest<HTMLTableCellElement>('thead tr:first-child th');
       if (!th) return;
       const table = th.closest<HTMLTableElement>('table');
-      if (!table || table.closest('.hoklas-sheet')) return;
+      if (!table || table.closest('.hoklas-sheet, #hoklas-print-portal, .light-island')) return;
       const theadRow = table.tHead?.rows[0];
       const tbody = table.tBodies[0];
       if (!theadRow || !tbody || th.parentElement !== theadRow) return;

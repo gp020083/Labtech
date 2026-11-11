@@ -360,8 +360,11 @@ export function getOfficialTemplateMeta(stpCode: string, tests?: TestMethodItem[
         templateTitleZh: '鑽孔及樁身垂直度測試完成工作紙 · FST08-INC',
         formalReportTitleEn: 'TEST REPORT — VERTICALITY CHECK BY PEEWEE & BIAXIAL INCLINOMETER',
         formalReportTitleZh: '樁身及鑽孔垂直度測試正式報告 · INC-RT',
-        testStandard: matched?.std || 'BD CoP Foundations / PeeWee & Biaxial Inclinometer Verticality Survey',
-        stpDocRef: `${matched?.stpDocCode || 'STP08-INC-DRAFT'} (${matched?.stpRev || 'Draft'})`,
+        testStandard: toEnglishWorksheetText(
+          matched?.std,
+          'BD CoP Foundations / PeeWee & Biaxial Inclinometer Verticality Survey'
+        ),
+        stpDocRef: 'STP08-INC (Draft — In Preparation)',
         muRefCode: 'MU-INC-01',
         uncertaintyStatement: 'Expanded Uncertainty U95 = ± 1.5 mm per 10 m depth (A0/A180 zero-bias compensated, k = 2)',
         accredited: false,

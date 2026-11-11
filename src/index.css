@@ -149,7 +149,7 @@ button:not(:disabled):active {
 :root.dark [class*="shadow"]:not(.light-island, .light-island *) {
   --tw-shadow-color: rgba(0, 0, 0, 0.45);
 }
-:root.dark img[src*="labtech-logo"] {
+:root.dark img[src*="labtech-logo"]:not(.light-island, .light-island *) {
   /* Logo PNG has a white background: invert it to black, then screen-blend so black disappears */
   filter: invert(1) hue-rotate(180deg) saturate(1.4);
   mix-blend-mode: screen;
@@ -325,6 +325,10 @@ html[data-shell="mobile"] .lt-floating-bottom {
 }
 
 @media print {
+  img[src*="labtech-logo"] {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+  }
   .no-print {
     display: none !important;
   }

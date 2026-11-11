@@ -712,8 +712,8 @@ const SAMPLE_BATCH_IS50 = '3.42, 3.18, 4.15, 2.85, 3.60, 3.51, 1.92, 3.33, 4.68,
 
 export const PointLoadCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = ({ onViewAllSpecs }) => {
   const { tx } = usePrefs();
-  const [mode, setMode] = useState<'diametral' | 'axial'>('diametral');
-  const [dMm, setDMm] = useState('52.0');
+  const [mode, setMode] = useState<'diametral' | 'axial'>('axial');
+  const [dMm, setDMm] = useState('36.0');
   const [dPrimeMm, setDPrimeMm] = useState('');
   const [wMm, setWMm] = useState('52.0');
   const [freeEndLMm, setFreeEndLMm] = useState('35.0');
