@@ -5,11 +5,9 @@ import { usePrefs } from '../../prefs';
 import { FieldCalcPhoto, FieldCalcRecord, SharedDocAttachment } from '../../types';
 import { HK_GOV_SPECS, GOV_DEPTS } from '../../data/hkGovSpecs';
 import { detectCalcPassStatus } from '../../utils/limsRules';
-import { buildHoklasFieldWorksheetData } from '../../utils/limsProcessTools';
 import {
   StructuredCalcPayload,
   getOfficialTemplateMeta,
-  triggerCompletedExcelDownload,
   generateSequentialJobRefNo,
   isOfficialJobRefNo,
   toEnglishWorksheetText,
@@ -180,32 +178,40 @@ export const ToolGuideCard: React.FC<{
     );
   };
 
+  const cleanCode = stpCode.trim().toUpperCase();
+  const isHoklasAccredited = templateMeta.accredited && cleanCode !== 'PLT' && cleanCode !== 'VC';
+
   const buildCurrentDraftRecord = (): FieldCalcRecord => {
     const job = jobs.find((j) => j.no === selectedJobNo);
     const activeRefNo =
       jobRefNo.trim() || generateSequentialJobRefNo(selectedJobNo, stpCode, calcRecords);
+    const normRef = activeRefNo.trim().toUpperCase();
+    const existing = calcRecords.find(
+      (r) => (r.jobRefNo || r.id || '').trim().toUpperCase() === normRef
+    );
     return {
-      id: `${stpCode}-${Date.now().toString().slice(-4)}`,
+      id: existing?.id || activeRefNo,
       jobNo: selectedJobNo,
       jobRefNo: activeRefNo,
-      worksOrderNo: worksOrderNo.trim() || undefined,
-      clientName: clientName.trim() || undefined,
-      batchNo: effectiveBatchNo,
-      sampleId: effectiveSampleId,
+      worksOrderNo: worksOrderNo.trim() || existing?.worksOrderNo || undefined,
+      clientName: clientName.trim() || existing?.clientName || undefined,
+      batchNo: effectiveBatchNo || existing?.batchNo,
+      sampleId: effectiveSampleId || existing?.sampleId,
       projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
-      title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
-      locationNote: locationNote.trim() || undefined,
+      title: `${stpCode} · ${standardRef.split('·')[0].trim()}`,
+      locationNote: locationNote.trim() || existing?.locationNote || undefined,
       summary: copyText,
       pass: passStatus,
-      testedAt: nowTimestamp(),
+      testedAt: existing?.testedAt || nowTimestamp(),
       operatorName: toEnglishWorksheetText(user?.name || 'Operator', 'Operator'),
-      signatureDataUrl: signatureDataUrl || undefined,
-      signedBy: signedBy.trim() || undefined,
-      signedRole: signedRole.trim() || undefined,
-      signedAt: signatureDataUrl ? nowTimestamp() : undefined,
-      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
-      worksOrderAttachment,
+      signatureDataUrl: signatureDataUrl || existing?.signatureDataUrl || undefined,
+      signedBy: signedBy.trim() || existing?.signedBy || undefined,
+      signedRole: signedRole.trim() || existing?.signedRole || undefined,
+      signedAt: signatureDataUrl ? nowTimestamp() : existing?.signedAt,
+      sitePhotos: sitePhotos.length > 0 ? sitePhotos : existing?.sitePhotos,
+      worksOrderAttachment: worksOrderAttachment || existing?.worksOrderAttachment,
+      worksheetAttachment: existing?.worksheetAttachment,
       structuredData,
     };
   };
@@ -224,7 +230,7 @@ export const ToolGuideCard: React.FC<{
       sampleId: effectiveSampleId,
       projectTitle: job?.project || job?.shortName || selectedJobNo,
       stpCode,
-      title: `${stpCode} (${standardRef.split('·')[0].trim()})`,
+      title: `${stpCode} · ${standardRef.split('·')[0].trim()}`,
       locationNote: locationNote.trim() || undefined,
       summary: copyText,
       pass: passStatus,
@@ -245,56 +251,16 @@ export const ToolGuideCard: React.FC<{
     const job = jobs.find((j) => j.no === selectedJobNo);
     downloadCalcRecordCsv(buildCurrentDraftRecord(), job);
     pushToast(
-      tx('已匯出 HOKLAS 現場計算紀錄 CSV', 'HOKLAS Field Calc CSV Exported'),
+      tx(
+        isHoklasAccredited ? '已匯出 HOKLAS 現場計算紀錄 CSV' : '已匯出現場計算紀錄 CSV',
+        isHoklasAccredited ? 'HOKLAS Field Calc CSV Exported' : 'Field Calc CSV Exported'
+      ),
       `${selectedJobNo} · ${stpCode}`
     );
   };
 
-  const handleDirectGenExcel = () => {
-    const savedRec = handleSaveToJob();
-    const job = jobs.find((j) => j.no === selectedJobNo) || null;
-    const ws = buildHoklasFieldWorksheetData({
-      record: savedRec,
-      job,
-      equipment,
-      tests,
-    });
-    const downloadedName = triggerCompletedExcelDownload({
-      stpCode,
-      reportRefNo: ws.reportRefNo,
-      jobRefNo: ws.jobRefNo,
-      worksOrderNo: ws.worksOrderNo,
-      batchNo: ws.batchNo,
-      sampleId: ws.sampleId,
-      testedAt: ws.testedAt,
-      jobNo: ws.jobNo,
-      companyProjNo: ws.companyProjNo,
-      projectTitle: ws.projectTitle,
-      clientName: ws.clientName,
-      siteLocation: ws.siteLocation,
-      locationNote: ws.locationNote,
-      ambientTemp: '26.5 °C',
-      weatherNote: 'Fine / Sunny',
-      operatorName: ws.operatorName,
-      approvedSignatory: ws.approvedSignatory,
-      pass: ws.pass,
-      equipmentRows: ws.equipmentList,
-      measurementRows: ws.rows,
-      structured: structuredData,
-      tests,
-      equipmentRegistry: equipment,
-      job,
-      record: savedRec,
-    });
-    pushToast(
-      tx('已按官方 Excel 底板產生 Completed Worksheet (.xlsx)', 'Generated Official Completed Excel Worksheet (.xlsx)'),
-      `${downloadedName} (Ref: ${ws.jobRefNo})`
-    );
-  };
-
   const handleOpenPreview = (mode: 'worksheet' | 'formal_report') => {
-    const savedRec = handleSaveToJob();
-    setPreviewState({ record: savedRec, mode });
+    setPreviewState({ record: buildCurrentDraftRecord(), mode });
   };
 
   return (
@@ -324,7 +290,12 @@ export const ToolGuideCard: React.FC<{
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
             <Save className="h-4 w-4 text-brand" />
-            {tx('儲存計算紀錄、Completed Worksheet 及 HOKLAS 正式報告', 'Save Calc, Completed Worksheet & Formal Report')}
+            {tx(
+              isHoklasAccredited
+                ? '儲存計算紀錄、Completed Worksheet 及 HOKLAS 正式報告'
+                : '儲存計算紀錄、Completed Worksheet 及正式報告',
+              'Save Calc, Completed Worksheet & Formal Report'
+            )}
           </span>
           <div className="flex items-center gap-1.5">
             <button
@@ -353,7 +324,7 @@ export const ToolGuideCard: React.FC<{
         <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/80 px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
           <span className="font-bold text-emerald-950">
             📋 {tx('對應受控工作紙 PDF：', 'Controlled Worksheet PDF: ')}
-            <code className="font-mono font-extrabold text-emerald-800">{templateMeta.templateFileCode.replace(/\.xlsx?$/i, '.pdf')}</code>
+            <code className="font-mono font-extrabold text-emerald-800">{templateMeta.pdfTemplateName}</code>
           </span>
           <span className="font-mono text-[10px] font-bold text-emerald-700">
             {templateMeta.muRefCode}

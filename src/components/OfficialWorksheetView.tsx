@@ -112,6 +112,7 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
   stpCode,
   reportRefNo,
   testedAt,
+  pass,
   siteForm,
   setSiteForm,
   templateMeta,
@@ -132,9 +133,10 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
   sitePhotos = [],
 }) => {
   const cleanStp = (stpCode || 'KD').trim().toUpperCase();
+  const isNonHoklas = cleanStp === 'PLT' || cleanStp === 'VC' || !templateMeta.accredited;
   const dateOnly = (testedAt || '').slice(0, 10);
   const timeOnly = (testedAt || '').slice(11, 16) || '10:00';
-  const contractNo = siteForm.companyProjNo || 'CEDD/2026/01';
+  const sonicData = resolveSonicWorksheetPayload(cleanStp, structured, measurementRows, pass);
 
   const findEq = (keywords: string[], fallback: string) => {
     const found = eqRows.find((e) =>
@@ -285,8 +287,8 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             <input
               value={siteForm.worksOrderNo ?? ''}
               onChange={(e) => setSiteForm({ ...siteForm, worksOrderNo: e.target.value })}
-              placeholder="Manual Input (e.g. WO/2026/01)"
-              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
+              placeholder="—"
+              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400 print:placeholder-transparent"
             />
           </div>
 
@@ -297,8 +299,8 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             <input
               value={siteForm.batchNo ?? ''}
               onChange={(e) => setSiteForm({ ...siteForm, batchNo: e.target.value })}
-              placeholder="Manual Input (e.g. B-01)"
-              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
+              placeholder="—"
+              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400 print:placeholder-transparent"
             />
           </div>
           <div className="col-span-3 sm:col-span-2 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">
@@ -308,8 +310,8 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             <input
               value={siteForm.sampleId ?? ''}
               onChange={(e) => setSiteForm({ ...siteForm, sampleId: e.target.value })}
-              placeholder="Manual Input (e.g. GS-01)"
-              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400"
+              placeholder="—"
+              className="w-full bg-transparent font-mono font-bold text-slate-950 outline-none placeholder:text-slate-400 print:placeholder-transparent"
             />
           </div>
         </div>
@@ -546,8 +548,8 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
                       <td className="border-r border-slate-800 px-2 py-1 font-sans font-bold">{iv.timeLabel}</td>
                       <td className="border-r border-slate-800 px-1.5 py-1 font-bold">{iv.v2}</td>
                       <td className="border-r border-slate-800 px-1.5 py-1 font-bold">{iv.vg}</td>
-                      <td className="border-r border-slate-800 px-1.5 py-1 font-extrabold text-brand-deep">{iv.bleedPct.toFixed(2)}</td>
-                      <td className="border-r border-slate-900 px-1.5 py-1 font-bold">{iv.expPct.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1 font-extrabold text-brand-deep">{iv.bleedPct.toFixed(1)}</td>
+                      <td className="border-r border-slate-900 px-1.5 py-1 font-bold">{iv.expPct.toFixed(1)}</td>
                       <td className="border-r border-slate-400 px-1 py-1 text-slate-400">—</td>
                       <td className="border-r border-slate-400 px-1 py-1 text-slate-400">—</td>
                       <td className="border-r border-slate-400 px-1 py-1 text-slate-400">—</td>
@@ -563,7 +565,7 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             </table>
             <div className="border-t-2 border-slate-900 bg-slate-50 px-2.5 py-1.5 text-[10.5px] flex flex-wrap items-center justify-between gap-2">
               <div>
-                <b>Remark:</b> Initial Grout ({structured.unit === 'mL' ? 'V1' : 'H1'}) = <b>{structured.v1} {structured.unit}</b>; Final Bleeding = <b>{structured.finalBleedPct.toFixed(2)}%</b> (Spec ≤ {structured.specLimitPct.toFixed(1)}% → <b>{structured.isPass ? 'PASS' : 'EXCEED'}</b>); Free Expansion = <b>{structured.finalExpPct >= 0 ? '+' : ''}{structured.finalExpPct.toFixed(2)}%</b>.
+                <b>Remark:</b> Initial Grout ({structured.unit === 'mL' ? 'V1' : 'H1'}) = <b>{structured.v1} {structured.unit}</b>; Final Bleeding = <b>{structured.finalBleedPct.toFixed(1)}%</b> (Spec ≤ {structured.specLimitPct.toFixed(1)}% → <b>{structured.isPass ? 'PASS' : 'EXCEED'}</b>); Free Expansion = <b>{structured.finalExpPct >= 0 ? '+' : ''}{structured.finalExpPct.toFixed(1)}%</b>.
               </div>
               <div className="font-mono text-[10px]">
                 Apparatus: {findEq(['gmc', 'pmc', 'sr', 'cyl'], 'LT-PMC-01')} · {findEq(['lv', 'level'], 'LT-LV-01')}
@@ -703,15 +705,15 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-400 font-mono">
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Moisture Condition (Note 2)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">AR (As received)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Test type + direction (Note 3 &amp; 4)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.mode === 'diametral' ? 'D + R (Diametral)' : 'A + R (Axial)'}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Distance between platens D / Average D (mm)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.dMm.toFixed(1)}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Width W / Average W (mm)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.wMm.toFixed(1)}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Equivalent core diameter, De (Note 9) (mm)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.deMm.toFixed(2)}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Moisture Condition (Note 2)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">AR — As received</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Test type + direction (Note 3 &amp; 4)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.mode === 'diametral' ? 'D — Diametral Core' : 'A — Axial Core'}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Distance between platens D / Failure D&apos; (mm)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.dMm.toFixed(1)}{structured.dPrimeMm ? ` · D' = ${structured.dPrimeMm.toFixed(1)}` : ''}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Specimen Width W (mm)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.wMm.toFixed(1)}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Equivalent core diameter, De (Note 9) (mm)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.deMm.toFixed(2)} ({structured.mode === 'diametral' ? "De = √(D·D')" : 'De = √(4DW/π)'})</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
                 <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Failure Load, P (kN) [Fail Time: {structured.failSec}s]</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.loadKn.toFixed(2)}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Point Load Index, Is (Note 9) (MPa)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.isUncorrMpa.toFixed(2)} (F = {structured.fFactor.toFixed(3)})</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
-                <tr className="bg-sky-50/70"><td className="border-r border-slate-800 px-2.5 py-1.5 font-sans font-extrabold">Point Load Index, Is50 (Note 9) (MPa)</td><td className="border-r border-slate-800 px-2.5 py-1.5 text-center font-black text-brand-deep">{structured.is50Mpa.toFixed(2)} MPa</td><td className="border-r border-slate-800 px-2.5 py-1.5 text-center text-slate-400">—</td><td className="px-2.5 py-1.5 text-center text-slate-400">—</td></tr>
-                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Failure Mode (Note 6) &amp; Failure Type (Note 5)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.mode === 'diametral' ? 'a (Valid diametral)' : 'b (Valid axial)'} · m (Material failure)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">a / b / d *</td><td className="px-2.5 py-1 text-center text-slate-400">a / b / d *</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Point Load Index, Is (Note 9) (MPa)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.isUncorrMpa.toFixed(2)} · F = (De/50)^0.45 = {structured.fFactor.toFixed(3)}</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">—</td><td className="px-2.5 py-1 text-center text-slate-400">—</td></tr>
+                <tr className="bg-sky-50/70"><td className="border-r border-slate-800 px-2.5 py-1.5 font-sans font-extrabold">Point Load Index, Is(50) (Note 9) (MPa)</td><td className="border-r border-slate-800 px-2.5 py-1.5 text-center font-black text-brand-deep">{structured.is50Mpa.toFixed(2)} MPa</td><td className="border-r border-slate-800 px-2.5 py-1.5 text-center text-slate-400">—</td><td className="px-2.5 py-1.5 text-center text-slate-400">—</td></tr>
+                <tr><td className="border-r border-slate-800 px-2.5 py-1 font-sans font-semibold">Failure Mode (Note 6) &amp; Failure Type (Note 5)</td><td className="border-r border-slate-800 px-2.5 py-1 text-center font-bold">{structured.mode === 'diametral' ? 'a — Valid Diametral Core' : 'b — Valid Axial Core'} · m — Material Failure</td><td className="border-r border-slate-800 px-2.5 py-1 text-center text-slate-400">a / b *</td><td className="px-2.5 py-1 text-center text-slate-400">a / b *</td></tr>
               </tbody>
             </table>
           </div>
@@ -721,112 +723,247 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
       {/* =====================================================================
           5) STP07-PLT Appendix B & C (Plate Loading Test — PLT)
          ===================================================================== */}
-      {structured?.kind === 'PLT' && (
-        <>
-          <div className="border-2 border-slate-900">
-            <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
-              Appendix B — Standard Loading Schedule &amp; Design Parameters (STP07-PLT)
-            </div>
-            <div className="grid grid-cols-12 divide-y divide-slate-400 font-mono text-[10.5px]">
-              <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">Working Pressure (kPa):</div>
-              <div className="col-span-3 px-2 py-1 font-bold border-r border-slate-400">{structured.workingKpa} kPa ({(structured.workingKpa * structured.areaM2).toFixed(1)} kN)</div>
-              <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">300% Test Pressure (kPa):</div>
-              <div className="col-span-3 px-2 py-1 font-bold">{structured.workingKpa * 3} kPa ({(structured.workingKpa * 3 * structured.areaM2).toFixed(1)} kN)</div>
+      {structured?.kind === 'PLT' && (() => {
+        const gCount = structured.gaugeCount === 3 ? 3 : 4;
+        return (
+          <>
+            <div className="border-2 border-slate-900">
+              <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
+                Appendix B — Standard Loading Schedule &amp; Design Parameters (STP07-PLT)
+              </div>
+              <div className="grid grid-cols-12 divide-y divide-slate-400 font-mono text-[10.5px]">
+                <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">Working Pressure (kPa):</div>
+                <div className="col-span-3 px-2 py-1 font-bold border-r border-slate-400">{structured.workingKpa} kPa ({(structured.workingKpa * structured.areaM2).toFixed(1)} kN)</div>
+                <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">300% Test Pressure (kPa):</div>
+                <div className="col-span-3 px-2 py-1 font-bold">{structured.workingKpa * 3} kPa ({(structured.workingKpa * 3 * structured.areaM2).toFixed(1)} kN)</div>
 
-              <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">Plate Size &amp; Area:</div>
-              <div className="col-span-3 px-2 py-1 font-bold border-r border-slate-400">{structured.plateShape === 'circular' ? `Ø${structured.plateSizeMm}mm` : `${structured.plateSizeMm}×${structured.plateSizeMm}mm`} ({structured.areaM2.toFixed(4)} m²)</div>
-              <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">Load Cell &amp; Dial Gauges:</div>
-              <div className="col-span-3 px-2 py-1 font-bold">{findEqCodeOnly(['lc', 'load'], 'LT-LC-01')} / LT-DG-01~04</div>
+                <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">Plate Size &amp; Area:</div>
+                <div className="col-span-3 px-2 py-1 font-bold border-r border-slate-400">{structured.plateShape === 'circular' ? `Ø${structured.plateSizeMm}mm` : `${structured.plateSizeMm}×${structured.plateSizeMm}mm`} ({structured.areaM2.toFixed(4)} m²)</div>
+                <div className="col-span-3 bg-slate-50 px-2 py-1 font-sans font-bold border-r border-slate-400">Load Cell &amp; Dial Gauges:</div>
+                <div className="col-span-3 px-2 py-1 font-bold">{findEqCodeOnly(['lc', 'load'], 'LT-LC-01')} / {gCount === 3 ? 'LT-DG-01~03 (3 Gauges)' : 'LT-DG-01~04 (4 Gauges)'}</div>
+              </div>
             </div>
-          </div>
 
-          <div className="border-2 border-slate-900 overflow-x-auto">
-            <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
-              Appendix C — Sample Test Record Sheet (Incremental Loading Method — STP07-PLT)
-            </div>
-            <table className="w-full border-collapse text-center text-[10.5px]">
-              <thead>
-                <tr className="border-b-2 border-slate-900 bg-slate-50 font-extrabold">
-                  <th className="border-r border-slate-800 px-1.5 py-1">Date</th>
-                  <th className="border-r border-slate-800 px-2 py-1">Time / Stage</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Temp (°C)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Applied Pressure (kPa)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Applied Load (kN)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 1 (mm)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 2 (mm)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 3 (mm)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 4 (mm)</th>
-                  <th className="border-r border-slate-800 px-1.5 py-1">Average Reading (mm)</th>
-                  <th className="px-1.5 py-1">Cumulative Def. S (mm)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-400 font-mono">
-                {structured.steps.map((st, idx) => (
-                  <tr key={idx}>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{dateOnly}</td>
-                    <td className="border-r border-slate-800 px-2 py-1 font-sans font-bold">{st.stepName}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{parseFloat(siteForm.ambientTemp) || 26.5}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1 font-bold">{st.pressureKpa.toFixed(1)}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1 font-bold">{st.loadKn.toFixed(2)}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{st.g1.toFixed(2)}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{st.g2.toFixed(2)}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{st.g3.toFixed(2)}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{st.g4.toFixed(2)}</td>
-                    <td className="border-r border-slate-800 px-1.5 py-1">{((st.g1 + st.g2 + st.g3 + st.g4) / 4).toFixed(2)}</td>
-                    <td className="px-1.5 py-1 font-extrabold text-brand-deep">{st.meanMm.toFixed(2)}</td>
+            <div className="border-2 border-slate-900 overflow-x-auto">
+              <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
+                Appendix C — Sample Test Record Sheet (Incremental Loading Method — STP07-PLT)
+              </div>
+              <table className="w-full border-collapse text-center text-[10.5px]">
+                <thead>
+                  <tr className="border-b-2 border-slate-900 bg-slate-50 font-extrabold">
+                    <th className="border-r border-slate-800 px-1.5 py-1">Date</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Time / Stage</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Temp (°C)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Applied Pressure (kPa)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Applied Load (kN)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 1 (mm)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 2 (mm)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 3 (mm)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Dial Gauge 4 (mm)</th>
+                    <th className="border-r border-slate-800 px-1.5 py-1">Average Reading (mm)</th>
+                    <th className="px-1.5 py-1">Cumulative Def. S (mm)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t-2 border-slate-900 bg-slate-50 px-2.5 py-1.5 text-[10.5px]">
-              <b>Remarks:</b> Peak Bearing Pressure q = <b>{structured.peakPressureKpa.toFixed(1)} kPa</b> ({structured.peakLoadKn.toFixed(1)} kN); Max Settlement S = <b>{structured.peakSettlementMm.toFixed(2)} mm</b> (0.15B Limit ≤ {structured.limit015BMm.toFixed(1)} mm → <b>{structured.pass015B ? 'PASS' : 'EXCEED'}</b>); Modulus ks = <b>{structured.ksPeak ? `${structured.ksPeak.toFixed(1)} MN/m³` : '—'}</b>; Es = <b>{structured.esMpa ? `${structured.esMpa.toFixed(2)} MPa` : '—'}</b>.
+                </thead>
+                <tbody className="divide-y divide-slate-400 font-mono">
+                  {structured.steps.map((st, idx) => (
+                    <tr key={idx}>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{dateOnly}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 font-sans font-bold">{st.stepName}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{parseFloat(siteForm.ambientTemp) || 26.5}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1 font-bold">{st.pressureKpa.toFixed(1)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1 font-bold">{st.loadKn.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{st.g1.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{st.g2.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{st.g3.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{gCount === 3 ? '—' : st.g4.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-1.5 py-1">{((st.g1 + st.g2 + st.g3 + (gCount === 4 ? (st.g4 ?? 0) : 0)) / gCount).toFixed(2)}</td>
+                      <td className="px-1.5 py-1 font-extrabold text-brand-deep">{st.meanMm.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="border-t-2 border-slate-900 bg-slate-50 px-2.5 py-1.5 text-[10.5px]">
+                <b>Remarks:</b> Peak Bearing Pressure q = <b>{structured.peakPressureKpa.toFixed(1)} kPa</b> ({structured.peakLoadKn.toFixed(1)} kN); Max Settlement S = <b>{structured.peakSettlementMm.toFixed(2)} mm</b> (0.15B Limit ≤ {structured.limit015BMm.toFixed(1)} mm → <b>{structured.pass015B ? 'PASS' : 'EXCEED'}</b>); Modulus ks = <b>{structured.ksPeak ? `${structured.ksPeak.toFixed(1)} MN/m³` : '—'}</b>; Es = <b>{structured.esMpa ? `${structured.esMpa.toFixed(2)} MPa` : '—'}</b>.
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* =====================================================================
-          6) VC (Inclinometer) or SO (Crosshole Sonic Logging FST03) or Fallback
+          6) FST03-FDT-D6760-2-260417 (Crosshole Sonic Logging — SO)
          ===================================================================== */}
-      {structured?.kind === 'VC' && (
-        <div className="border-2 border-slate-900 overflow-x-auto">
-          <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
-            Biaxial Inclinometer Verticality Profile Readings (A0 / A180 &amp; B0 / B180)
-          </div>
-          <table className="w-full border-collapse text-center text-[10.5px]">
-            <thead>
-              <tr className="border-b border-slate-900 bg-slate-50 font-extrabold">
-                <th className="border-r border-slate-800 px-2 py-1">Depth (m)</th>
-                <th className="border-r border-slate-800 px-2 py-1">A0 (mm)</th>
-                <th className="border-r border-slate-800 px-2 py-1">A180 (mm)</th>
-                <th className="border-r border-slate-800 px-2 py-1">Checksum A</th>
-                <th className="border-r border-slate-800 px-2 py-1">B0 (mm)</th>
-                <th className="border-r border-slate-800 px-2 py-1">B180 (mm)</th>
-                <th className="border-r border-slate-800 px-2 py-1">Checksum B</th>
-                <th className="border-r border-slate-800 px-2 py-1">Drift R (mm)</th>
-                <th className="px-2 py-1">Inclination (1 : N)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-400 font-mono">
-              {structured.rows.map((r, i) => (
-                <tr key={i}>
-                  <td className="border-r border-slate-800 px-2 py-1 font-bold">{r.depthM.toFixed(1)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1">{r.a0.toFixed(2)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1">{r.a180.toFixed(2)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1 text-slate-600">{r.chkA.toFixed(2)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1">{r.b0.toFixed(2)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1">{r.b180.toFixed(2)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1 text-slate-600">{r.chkB.toFixed(2)}</td>
-                  <td className="border-r border-slate-800 px-2 py-1 font-extrabold text-brand-deep">{r.resMm.toFixed(2)}</td>
-                  <td className="px-2 py-1 font-bold">1 : {Math.round(r.ratioN)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {sonicData && (() => {
+        const profileCount = sonicData.profiles.length || (sonicData.tubeCount * (sonicData.tubeCount - 1)) / 2;
+        const meanSpeed =
+          sonicData.profiles.length > 0
+            ? Math.round(sonicData.profiles.reduce((s, p) => s + p.waveSpeedMs, 0) / sonicData.profiles.length)
+            : 4015;
+        const maxDelay =
+          sonicData.profiles.length > 0 ? Math.max(...sonicData.profiles.map((p) => p.fatDelayPct)) : 0;
+        const maxDrop =
+          sonicData.profiles.length > 0 ? Math.max(...sonicData.profiles.map((p) => p.energyDropDb)) : 0;
+        const pullSpeed = sonicData.scannedLenM / Math.max(1, sonicData.actualPullingSec);
+        const absDiffM = Math.abs(sonicData.plumbedLenM - sonicData.scannedLenM);
 
-      {!structured && (
+        return (
+          <>
+            <div className="border-2 border-slate-900">
+              <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
+                Pre-Test Verification &amp; Access Tube Setup (FST03-FDT-D6760-2-260417 · STP03 Rev. 3)
+              </div>
+              <div className="grid grid-cols-12 divide-y divide-slate-400 text-[10.5px]">
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Pile / Shaft Ref.:</div>
+                <div className="col-span-8 sm:col-span-3 px-2 py-1 font-mono font-bold border-r border-slate-400">{siteForm.locationNote || siteForm.sampleId || '—'}</div>
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Access Tubes N &amp; Profiles:</div>
+                <div className="col-span-8 sm:col-span-3 px-2 py-1 font-mono font-bold">{sonicData.tubeCount} Mild Steel Tubes · {profileCount} Profiles</div>
+
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Concrete Age at Test:</div>
+                <div className="col-span-8 sm:col-span-3 px-2 py-1 font-mono font-bold border-r border-slate-400">{sonicData.concreteAgeDays} days (≥ 7d: {sonicData.ageOk ? 'OK' : 'HOLD'})</div>
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Tube Water Temp.:</div>
+                <div className="col-span-8 sm:col-span-3 px-2 py-1 font-mono font-bold">{sonicData.waterTempC.toFixed(1)} °C (0–30 °C: {sonicData.tempOk ? 'OK' : 'CHECK'})</div>
+
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Shortest / Plumbed Len. A:</div>
+                <div className="col-span-8 sm:col-span-3 px-2 py-1 font-mono font-bold border-r border-slate-400">{sonicData.shortestTubeLenM.toFixed(2)} m · Plumbed {sonicData.plumbedLenM.toFixed(2)} m</div>
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Scanned Len. B &amp; |A − B|:</div>
+                <div className="col-span-8 sm:col-span-3 px-2 py-1 font-mono font-bold">{sonicData.scannedLenM.toFixed(2)} m · |A−B| = {absDiffM.toFixed(2)} m ({sonicData.lengthCheckOk ? 'OK' : 'RE-CHECK'})</div>
+
+                <div className="col-span-4 sm:col-span-3 bg-slate-50 px-2 py-1 font-bold border-r border-slate-400">Pull Duration &amp; Speed:</div>
+                <div className="col-span-8 sm:col-span-9 px-2 py-1 font-mono font-bold">
+                  {sonicData.actualPullingSec} s (Min {sonicData.minPullingSec} s) · Speed = {pullSpeed.toFixed(2)} m/s (≤ 0.50 m/s: {sonicData.pullingOk ? 'OK' : 'TOO FAST'})
+                </div>
+
+                <div className="col-span-12 bg-slate-50 px-2.5 py-1 font-mono text-[10px]">
+                  <b>Calibrated Apparatus:</b> Analyzer <b>{findEqCodeOnly(['ca', 'champ', 'sonic'], 'LT-CA-01')}</b> · Depth Encoder <b>{findEqCodeOnly(['de', 'enc'], 'LT-DE-01')}</b> · Tape <b>{findEqCodeOnly(['mt', 'tape'], 'LT-MT-06')}</b> · Thermometer <b>{findEqCodeOnly(['tm', 'therm'], 'LT-TM-01')}</b> · Stopwatch <b>{findEqCodeOnly(['td', 'stop', 'timer'], 'LT-TD-01')}</b>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-2 border-slate-900 overflow-x-auto">
+              <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
+                Crosshole Sonic Logging Profile Summary (ASTM D6760-16 · FST03-FDT-D6760-2-260417)
+              </div>
+              <table className="w-full border-collapse text-center text-[10.5px]">
+                <thead>
+                  <tr className="border-b-2 border-slate-900 bg-slate-50 font-extrabold">
+                    <th className="border-r border-slate-800 px-2 py-1">Profile Pair</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Path Distance (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Baseline FAT₀ (μs)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Measured FAT (μs)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">FAT Delay (%)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Energy Loss (dB)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Wave Speed (m/s)</th>
+                    <th className="px-2 py-1">Integrity Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-400 font-mono">
+                  {sonicData.profiles.map((p, idx) => (
+                    <tr key={idx} className={p.anomaly ? 'bg-rose-50/70' : ''}>
+                      <td className="border-r border-slate-800 px-2 py-1 font-extrabold text-slate-950">{p.pair}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{p.distMm}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{p.baseFatUs}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 font-bold">{p.measFatUs}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 font-bold">{p.fatDelayPct.toFixed(1)}%</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{p.energyDropDb.toFixed(1)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 font-extrabold text-brand-deep">{p.waveSpeedMs}</td>
+                      <td className="px-2 py-1 font-sans font-extrabold">{p.anomaly ? 'ANOMALY (>20% / >6dB)' : 'CONTINUOUS · OK'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="border-t-2 border-slate-900 bg-slate-50 px-2.5 py-1.5 text-[10.5px]">
+                <b>Summary:</b> Mean Ultrasonic Wave Speed = <b>{meanSpeed} m/s</b>; Max FAT Delay = <b>{maxDelay.toFixed(1)}%</b>; Max Energy Drop = <b>{maxDrop.toFixed(1)} dB</b>; Pile Integrity Verdict = <b>{sonicData.isPass ? 'PASS — No Significant Anomaly Detected' : 'ANOMALY — Refer to Engineer / Verification Core'}</b>.
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* =====================================================================
+          7) FST08-INC (Verticality Profile Check — PeeWee & Biaxial Inclinometer)
+         ===================================================================== */}
+      {structured?.kind === 'VC' && (() => {
+        const rawMode = (structured.surveyMode as string | undefined) || ((structured as unknown as { mode?: string }).mode);
+        const isPeewee = rawMode === 'peewee';
+        return (
+          <div className="border-2 border-slate-900 overflow-x-auto">
+            <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold flex flex-wrap items-center justify-between gap-2">
+              <span>
+                {isPeewee
+                  ? 'PeeWee / Borehole Optical-Gyro Deviation Survey Readings (FST08-INC)'
+                  : 'Biaxial Inclinometer Verticality Profile Readings — A0 / A180 & B0 / B180 (FST08-INC)'}
+              </span>
+              <span className="font-mono text-[10px]">
+                Max Depth: {structured.maxDepthM.toFixed(1)} m · Max Drift R: {structured.maxDriftMm.toFixed(2)} mm · Limit 1:{structured.limitN}
+              </span>
+            </div>
+            {isPeewee ? (
+              <table className="w-full border-collapse text-center text-[10.5px]">
+                <thead>
+                  <tr className="border-b border-slate-900 bg-slate-50 font-extrabold">
+                    <th className="border-r border-slate-800 px-2 py-1">Depth (m)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Tilt (°)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Azimuth (°)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">ΔX (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">ΔY (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Resultant Drift R (mm)</th>
+                    <th className="px-2 py-1">Inclination (1 : N)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-400 font-mono">
+                  {structured.rows.map((r, i) => (
+                    <tr key={i}>
+                      <td className="border-r border-slate-800 px-2 py-1 font-bold">{r.depthM.toFixed(1)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.a0.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.b0.toFixed(1)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.chkA.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.chkB.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 font-extrabold text-brand-deep">{r.resMm.toFixed(2)}</td>
+                      <td className="px-2 py-1 font-bold">1 : {r.ratioN >= 9999 ? '∞' : Math.round(r.ratioN)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full border-collapse text-center text-[10.5px]">
+                <thead>
+                  <tr className="border-b border-slate-900 bg-slate-50 font-extrabold">
+                    <th className="border-r border-slate-800 px-2 py-1">Depth (m)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">A0 (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">A180 (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Checksum A</th>
+                    <th className="border-r border-slate-800 px-2 py-1">B0 (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">B180 (mm)</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Checksum B</th>
+                    <th className="border-r border-slate-800 px-2 py-1">Drift R (mm)</th>
+                    <th className="px-2 py-1">Inclination (1 : N)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-400 font-mono">
+                  {structured.rows.map((r, i) => (
+                    <tr key={i}>
+                      <td className="border-r border-slate-800 px-2 py-1 font-bold">{r.depthM.toFixed(1)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.a0.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.a180.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 text-slate-600">{r.chkA.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.b0.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1">{r.b180.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 text-slate-600">{r.chkB.toFixed(2)}</td>
+                      <td className="border-r border-slate-800 px-2 py-1 font-extrabold text-brand-deep">{r.resMm.toFixed(2)}</td>
+                      <td className="px-2 py-1 font-bold">1 : {r.ratioN >= 9999 ? '∞' : Math.round(r.ratioN)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="border-t-2 border-slate-900 bg-slate-50 px-2.5 py-1.5 text-[10.5px]">
+              <b>Remarks:</b> Critical Verticality Gradient = <b>1 : {structured.overallN >= 9999 ? '∞' : Math.round(structured.overallN)}</b> (Spec Limit 1 : {structured.limitN} → <b>{structured.isPass ? 'PASS' : 'EXCEED / RE-CHECK'}</b>).
+            </div>
+          </div>
+        );
+      })()}
+
+      {!structured && !sonicData && (
         <div className="border-2 border-slate-900 overflow-x-auto">
           <div className="border-b border-slate-900 bg-slate-100 px-2.5 py-1 font-extrabold">
             Recorded Worksheet Data ({templateMeta.worksheetFormCode})
@@ -946,7 +1083,11 @@ export const OfficialWorksheetView: React.FC<OfficialWorksheetViewProps> = ({
             )}
           </div>
           <div className="border-t border-slate-400 pt-1 flex justify-between font-mono text-[10px]">
-            <span>Authorised Signature ({LABTECH_COMPANY_HEADER.hoklasRegNo})</span>
+            <span>
+              {isNonHoklas
+                ? 'Authorised Signature · LabTech Testing Limited'
+                : `Authorised Signature (${LABTECH_COMPANY_HEADER.hoklasRegNo})`}
+            </span>
             <span>Date : {dateOnly}</span>
           </div>
         </div>

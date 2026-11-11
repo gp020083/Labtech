@@ -8,7 +8,6 @@ import {
   roundToNearestStep,
   formatNearest02,
 } from '../utils/limsRules';
-import { buildHoklasFieldWorksheetData } from '../utils/limsProcessTools';
 import {
   StructuredCalcPayload,
   SonicStructuredPayload,
@@ -17,12 +16,10 @@ import {
   KodenStructuredPayload,
   FlowConeStructuredPayload,
   PointLoadStructuredPayload,
-  getOfficialTemplateMeta,
-  triggerCompletedExcelDownload,
   generateSequentialJobRefNo,
   collectPreviousClientOptions,
 } from '../utils/completedWorksheetGenerator';
-import { downloadCalcRecordCsv, nowTimestamp, getHkTodayIso } from '../utils';
+import { nowTimestamp, getHkTodayIso } from '../utils';
 import { buildTubePairRows } from '../components/tools/SonicCalcTool';
 import { parseIntervalMinutes } from '../components/tools/BleedingCalcTool';
 import { formatSigFigs } from '../components/tools/KodenFlowPointTools';
@@ -36,10 +33,8 @@ import {
   Plus,
   RotateCcw,
   Save,
-  Download,
   PenTool,
   Printer,
-  FileSpreadsheet,
   Award,
   AlertTriangle,
   CheckCircle2,
@@ -53,13 +48,14 @@ export const MobileCalcFooter: React.FC<{
   notes: string[];
   structuredData?: StructuredCalcPayload;
 }> = ({ stpCode, formula, copyText, notes, structuredData }) => {
-  const { jobs, equipment, tests, calcRecords, saveCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
+  const { jobs, calcRecords, saveCalcRecord, setStpPreviewCode, pushToast, user } = useApp();
   const { lang, tx } = usePrefs();
   const [open, setOpen] = useState(false);
   const [jobNo, setJobNo] = useState(jobs[0]?.no || 'LT0002');
   const [jobRefNo, setJobRefNo] = useState(() =>
     generateSequentialJobRefNo(jobs[0]?.no || 'LT0002', stpCode, calcRecords)
   );
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [clientName, setClientName] = useState('');
   const [worksOrderNo, setWorksOrderNo] = useState('');
   const [batchNo, setBatchNo] = useState('');
@@ -76,7 +72,6 @@ export const MobileCalcFooter: React.FC<{
   } | null>(null);
 
   const spec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
-  const templateMeta = getOfficialTemplateMeta(stpCode, tests);
   const passStatus = detectCalcPassStatus(copyText);
   const selectedJob = jobs.find((j) => j.no === jobNo) || null;
   const effectiveRefNo =
@@ -98,29 +93,48 @@ export const MobileCalcFooter: React.FC<{
       : '') ||
     undefined;
 
-  const buildDraftRecord = (): FieldCalcRecord => ({
-    id: `${stpCode}-${Date.now().toString().slice(-4)}`,
-    jobNo,
-    jobRefNo: effectiveRefNo,
-    worksOrderNo: worksOrderNo.trim() || undefined,
-    clientName: clientName.trim() || undefined,
-    batchNo: effectiveBatchNo,
-    sampleId: effectiveSampleId,
-    projectTitle: selectedJob?.project || selectedJob?.shortName || undefined,
-    stpCode,
-    title: `${stpCode} Field Calculation`,
-    locationNote: locNote.trim() || undefined,
-    summary: copyText,
-    pass: passStatus,
-    testedAt: nowTimestamp(),
-    operatorName: user?.name || 'Operator',
-    signatureDataUrl: signatureDataUrl || undefined,
-    signedBy: signedBy.trim() || undefined,
-    signedRole: signedRole.trim() || undefined,
-    signedAt: signatureDataUrl ? nowTimestamp() : undefined,
-    sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
-    structuredData,
-  });
+  const findMatchingSavedRecord = (): FieldCalcRecord | undefined => {
+    if (savedRecordId) {
+      const byId = calcRecords.find((r) => r.id === savedRecordId);
+      if (byId && (byId.jobRefNo || '').toUpperCase() === effectiveRefNo.trim().toUpperCase()) {
+        return byId;
+      }
+    }
+    return calcRecords.find(
+      (r) =>
+        r.stpCode === stpCode &&
+        (r.jobRefNo || '').trim().toUpperCase() === effectiveRefNo.trim().toUpperCase()
+    );
+  };
+
+  const buildDraftRecord = (): FieldCalcRecord => {
+    const existing = findMatchingSavedRecord();
+    return {
+      id: existing?.id || `${stpCode}-${Date.now().toString().slice(-4)}`,
+      jobNo,
+      jobRefNo: effectiveRefNo,
+      worksOrderNo: worksOrderNo.trim() || existing?.worksOrderNo || undefined,
+      clientName: clientName.trim() || existing?.clientName || undefined,
+      batchNo: effectiveBatchNo || existing?.batchNo,
+      sampleId: effectiveSampleId || existing?.sampleId,
+      projectTitle: selectedJob?.project || selectedJob?.shortName || existing?.projectTitle || undefined,
+      stpCode,
+      title: `${stpCode} Field Calculation`,
+      locationNote: locNote.trim() || existing?.locationNote || undefined,
+      summary: copyText,
+      pass: passStatus,
+      testedAt: existing?.testedAt || nowTimestamp(),
+      operatorName: existing?.operatorName || user?.name || 'Operator',
+      signatureDataUrl: signatureDataUrl || existing?.signatureDataUrl || undefined,
+      signedBy: signedBy.trim() || existing?.signedBy || undefined,
+      signedRole: signedRole.trim() || existing?.signedRole || undefined,
+      signedAt: signatureDataUrl ? existing?.signedAt || nowTimestamp() : existing?.signedAt,
+      sitePhotos: sitePhotos.length > 0 ? sitePhotos : existing?.sitePhotos,
+      worksOrderAttachment: existing?.worksOrderAttachment,
+      worksheetAttachment: existing?.worksheetAttachment,
+      structuredData,
+    };
+  };
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(copyText);
@@ -130,30 +144,15 @@ export const MobileCalcFooter: React.FC<{
   const handleDispatchNewRefNo = () => {
     const nextRef = generateSequentialJobRefNo(jobNo, stpCode, calcRecords);
     setJobRefNo(nextRef);
-    saveCalcRecord({
-      jobNo,
-      jobRefNo: nextRef,
-      worksOrderNo: worksOrderNo.trim() || undefined,
-      clientName: clientName.trim() || undefined,
-      batchNo: effectiveBatchNo,
-      sampleId: effectiveSampleId,
-      projectTitle: selectedJob?.project || selectedJob?.shortName || undefined,
-      stpCode,
-      title: `${stpCode} Field Calculation`,
-      locationNote: locNote.trim() || undefined,
-      summary: copyText,
-      pass: passStatus,
-      signatureDataUrl: signatureDataUrl || undefined,
-      signedBy: signedBy.trim() || undefined,
-      signedRole: signedRole.trim() || undefined,
-      signedAt: signatureDataUrl ? nowTimestamp() : undefined,
-      sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
-      structuredData,
-    });
+    setSavedRecordId(null);
+    pushToast(
+      tx('已編配新工作編號', 'Assigned Next Job Ref. No.'),
+      `${nextRef} · ${tx('按儲存紀錄寫入總表', 'Tap Save Record to commit')}`
+    );
   };
 
   const handleSave = () => {
-    saveCalcRecord({
+    const saved = saveCalcRecord({
       jobNo,
       jobRefNo: effectiveRefNo,
       worksOrderNo: worksOrderNo.trim() || undefined,
@@ -173,70 +172,24 @@ export const MobileCalcFooter: React.FC<{
       sitePhotos: sitePhotos.length > 0 ? sitePhotos : undefined,
       structuredData,
     });
-    const nextAfterSave = generateSequentialJobRefNo(jobNo, stpCode, [
-      ...calcRecords,
-      { id: 'tmp', jobNo, jobRefNo: effectiveRefNo, stpCode, title: '', summary: '', pass: passStatus, testedAt: '', operatorName: '' },
-    ]);
-    setJobRefNo(nextAfterSave);
-  };
-
-  const handleDirectExcel = () => {
-    const draft = buildDraftRecord();
-    const job = jobs.find((j) => j.no === jobNo) || null;
-    const ws = buildHoklasFieldWorksheetData({
-      record: draft,
-      job,
-      equipment,
-      tests,
-    });
-    const downloadedName = triggerCompletedExcelDownload({
-      stpCode,
-      reportRefNo: ws.reportRefNo,
-      jobRefNo: ws.jobRefNo,
-      worksOrderNo: ws.worksOrderNo,
-      batchNo: ws.batchNo,
-      sampleId: ws.sampleId,
-      testedAt: ws.testedAt,
-      jobNo: ws.jobNo,
-      companyProjNo: ws.companyProjNo,
-      projectTitle: ws.projectTitle,
-      clientName: ws.clientName,
-      siteLocation: ws.siteLocation,
-      locationNote: ws.locationNote,
-      ambientTemp: '23.0 °C',
-      weatherNote: 'Fine / Sunny',
-      operatorName: ws.operatorName,
-      approvedSignatory: ws.approvedSignatory,
-      pass: ws.pass,
-      equipmentRows: ws.equipmentList,
-      measurementRows: ws.rows,
-      structured: structuredData,
-      tests,
-      equipmentRegistry: equipment,
-      job,
-      record: draft,
-    });
-    pushToast(
-      tx('已產生官方 Completed Excel', 'Generated Official Completed Excel'),
-      `${downloadedName} · ${templateMeta.templateFileCode}`
-    );
-  };
-
-  const handleCsv = () => {
-    const job = jobs.find((j) => j.no === jobNo);
-    downloadCalcRecordCsv(buildDraftRecord(), job);
+    setSavedRecordId(saved.id);
+    if (saved.jobRefNo) {
+      setJobRefNo(saved.jobRefNo);
+    }
   };
 
   return (
-    <div className="space-y-2.5 text-xs">
+    <div className="space-y-2.5 pb-2 text-xs">
       <div className="rounded-2xl border border-brand/30 bg-white p-3.5 space-y-2.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-extrabold text-slate-900">💾 {tx('儲存紀錄及匯出工作紙 / 報告', 'Save Calc & Gen Worksheet / Report')}</span>
+          <span className="font-extrabold text-slate-900">
+            💾 {tx('儲存紀錄及預覽工作紙 / 報告', 'Save Record & Preview PDF')}
+          </span>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => setSignOffExpanded(!signOffExpanded)}
-              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-extrabold cursor-pointer ${
+              className={`inline-flex min-h-[32px] items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-extrabold cursor-pointer ${
                 signOffExpanded || signatureDataUrl
                   ? 'border-brand bg-brand-wash text-brand-deep'
                   : 'border-slate-200 bg-slate-50 text-slate-700'
@@ -257,36 +210,45 @@ export const MobileCalcFooter: React.FC<{
               const nextJob = e.target.value;
               setJobNo(nextJob);
               setJobRefNo(generateSequentialJobRefNo(nextJob, stpCode, calcRecords));
+              setSavedRecordId(null);
             }}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 font-bold text-slate-900"
+            className="min-h-[42px] rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 font-bold text-slate-900"
           >
             {jobs.map((j) => (
               <option key={j.no} value={j.no}>{j.no} · {j.shortName}</option>
             ))}
           </select>
-          <input value={locNote} onChange={(e) => setLocNote(e.target.value)} placeholder={tx('樁號 / 樣本號 · 選填', 'Pile / Sample Ref')} className="rounded-xl border border-slate-200 px-2.5 py-2" />
+          <input
+            value={locNote}
+            onChange={(e) => setLocNote(e.target.value)}
+            placeholder={tx('樁號 / 樣本號 · 選填', 'Pile / Sample Ref')}
+            className="min-h-[42px] rounded-xl border border-slate-200 px-2.5 py-2"
+          />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="flex gap-1">
             <input
               value={jobRefNo}
-              onChange={(e) => setJobRefNo(e.target.value)}
+              onChange={(e) => {
+                setJobRefNo(e.target.value);
+                setSavedRecordId(null);
+              }}
               placeholder="Job Ref. No."
-              className="min-w-0 flex-1 rounded-xl border border-brand/40 bg-brand-wash/30 px-2 py-1.5 font-mono text-[11px] font-extrabold text-brand-deep"
+              className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-brand/40 bg-brand-wash/30 px-2 py-1.5 font-mono text-[11px] font-extrabold text-brand-deep"
             />
             <button
               type="button"
               onClick={handleDispatchNewRefNo}
-              className="shrink-0 rounded-xl bg-brand px-2 py-1.5 text-[10px] font-extrabold text-white cursor-pointer"
+              className="min-h-[40px] shrink-0 rounded-xl bg-brand px-2.5 py-1.5 text-[10px] font-extrabold text-white cursor-pointer"
             >
-              🎯 {tx('編配', 'Ref')}
+              🎯 {tx('編配', 'New')}
             </button>
           </div>
           <input
             value={worksOrderNo}
             onChange={(e) => setWorksOrderNo(e.target.value)}
             placeholder={tx('Works Order No.', 'Works Order No.')}
-            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
+            className="min-h-[40px] rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -295,7 +257,7 @@ export const MobileCalcFooter: React.FC<{
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder={tx('Client 客戶名稱', 'Client Name')}
-            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-[11px] font-bold text-slate-900"
+            className="min-h-[40px] rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 text-[11px] font-bold text-slate-900"
           />
           <datalist id={`mob-prev-clients-${stpCode}`}>
             {previousClients.map((c) => (
@@ -307,7 +269,7 @@ export const MobileCalcFooter: React.FC<{
             onChange={(e) => {
               if (e.target.value) setClientName(e.target.value);
             }}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-800"
+            className="min-h-[40px] rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-800"
           >
             <option value="">{tx('📂 歷史客戶...', '📂 Previous Clients...')}</option>
             {previousClients.map((c) => (
@@ -320,13 +282,13 @@ export const MobileCalcFooter: React.FC<{
             value={batchNo}
             onChange={(e) => setBatchNo(e.target.value)}
             placeholder="Batch No."
-            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
+            className="min-h-[40px] rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
           <input
             value={sampleId}
             onChange={(e) => setSampleId(e.target.value)}
             placeholder="Sample ID No."
-            className="rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
+            className="min-h-[40px] rounded-xl border border-amber-300 bg-amber-50/40 px-2.5 py-1.5 font-mono text-[11px] font-bold text-slate-900"
           />
         </div>
 
@@ -354,24 +316,35 @@ export const MobileCalcFooter: React.FC<{
           />
         )}
 
-        <div className="grid grid-cols-2 gap-1.5">
-          <button type="button" onClick={handleSave} className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-brand py-2.5 font-extrabold text-white cursor-pointer">
-            <Save className="h-4 w-4" /> {tx(`存入 ${jobNo}`, `Save to ${jobNo}`)}
-          </button>
-          <button type="button" onClick={handleDirectExcel} className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 font-extrabold text-white cursor-pointer">
-            <FileSpreadsheet className="h-4 w-4" /> {tx('📊 官方 Excel', '📊 Official Excel')}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl bg-brand py-2.5 font-extrabold text-white shadow-2xs active:bg-brand-deep cursor-pointer"
+        >
+          <Save className="h-4 w-4 shrink-0" />
+          <span>
+            {findMatchingSavedRecord()
+              ? tx(`更新紀錄 · ${effectiveRefNo}`, `Update Record · ${effectiveRefNo}`)
+              : tx(`儲存紀錄 · ${effectiveRefNo}`, `Save Record · ${effectiveRefNo}`)}
+          </span>
+        </button>
 
-        <div className="grid grid-cols-3 gap-1.5">
-          <button type="button" onClick={() => setPreviewState({ record: buildDraftRecord(), mode: 'worksheet' })} className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl bg-slate-900 py-2 font-extrabold text-white cursor-pointer">
-            <Printer className="h-3.5 w-3.5" /> {tx('📋 工作紙', '📋 Worksheet')}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewState({ record: buildDraftRecord(), mode: 'worksheet' })}
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 font-extrabold text-white active:bg-slate-800 cursor-pointer"
+          >
+            <Printer className="h-4 w-4 shrink-0" />
+            <span>{tx('官方工作紙', 'Official Worksheet')}</span>
           </button>
-          <button type="button" onClick={() => setPreviewState({ record: buildDraftRecord(), mode: 'formal_report' })} className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl border border-amber-400 bg-amber-50 py-2 font-extrabold text-amber-950 cursor-pointer">
-            <Award className="h-3.5 w-3.5 text-amber-700" /> {tx('📜 正式報告', '📜 Report')}
-          </button>
-          <button type="button" onClick={handleCsv} className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2 font-extrabold text-slate-700 cursor-pointer">
-            <Download className="h-3.5 w-3.5" /> CSV
+          <button
+            type="button"
+            onClick={() => setPreviewState({ record: buildDraftRecord(), mode: 'formal_report' })}
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-amber-400 bg-amber-50 px-3 py-2 font-extrabold text-amber-950 active:bg-amber-100 cursor-pointer"
+          >
+            <Award className="h-4 w-4 shrink-0 text-amber-700" />
+            <span>{tx('正式報告', 'Formal Report')}</span>
           </button>
         </div>
       </div>

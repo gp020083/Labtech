@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePermissions } from '../permissions';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
@@ -22,6 +23,38 @@ import {
 
 const ALL_TAGS = ['KD', 'SO', 'FC', 'BL', 'PO', 'PLT', 'VC', 'COMMON'];
 
+function isTopmostModalBackdrop(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const backdrops = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+  );
+  if (backdrops.length === 0) return true;
+  const getZ = (el: HTMLElement) => {
+    const attrZ = Number(el.dataset.modalZ);
+    if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+    const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+    return Number.isNaN(computed) ? 0 : computed;
+  };
+  let topEl = backdrops[0];
+  let topZ = getZ(topEl);
+  for (let i = 1; i < backdrops.length; i++) {
+    const z = getZ(backdrops[i]);
+    if (z >= topZ) {
+      topEl = backdrops[i];
+      topZ = z;
+    }
+  }
+  return topEl === target;
+}
+
+function cleanLocationLabel(raw?: string): string {
+  if (!raw) return 'Office';
+  return raw
+    .replace(/\s*[（(]([^）)]+)[）)]/g, ' · $1')
+    .replace(/\s*·\s*·\s*/g, ' · ')
+    .trim();
+}
+
 export const MobileEquipmentSheet: React.FC<{
   item: EquipmentItem | null;
   onClose: () => void;
@@ -34,8 +67,27 @@ export const MobileEquipmentSheet: React.FC<{
   const [certNo, setCertNo] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
-  if (!item) return null;
+  useEffect(() => {
+    if (!item) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isTopmostModalBackdrop(backdropRef.current)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (selectedLoanId) {
+          setSelectedLoanId(null);
+          return;
+        }
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [item, selectedLoanId, onClose]);
+
+  if (!item || typeof document === 'undefined') return null;
 
   const cal = getEquipmentCalStatus(item, undefined, lang);
   const itemLoans = loans.filter((l) => l.equipmentCode === item.code);
@@ -64,63 +116,73 @@ export const MobileEquipmentSheet: React.FC<{
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="flex max-h-[92dvh] w-full max-w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl">
-        {/* Bottom Sheet Handle & Header */}
-        <div className="border-b border-slate-200 bg-white px-4 pt-2.5 pb-3">
-          <div className="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-slate-300" />
-          <div className="flex items-start justify-between gap-2.5">
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-extrabold text-white">
-                  {item.code}
-                </span>
-                <Badge tone={cal.kind}>{cal.label}</Badge>
+    <>
+      {createPortal(
+        <div
+          ref={backdropRef}
+          data-modal-backdrop="true"
+          data-modal-z="75"
+          className="fixed inset-0 z-[75] flex flex-col justify-end bg-black/45"
+          onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+        >
+          <div className="flex max-h-[92dvh] w-full max-w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl">
+            {/* Bottom Sheet Handle & Header */}
+            <div className="border-b border-slate-200 bg-white px-4 pt-2.5 pb-3">
+              <div className="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-slate-300" />
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-lg bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-extrabold text-white">
+                      {item.code}
+                    </span>
+                    <Badge tone={cal.kind}>{cal.label}</Badge>
+                  </div>
+                  <div className="text-base font-extrabold text-slate-900 leading-snug">{item.name}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label={tx('關閉', 'Close')}
+                  className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:bg-slate-200 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <div className="text-base font-extrabold text-slate-900 leading-snug">{item.name}</div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={tx('關閉', 'Close')}
-              className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:bg-slate-200 cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
 
-        {/* Scrollable Sheet Body */}
-        <div className="flex-1 overflow-y-auto p-4 pb-10 space-y-3.5 text-xs">
-          {/* Crisp Key-Value Grid */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500">{tx('製造商', 'Maker')}</div>
-                <div className="mt-0.5 font-bold text-slate-900 truncate">{item.maker || '—'}</div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500">{tx('型號及 S/N', 'Model & S/N')}</div>
-                <div className="mt-0.5 font-mono font-bold text-slate-900 truncate">
-                  {item.model || '—'} · {item.serial || '—'}
+            {/* Scrollable Sheet Body */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs"
+              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+            >
+              {/* Crisp Key-Value Grid */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold text-slate-500">{tx('製造商', 'Maker')}</div>
+                    <div className="mt-0.5 font-bold text-slate-900 truncate">{item.maker || '—'}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold text-slate-500">{tx('型號及 S/N', 'Model & S/N')}</div>
+                    <div className="mt-0.5 font-mono font-bold text-slate-900 truncate">
+                      {item.model || '—'} · {item.serial || '—'}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold text-slate-500">{tx('校準到期日', 'Cal Due')}</div>
+                    <div className="mt-0.5 font-mono font-extrabold text-slate-900 tabular-nums">
+                      {item.certDue || item.due || '—'}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold text-slate-500">{tx('目前位置', 'Location')}</div>
+                    <div className="mt-0.5 font-bold text-slate-900 truncate">
+                      {cleanLocationLabel(
+                        item.currentLoan ? item.currentLoan.siteLocation : item.loc || item.store || 'Office'
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500">{tx('校準到期日', 'Cal Due')}</div>
-                <div className="mt-0.5 font-mono font-extrabold text-slate-900 tabular-nums">
-                  {item.certDue || item.due || '—'}
-                </div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500">{tx('目前位置', 'Location')}</div>
-                <div className="mt-0.5 font-bold text-slate-900 truncate">
-                  {item.currentLoan ? item.currentLoan.siteLocation : item.loc || item.store || 'Office'}
-                </div>
-              </div>
-            </div>
 
             {item.currentLoan && (
               <div className="border-t border-slate-200/80 pt-2.5 flex items-center justify-between gap-2 text-[11px]">
@@ -352,7 +414,7 @@ export const MobileEquipmentSheet: React.FC<{
                   >
                     <div className="flex items-center justify-between gap-1.5">
                       <span className="font-bold text-slate-900 truncate min-w-0">
-                        {ln.borrowerName} · {ln.siteLocation}
+                        {ln.borrowerName} · {cleanLocationLabel(ln.siteLocation)}
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
                         <Badge tone={ln.returnedAt ? 'ok' : 'brand'}>
@@ -371,15 +433,23 @@ export const MobileEquipmentSheet: React.FC<{
                 ))
             )}
           </div>
-        </div>
-
-        <LoanDetailModal
-          loan={selectedLoan}
-          equipment={item}
-          onClose={() => setSelectedLoanId(null)}
-          onOpenReturn={!selectedLoan?.returnedAt ? onOpenReturn : undefined}
-        />
-      </div>
-    </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      {selectedLoan &&
+        createPortal(
+          <div className="fixed inset-0 z-[76] pointer-events-none [&>*]:pointer-events-auto">
+            <LoanDetailModal
+              loan={selectedLoan}
+              equipment={item}
+              onClose={() => setSelectedLoanId(null)}
+              onOpenReturn={!selectedLoan.returnedAt ? onOpenReturn : undefined}
+            />
+          </div>,
+          document.body
+        )}
+    </>
   );
 };

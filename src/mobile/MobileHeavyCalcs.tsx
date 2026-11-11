@@ -615,7 +615,7 @@ export const MobileInclinometerCalc: React.FC = () => {
   const statusText = !gradOk ? 'EXCEED' : anyChkWarn ? 'RE-CHECK' : 'PASS';
 
   const copySummary = isPeewee
-    ? `[VC Verticality — HOKLAS-5 PeeWee] Depth=${maxD.toFixed(1)}m | Max R=${maxDriftMm.toFixed(2)}mm | Critical 1:${
+    ? `[VC Verticality — PeeWee / Devishot] Depth=${maxD.toFixed(1)}m | Max R=${maxDriftMm.toFixed(2)}mm | Critical 1:${
         overallN > 5000 ? '∞' : Math.round(overallN)
       } at ${criticalStation?.d.toFixed(1) ?? '0'}m vs ≤1:${limitN} → ${statusText}`
     : `[VC Verticality — Biaxial Lg=${gaugeLengthM.toFixed(1)}m] Depth=${maxD.toFixed(1)}m | Max R=${maxDriftMm.toFixed(
@@ -667,7 +667,7 @@ export const MobileInclinometerCalc: React.FC = () => {
               {tx('📐 鑽孔垂直度測斜 · VC', '📐 Borehole Verticality · VC')}
             </div>
             <div className="text-[11px] text-slate-500">
-              {tx('HOKLAS-5 PeeWee 鑽孔測斜及雙軸測斜管', 'HOKLAS-5 PeeWee & Biaxial Casing Mode')}
+              {tx('PeeWee / Devishot 鑽孔測斜及雙軸測斜管', 'PeeWee / Devishot & Biaxial Casing Mode')}
             </div>
           </div>
           <button
@@ -955,8 +955,8 @@ export const MobileInclinometerCalc: React.FC = () => {
         structuredData={vcPayload}
         notes={[
           tx(
-            'HOKLAS-5 認可範圍採用 PeeWee / Devishot 鑽孔傾角及方位角分段積分；雙軸模式須乘以站距倍率 Δdepth / Lg。',
-            'HOKLAS-5 schedule uses PeeWee / Devishot inclination-azimuth integration; biaxial mode scales by Δdepth / Lg.'
+            'PeeWee / Devishot 模式採用鑽孔傾角及方位角分段積分；雙軸模式須乘以站距倍率 Δdepth / Lg。',
+            'PeeWee / Devishot mode uses borehole inclination-azimuth integration; biaxial mode scales by Δdepth / Lg.'
           ),
           tx(
             '各測站垂直度按該站深度 d / R(d) 逐點檢核，並核對正反 180° Checksum 漂移 ≤ 0.30 mm。',

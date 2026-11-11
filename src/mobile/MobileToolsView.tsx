@@ -83,7 +83,10 @@ export const MobileToolsView: React.FC<{
   ];
 
   return (
-    <div className="space-y-3">
+    <div
+      className="space-y-3 w-full min-w-0"
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+    >
       <div className="rounded-2xl bg-white p-3.5 border border-slate-200/90 shadow-xs space-y-2.5">
         <div>
           <h1 className="text-base font-extrabold text-slate-900">
@@ -100,29 +103,29 @@ export const MobileToolsView: React.FC<{
           <button
             type="button"
             onClick={() => setMode('calc')}
-            className={`min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${
+            className={`min-h-[44px] inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${
               mode === 'calc' ? 'bg-white text-brand-deep shadow-xs' : 'text-slate-600'
             }`}
           >
-            <Calculator className="h-3.5 w-3.5" /> {tx(`計算 · ${tools.length}`, `Calc · ${tools.length}`)}
+            <Calculator className="h-3.5 w-3.5 shrink-0" /> {tx(`計算 · ${tools.length}`, `Calc · ${tools.length}`)}
           </button>
           <button
             type="button"
             onClick={() => setMode('registry')}
-            className={`min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${
+            className={`min-h-[44px] inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${
               mode === 'registry' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600'
             }`}
           >
-            <FolderKanban className="h-3.5 w-3.5" /> {tx(`編號 · ${calcRecords.length}`, `Ref. · ${calcRecords.length}`)}
+            <FolderKanban className="h-3.5 w-3.5 shrink-0" /> {tx(`編號 · ${calcRecords.length}`, `Ref. · ${calcRecords.length}`)}
           </button>
           <button
             type="button"
             onClick={() => setMode('specs')}
-            className={`min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${
+            className={`min-h-[44px] inline-flex items-center justify-center gap-1 rounded-lg py-2 cursor-pointer ${
               mode === 'specs' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600'
             }`}
           >
-            <Landmark className="h-3.5 w-3.5" /> {tx(`標準 · ${HK_GOV_SPECS.length}`, `Specs · ${HK_GOV_SPECS.length}`)}
+            <Landmark className="h-3.5 w-3.5 shrink-0" /> {tx(`標準 · ${HK_GOV_SPECS.length}`, `Specs · ${HK_GOV_SPECS.length}`)}
           </button>
         </div>
       </div>
@@ -172,13 +175,13 @@ export const MobileToolsView: React.FC<{
         </>
       ) : (
         <div className="space-y-2.5 text-xs">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pr-4">
             {(['ALL', 'CEDD', 'ASD', 'HOUSING', 'BD'] as const).map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => setDeptFilter(d)}
-                className={`min-h-[40px] rounded-xl px-3.5 py-1.5 font-extrabold shrink-0 cursor-pointer ${
+                className={`min-h-[44px] rounded-xl px-3.5 py-1.5 font-extrabold shrink-0 cursor-pointer ${
                   deptFilter === d
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white border border-slate-200 text-slate-600'
@@ -187,6 +190,7 @@ export const MobileToolsView: React.FC<{
                 {d === 'ALL' ? tx('全部部門', 'All Depts') : d}
               </button>
             ))}
+            <div className="w-2 shrink-0" aria-hidden="true" />
           </div>
 
           {HK_GOV_SPECS.map((sp) => {

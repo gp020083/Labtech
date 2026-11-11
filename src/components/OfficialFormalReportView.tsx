@@ -8,7 +8,10 @@ import {
   OfficialTemplateMeta,
   StructuredCalcPayload,
 } from '../utils/completedWorksheetGenerator';
-import { OfficialFormSiteState } from './OfficialWorksheetView';
+import {
+  OfficialFormSiteState,
+  resolveSonicWorksheetPayload,
+} from './OfficialWorksheetView';
 
 export interface OfficialFormalReportViewProps {
   stpCode: string;
@@ -32,8 +35,8 @@ const REPORT_FORM_CODES: Record<string, string> = {
   KD: 'FDT-TM3-RT',
   SO: 'FDT-D6760-RT',
   PO: 'RKT-D5731-RT',
-  PLT: 'PLT-RT (STP07)',
-  VC: 'INC-RT (STP08)',
+  PLT: 'FDT-PLT-RT-1-261028',
+  VC: 'INC-RT',
 };
 
 export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> = ({
@@ -52,12 +55,14 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
   signatorySigDataUrl,
 }) => {
   const code = stpCode.toUpperCase();
-  const reportFormCode = REPORT_FORM_CODES[code] || `${code}-RT`;
+  const isHoklasAccredited = templateMeta.accredited && code !== 'PLT' && code !== 'VC';
+  const reportFormCode = templateMeta.reportCode || REPORT_FORM_CODES[code] || `${code}-RT`;
   const dateOnly = baseWorksheet.testedAt.slice(0, 10);
+  const sonicData = resolveSonicWorksheetPayload(code, activeStructured, measurementRows, baseWorksheet.pass);
 
   return (
     <div className="light-island mx-auto max-w-[210mm] bg-white p-5 sm:p-7 text-slate-950 font-sans text-[11px] leading-snug border-2 border-slate-900 shadow-sm print:border-none print:shadow-none print:p-0">
-      {/* Official LabTech HOKLAS 298 Letterhead */}
+      {/* Official LabTech Letterhead */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-slate-950 pb-3 mb-2">
         <div className="flex items-start gap-3">
           <div className="border-2 border-slate-950 px-2.5 py-1.5 text-center shrink-0 bg-white">
@@ -82,11 +87,13 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           </div>
         </div>
         <div className="flex items-start gap-2">
-          <div className="border-2 border-slate-950 px-2.5 py-1 text-center bg-white min-w-[130px]">
+          <div className="border-2 border-slate-950 px-2.5 py-1 text-center bg-white min-w-[138px]">
             <div className="text-[8px] font-extrabold uppercase tracking-wider text-slate-700">
-              HOKLAS Accredited
+              {isHoklasAccredited ? 'HOKLAS Accredited' : 'LABTECH CONTROLLED'}
             </div>
-            <div className="text-sm font-black tracking-tight text-slate-950">HOKLAS 298</div>
+            <div className="text-xs font-black tracking-tight text-slate-950 mt-0.5">
+              {isHoklasAccredited ? 'HOKLAS 298' : 'NON-HOKLAS SCOPE'}
+            </div>
             <div className="text-[8px] font-mono font-bold text-slate-700 border-t border-slate-400 pt-0.5 mt-0.5">
               Form: {reportFormCode}
             </div>
@@ -97,7 +104,9 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
       {/* Report Banner */}
       <div className="border-2 border-slate-950 bg-slate-100 py-1.5 px-3 text-center mb-2">
         <div className="text-xs font-black tracking-[0.2em] uppercase text-slate-950">
-          HOKLAS ENDORSED TEST REPORT
+          {isHoklasAccredited
+            ? 'HOKLAS ENDORSED TEST REPORT'
+            : 'OFFICIAL FIELD & LABORATORY TEST REPORT'}
         </div>
         <div className="text-[11px] font-extrabold text-slate-900 mt-0.5">
           {templateMeta.formalReportTitleEn}
@@ -135,12 +144,7 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
             </td>
             <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">Works Order No. *:</td>
             <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
-              <input
-                value={siteForm.worksOrderNo ?? ''}
-                onChange={(e) => setSiteForm((s) => ({ ...s, worksOrderNo: e.target.value }))}
-                placeholder="Manual Input (e.g. WO/2026/01)"
-                className="w-full bg-transparent font-mono font-bold outline-none placeholder:text-slate-400"
-              />
+              {siteForm.worksOrderNo?.trim() || '—'}
             </td>
           </tr>
           <tr>
@@ -184,21 +188,11 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           <tr>
             <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">Batch No. *:</td>
             <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
-              <input
-                value={siteForm.batchNo ?? ''}
-                onChange={(e) => setSiteForm((s) => ({ ...s, batchNo: e.target.value }))}
-                placeholder="Manual Input (e.g. B-01)"
-                className="w-full bg-transparent font-mono font-bold outline-none placeholder:text-slate-400"
-              />
+              {siteForm.batchNo?.trim() || '—'}
             </td>
             <td className="border border-slate-950 px-2 py-1 font-bold bg-slate-50">Sample ID No. *:</td>
             <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
-              <input
-                value={siteForm.sampleId ?? ''}
-                onChange={(e) => setSiteForm((s) => ({ ...s, sampleId: e.target.value }))}
-                placeholder="Manual Input (e.g. GS-01)"
-                className="w-full bg-transparent font-mono font-bold outline-none placeholder:text-slate-400"
-              />
+              {siteForm.sampleId?.trim() || '—'}
             </td>
           </tr>
         </tbody>
@@ -318,27 +312,31 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           <table className="w-full border-collapse border-2 border-slate-950 text-[10.5px]">
             <thead>
               <tr className="bg-slate-50">
-                <th className="border border-slate-950 px-2 py-1 text-left">Rock Point Load Parameter (ASTM D5731 / STP 05)</th>
+                <th className="border border-slate-950 px-2 py-1 text-left">Rock Point Load Parameter (ASTM D5731 / STP06-RKT-D5731)</th>
                 <th className="border border-slate-950 px-2 py-1 text-center">Certified Result</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-950 px-2 py-1 font-semibold">Test Type &amp; Dimensions (D × W)</td>
+                <td className="border border-slate-950 px-2 py-1 font-semibold">Test Type &amp; Specimen Dimensions (D × W)</td>
                 <td className="border border-slate-950 px-2 py-1 text-center font-mono font-bold">
-                  {activeStructured.mode.toUpperCase()} — D={activeStructured.dMm} mm, W={activeStructured.wMm} mm
+                  {activeStructured.mode === 'diametral'
+                    ? 'DIAMETRAL CORE (D — Diametral Core)'
+                    : 'AXIAL CORE (A — Axial Core)'}{' '}
+                  — D = {activeStructured.dMm} mm, W = {activeStructured.wMm} mm
                 </td>
               </tr>
               <tr>
                 <td className="border border-slate-950 px-2 py-1 font-semibold">Failure Load P (kN) &amp; Equivalent Core Diameter De (mm)</td>
                 <td className="border border-slate-950 px-2 py-1 text-center font-mono font-bold">
-                  P = {activeStructured.loadKn.toFixed(2)} kN &nbsp;|&nbsp; De = {activeStructured.deMm.toFixed(2)} mm
+                  P = {activeStructured.loadKn.toFixed(2)} kN &nbsp;|&nbsp; De ={' '}
+                  {activeStructured.mode === 'diametral' ? "√(D·D')" : '√(4DW/π)'} = {activeStructured.deMm.toFixed(2)} mm
                 </td>
               </tr>
               <tr>
                 <td className="border border-slate-950 px-2 py-1 font-semibold">Uncorrected Point Load Strength Is (MPa) &amp; Size Correction F</td>
                 <td className="border border-slate-950 px-2 py-1 text-center font-mono font-bold">
-                  Is = {activeStructured.isUncorrMpa.toFixed(2)} MPa &nbsp;|&nbsp; F = {activeStructured.fFactor.toFixed(3)}
+                  Is = {activeStructured.isUncorrMpa.toFixed(2)} MPa &nbsp;|&nbsp; F = (De/50)^0.45 = {activeStructured.fFactor.toFixed(3)}
                 </td>
               </tr>
               <tr className="bg-slate-100 font-black">
@@ -355,7 +353,7 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           <table className="w-full border-collapse border-2 border-slate-950 text-[10.5px]">
             <thead>
               <tr className="bg-slate-50">
-                <th className="border border-slate-950 px-2 py-1 text-left">Koden Ultrasonic Echo Parameter (CS1:2012 / STP 06)</th>
+                <th className="border border-slate-950 px-2 py-1 text-left">Koden Ultrasonic Echo Parameter (HKCI TM3 Issue 2 / STP02-FDT-TM3)</th>
                 <th className="border border-slate-950 px-2 py-1 text-center">Certified Result</th>
               </tr>
             </thead>
@@ -381,6 +379,80 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
             </tbody>
           </table>
         )}
+
+        {code === 'SO' && sonicData && (() => {
+          const meanSpeed =
+            sonicData.profiles.length > 0
+              ? Math.round(sonicData.profiles.reduce((s, p) => s + p.waveSpeedMs, 0) / sonicData.profiles.length)
+              : 4015;
+          const pullSpeed = sonicData.scannedLenM / Math.max(1, sonicData.actualPullingSec);
+          return (
+            <div className="space-y-1.5">
+              <table className="w-full border-collapse border-2 border-slate-950 text-[10px]">
+                <tbody>
+                  <tr className="bg-slate-50">
+                    <td className="border border-slate-950 px-2 py-1 font-bold">Access Tubes &amp; Profiles:</td>
+                    <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+                      {sonicData.tubeCount} Steel Tubes ({sonicData.profiles.length} Profiles)
+                    </td>
+                    <td className="border border-slate-950 px-2 py-1 font-bold">Concrete Age &amp; Tube Water Temp.:</td>
+                    <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+                      {sonicData.concreteAgeDays} days (≥ 7d) · {sonicData.waterTempC.toFixed(1)} °C (0–30 °C)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-950 px-2 py-1 font-bold">Plumbed Depth A vs Scanned B:</td>
+                    <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+                      {sonicData.plumbedLenM.toFixed(2)} m vs {sonicData.scannedLenM.toFixed(2)} m (|A−B| = {Math.abs(sonicData.plumbedLenM - sonicData.scannedLenM).toFixed(2)} m)
+                    </td>
+                    <td className="border border-slate-950 px-2 py-1 font-bold">Pull Duration &amp; Speed:</td>
+                    <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+                      {sonicData.actualPullingSec} s ({pullSpeed.toFixed(2)} m/s ≤ 0.50 m/s)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <table className="w-full border-collapse border-2 border-slate-950 text-center text-[10px]">
+                <thead>
+                  <tr className="bg-slate-50 font-bold">
+                    <th className="border border-slate-950 px-1.5 py-1">Profile Pair</th>
+                    <th className="border border-slate-950 px-1.5 py-1">Path Dist. (mm)</th>
+                    <th className="border border-slate-950 px-1.5 py-1">Baseline FAT₀ (μs)</th>
+                    <th className="border border-slate-950 px-1.5 py-1">Measured FAT (μs)</th>
+                    <th className="border border-slate-950 px-1.5 py-1">FAT Delay (%)</th>
+                    <th className="border border-slate-950 px-1.5 py-1">Energy Loss (dB)</th>
+                    <th className="border border-slate-950 px-1.5 py-1">Wave Speed (m/s)</th>
+                    <th className="border border-slate-950 px-1.5 py-1">Integrity Status</th>
+                  </tr>
+                </thead>
+                <tbody className="font-mono">
+                  {sonicData.profiles.map((p, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{p.pair}</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5">{p.distMm}</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5">{p.baseFatUs}</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{p.measFatUs}</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5">{p.fatDelayPct.toFixed(1)}%</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5">{p.energyDropDb.toFixed(1)}</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{p.waveSpeedMs}</td>
+                      <td className="border border-slate-950 px-1.5 py-0.5 font-sans font-bold">
+                        {p.anomaly ? 'ANOMALY' : 'CONTINUOUS'}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-100 font-sans font-black">
+                    <td colSpan={4} className="border border-slate-950 px-2 py-1 text-left">
+                      Certified Pile Shaft Ultrasonic Integrity Verdict
+                    </td>
+                    <td colSpan={4} className="border border-slate-950 px-2 py-1 font-mono">
+                      Mean Wave Speed = {meanSpeed} m/s · {sonicData.isPass ? 'PASS — NO ANOMALY' : 'ANOMALY DETECTED'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
 
         {code === 'PLT' && activeStructured?.kind === 'PLT' && (
           <table className="w-full border-collapse border-2 border-slate-950 text-[10.5px]">
@@ -413,7 +485,113 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
           </table>
         )}
 
-        {(!activeStructured || (code !== 'FC' && code !== 'BL' && code !== 'PO' && code !== 'KD' && code !== 'PLT')) && (
+        {code === 'VC' && activeStructured?.kind === 'VC' && (() => {
+          const rawMode =
+            (activeStructured.surveyMode as string | undefined) ||
+            ((activeStructured as unknown as { mode?: string }).mode);
+          const isPeewee = rawMode === 'peewee';
+          return (
+            <div className="space-y-1.5">
+              <table className="w-full border-collapse border-2 border-slate-950 text-[10px]">
+                <tbody>
+                  <tr className="bg-slate-50">
+                    <td className="border border-slate-950 px-2 py-1 font-bold">Survey Method:</td>
+                    <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+                      {isPeewee ? 'PeeWee Optical-Gyro Borehole Deviation Probe' : 'Biaxial Servo-Accelerometer Inclinometer'}
+                    </td>
+                    <td className="border border-slate-950 px-2 py-1 font-bold">Survey Depth &amp; Max Drift R:</td>
+                    <td className="border border-slate-950 px-2 py-1 font-mono font-bold">
+                      {activeStructured.maxDepthM.toFixed(1)} m · Max R = {activeStructured.maxDriftMm.toFixed(2)} mm
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              {isPeewee ? (
+                <table className="w-full border-collapse border-2 border-slate-950 text-center text-[10px]">
+                  <thead>
+                    <tr className="bg-slate-50 font-bold">
+                      <th className="border border-slate-950 px-1.5 py-1">Depth (m)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Tilt (°)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Azimuth (°)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">ΔX (mm)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">ΔY (mm)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Resultant Drift R (mm)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Inclination (1 : N)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {activeStructured.rows.map((r, i) => (
+                      <tr key={i}>
+                        <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{r.depthM.toFixed(1)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.a0.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.b0.toFixed(1)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.chkA.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.chkB.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{r.resMm.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5 font-bold">
+                          1 : {r.ratioN >= 9999 ? '∞' : Math.round(r.ratioN)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-slate-100 font-sans font-black">
+                      <td colSpan={4} className="border border-slate-950 px-2 py-1 text-left">
+                        Certified Overall Borehole / Shaft Verticality
+                      </td>
+                      <td colSpan={3} className="border border-slate-950 px-2 py-1 font-mono">
+                        1 : {activeStructured.overallN >= 9999 ? '∞' : Math.round(activeStructured.overallN)} — Limit 1:{activeStructured.limitN} ({activeStructured.isPass ? 'PASS' : 'EXCEEDS'})
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full border-collapse border-2 border-slate-950 text-center text-[10px]">
+                  <thead>
+                    <tr className="bg-slate-50 font-bold">
+                      <th className="border border-slate-950 px-1.5 py-1">Depth (m)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">A0</th>
+                      <th className="border border-slate-950 px-1.5 py-1">A180</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Checksum A</th>
+                      <th className="border border-slate-950 px-1.5 py-1">B0</th>
+                      <th className="border border-slate-950 px-1.5 py-1">B180</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Checksum B</th>
+                      <th className="border border-slate-950 px-1.5 py-1">Drift R (mm)</th>
+                      <th className="border border-slate-950 px-1.5 py-1">1 : N</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {activeStructured.rows.map((r, i) => (
+                      <tr key={i}>
+                        <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{r.depthM.toFixed(1)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.a0.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.a180.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.chkA.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.b0.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.b180.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5">{r.chkB.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5 font-bold">{r.resMm.toFixed(2)}</td>
+                        <td className="border border-slate-950 px-1.5 py-0.5 font-bold">
+                          1 : {r.ratioN >= 9999 ? '∞' : Math.round(r.ratioN)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-slate-100 font-sans font-black">
+                      <td colSpan={5} className="border border-slate-950 px-2 py-1 text-left">
+                        Certified Overall Shaft Verticality Gradient
+                      </td>
+                      <td colSpan={4} className="border border-slate-950 px-2 py-1 font-mono">
+                        1 : {activeStructured.overallN >= 9999 ? '∞' : Math.round(activeStructured.overallN)} — Limit 1:{activeStructured.limitN} ({activeStructured.isPass ? 'PASS' : 'EXCEEDS'})
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+          );
+        })()}
+
+        {!sonicData &&
+          (!activeStructured ||
+            (code !== 'FC' && code !== 'BL' && code !== 'PO' && code !== 'KD' && code !== 'PLT' && code !== 'VC')) && (
           <table className="w-full border-collapse border-2 border-slate-950 text-[10.5px]">
             <thead>
               <tr className="bg-slate-50">
@@ -435,20 +613,28 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
         )}
       </div>
 
-      {/* Section IV: Notes, Measurement Uncertainty & HOKLAS Conditions */}
+      {/* Section IV: Notes, Measurement Uncertainty & Accreditation Scope */}
       <div className="border-2 border-slate-950 p-2 text-[9.5px] leading-relaxed mb-2 bg-slate-50/50">
         <div className="font-black uppercase tracking-wider text-slate-950 mb-0.5">
-          III. Notes, Statement of Measurement Uncertainty &amp; HOKLAS Conditions
+          {isHoklasAccredited
+            ? 'III. Notes, Statement of Measurement Uncertainty & HOKLAS Conditions'
+            : 'III. Notes & Statement of Measurement Uncertainty'}
         </div>
         <div>
-          1. <strong>* Information supplied by customer:</strong> LabTech Testing Limited is not responsible for the sampling or information supplied by the client unless otherwise stated. The test results relate only to the item(s) / location(s) tested.
+          1. <strong>* Information supplied by customer:</strong> LabTech Testing Limited is not responsible for the sampling or information supplied by the client unless otherwise stated. The test results relate only to the items or locations tested.
         </div>
         <div>
           2. <strong>Expanded Measurement Uncertainty ({templateMeta.muRefCode}):</strong> {templateMeta.uncertaintyStatement}
         </div>
-        <div>
-          3. <strong>HOKLAS Endorsement (Reg. No. HOKLAS 298):</strong> Hong Kong Accreditation Service (HKAS) has accredited this laboratory under HOKLAS for specific laboratory activities as listed in the HOKLAS Directory of Accredited Laboratories. This report shall not be reproduced except in full without written approval of LabTech Testing Limited.
-        </div>
+        {isHoklasAccredited ? (
+          <div>
+            3. <strong>HOKLAS Endorsement (Reg. No. HOKLAS 298):</strong> Hong Kong Accreditation Service (HKAS) has accredited this laboratory under HOKLAS for specific laboratory activities as listed in the HOKLAS Directory of Accredited Laboratories. This report shall not be reproduced except in full without written approval of LabTech Testing Limited.
+          </div>
+        ) : (
+          <div>
+            3. <strong>Controlled In-House Procedure:</strong> Test conducted in accordance with LabTech In-House Procedure {templateMeta.stpDocRef}; outside current HOKLAS 298 accredited scope. This report shall not be reproduced except in full without written approval of LabTech Testing Limited.
+          </div>
+        )}
       </div>
 
       {/* Section V: Official Authorization & Sign-Off */}
@@ -479,13 +665,19 @@ export const OfficialFormalReportView: React.FC<OfficialFormalReportViewProps> =
                 ) : (
                   <span className="text-[9px] text-slate-400">Pending Signatory Endorsement</span>
                 )}
-                <span className="border border-slate-950 px-1.5 py-0.5 text-[8px] font-mono font-black uppercase">
-                  HOKLAS 298 AS
-                </span>
+                {isHoklasAccredited && (
+                  <span className="border border-slate-950 px-1.5 py-0.5 text-[8px] font-mono font-black uppercase">
+                    HOKLAS 298 AS
+                  </span>
+                )}
               </div>
-              <div className="font-bold text-slate-950">{activeSignatory}</div>
+              <div className="font-bold text-slate-950">
+                {isHoklasAccredited ? activeSignatory : activeSignatory.replace(/\s*\(HOKLAS[^)]*\)/gi, '').trim()}
+              </div>
               <div className="text-[9px] text-slate-600">
-                HOKLAS Approved Signatory · For and on behalf of LabTech Testing Limited
+                {isHoklasAccredited
+                  ? 'HOKLAS Approved Signatory · For and on behalf of LabTech Testing Limited'
+                  : 'Approved Signatory · LabTech Testing Limited'}
               </div>
             </td>
           </tr>

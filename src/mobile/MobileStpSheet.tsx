@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { resolveDocLink } from '../driveDocs';
@@ -6,12 +7,51 @@ import { FORMAL_REPORT_PDF_URLS } from '../data/serverDocsCatalog';
 import { Badge } from '../components/Badge';
 import { X, Eye, Download, UploadCloud, AlertOctagon, Users } from 'lucide-react';
 
+function isTopmostModalBackdrop(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const backdrops = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-modal-backdrop="true"]:not([data-auth-gate="true"])')
+  );
+  if (backdrops.length === 0) return true;
+  const getZ = (el: HTMLElement) => {
+    const attrZ = Number(el.dataset.modalZ);
+    if (!Number.isNaN(attrZ) && attrZ > 0) return attrZ;
+    const computed = Number.parseInt(window.getComputedStyle(el).zIndex, 10);
+    return Number.isNaN(computed) ? 0 : computed;
+  };
+  let topEl = backdrops[0];
+  let topZ = getZ(topEl);
+  for (let i = 1; i < backdrops.length; i++) {
+    const z = getZ(backdrops[i]);
+    if (z >= topZ) {
+      topEl = backdrops[i];
+      topZ = z;
+    }
+  }
+  return topEl === target;
+}
+
 export const MobileStpSheet: React.FC = () => {
   const { stpPreviewCode, setStpPreviewCode, tests, uploadStpDocFile, openPreviewDoc, pushToast } = useApp();
   const { lang, tx } = usePrefs();
   const [docTypeFilter, setDocTypeFilter] = useState('ALL');
+  const backdropRef = useRef<HTMLDivElement>(null);
 
-  if (!stpPreviewCode) return null;
+  useEffect(() => {
+    if (!stpPreviewCode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isTopmostModalBackdrop(backdropRef.current)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setStpPreviewCode(null);
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [stpPreviewCode, setStpPreviewCode]);
+
+  if (!stpPreviewCode || typeof document === 'undefined') return null;
   const test = tests.find((t) => t.code === stpPreviewCode) || tests[0];
   const files = test.stpFiles || [];
   const docTypes = ['ALL', ...Array.from(new Set(files.map((f) => f.docType).filter(Boolean) as string[]))];
@@ -42,28 +82,42 @@ export const MobileStpSheet: React.FC = () => {
     reader.readAsDataURL(f);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white h-[100dvh] w-full max-w-full overflow-hidden">
-      <div className="flex items-start justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge tone={test.acc ? 'ok' : 'warn'}>{test.acc ? 'HOKLAS 298' : tx('籌備認證', 'Pending HOKLAS')}</Badge>
-            <span className="font-mono text-xs font-extrabold text-brand-deep">{test.stpDocCode} · {test.stpRev}</span>
-            <Badge tone="ok">PDF</Badge>
+  return createPortal(
+    <div
+      ref={backdropRef}
+      data-modal-backdrop="true"
+      data-modal-z="75"
+      className="fixed inset-0 z-[75] flex flex-col justify-end bg-black/45"
+      onMouseDown={(e) => e.target === e.currentTarget && setStpPreviewCode(null)}
+    >
+      <div className="flex max-h-[92dvh] w-full max-w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 pt-2.5 pb-3">
+          <div className="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-slate-300" />
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge tone={test.acc ? 'ok' : 'warn'}>{test.acc ? 'HOKLAS 298' : tx('籌備認證', 'Pending HOKLAS')}</Badge>
+                <span className="font-mono text-xs font-extrabold text-brand-deep">{test.stpDocCode} · {test.stpRev}</span>
+                <Badge tone="ok">PDF</Badge>
+              </div>
+              <div className="mt-1 text-sm font-extrabold text-slate-900">{test.code} — {test.name}</div>
+              <div className="text-[11px] text-slate-500">{test.std} · Eff: {test.stpEffectiveDate}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStpPreviewCode(null)}
+              aria-label={tx('關閉', 'Close')}
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl bg-slate-200/70 p-2 text-slate-700 shrink-0 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <div className="mt-1 text-sm font-extrabold text-slate-900">{test.code} — {test.name}</div>
-          <div className="text-[11px] text-slate-500">{test.std} · Eff: {test.stpEffectiveDate}</div>
         </div>
-        <button
-          type="button"
-          onClick={() => setStpPreviewCode(null)}
-          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl bg-slate-200/70 p-2 text-slate-700 shrink-0 cursor-pointer"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-10 space-y-3.5 text-xs">
+        <div
+          className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs"
+          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        >
         <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 p-3 text-rose-800">
           <AlertOctagon className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
           <div className="text-[11px] font-semibold leading-snug">
@@ -224,7 +278,7 @@ export const MobileStpSheet: React.FC = () => {
             </label>
           </div>
           {docTypes.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pr-4">
               {docTypes.map((dt) => (
                 <button
                   key={dt}
@@ -237,6 +291,7 @@ export const MobileStpSheet: React.FC = () => {
                   {dt === 'ALL' ? tx('全部類別', 'All') : dt.replace(/\(PDF.*?\)/gi, 'PDF')}
                 </button>
               ))}
+              <div className="w-2 shrink-0" aria-hidden="true" />
             </div>
           )}
           {visibleFiles.map((f) => {
@@ -279,7 +334,9 @@ export const MobileStpSheet: React.FC = () => {
             </div>
           ))}
         </div>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

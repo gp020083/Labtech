@@ -46,7 +46,10 @@ export const MobileJobsView: React.FC<{ onNavigateEquipment: () => void }> = ({ 
   };
 
   return (
-    <div className="space-y-2.5 w-full min-w-0">
+    <div
+      className="space-y-2.5 w-full min-w-0"
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+    >
       {/* Header Card */}
       <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs">
         <div className="min-w-0">
