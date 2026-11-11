@@ -5,6 +5,7 @@ import { usePrefs } from '../prefs';
 import { FieldCalcRecord, JobItem } from '../types';
 import {
   buildHoklasFieldWorksheetData,
+  deduplicateEquipmentRows,
   equipmentMatchesStp,
   stripManualInputPlaceholder,
   HoklasWorksheetEquipmentRow,
@@ -182,17 +183,22 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
   });
 
   const initialEqRows = useMemo<HoklasWorksheetEquipmentRow[]>(() => {
+    const refToday = getHkTodayIso();
     if (equipmentItems && equipmentItems.length > 0) {
       const filtered = equipmentItems.filter((item) => {
         const reg = equipment.find((e) => e.code.toUpperCase() === item.code.toUpperCase());
         return reg ? equipmentMatchesStp(reg, cleanStp) : true;
       });
       if (filtered.length > 0) {
-        return filtered.map((e) => ({
-          ...e,
-          name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
-          calDue: calibrationDueDates?.[e.code] || e.calDue,
-        }));
+        return deduplicateEquipmentRows(
+          filtered.map((e) => ({
+            ...e,
+            name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
+            calDue: calibrationDueDates?.[e.code] || e.calDue,
+          })),
+          refToday,
+          7
+        );
       }
     }
     if (equipmentIds && equipmentIds.length > 0) {
@@ -201,24 +207,32 @@ export const HoklasReportPreview: React.FC<HoklasReportPreviewProps> = ({
         return reg ? equipmentMatchesStp(reg, cleanStp) : false;
       });
       if (filteredCodes.length > 0) {
-        return filteredCodes.map((code) => {
-          const found = equipment.find((e) => e.code.toUpperCase() === code.toUpperCase());
-          return {
-            code: found?.code || code,
-            name: toEnglishWorksheetText(found?.name, 'Calibrated Test Instrument'),
-            model: found?.model || '—',
-            serial: found?.serial || '—',
-            calDue: calibrationDueDates?.[code] || found?.certDue || found?.due || '—',
-            source: found?.currentLoan?.jobNo === baseWorksheet.jobNo ? 'on_site' : 'recommended_lab',
-          };
-        });
+        return deduplicateEquipmentRows(
+          filteredCodes.map((code) => {
+            const found = equipment.find((e) => e.code.toUpperCase() === code.toUpperCase());
+            return {
+              code: found?.code || code,
+              name: toEnglishWorksheetText(found?.name, 'Calibrated Test Instrument'),
+              model: found?.model || '—',
+              serial: found?.serial || '—',
+              calDue: calibrationDueDates?.[code] || found?.certDue || found?.due || '—',
+              source: found?.currentLoan?.jobNo === baseWorksheet.jobNo ? 'on_site' : 'recommended_lab',
+            };
+          }),
+          refToday,
+          7
+        );
       }
     }
-    return baseWorksheet.equipmentList.map((e) => ({
-      ...e,
-      name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
-      calDue: calibrationDueDates?.[e.code] || e.calDue,
-    }));
+    return deduplicateEquipmentRows(
+      baseWorksheet.equipmentList.map((e) => ({
+        ...e,
+        name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
+        calDue: calibrationDueDates?.[e.code] || e.calDue,
+      })),
+      refToday,
+      7
+    );
   }, [equipmentItems, equipmentIds, calibrationDueDates, equipment, baseWorksheet, cleanStp]);
 
   const [eqRows, setEqRows] = useState<HoklasWorksheetEquipmentRow[]>(initialEqRows);

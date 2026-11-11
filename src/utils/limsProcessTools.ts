@@ -128,6 +128,50 @@ export function equipmentMatchesStp(eq: Pick<EquipmentItem, 'testTags' | 'tests'
   return tags.includes(cleanStp);
 }
 
+export function deduplicateEquipmentRows(
+  rows: HoklasWorksheetEquipmentRow[],
+  refDateIso = getHkTodayIso(),
+  maxRows = 7
+): HoklasWorksheetEquipmentRow[] {
+  const isCalValid = (due: string) => {
+    const d = (due || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d >= refDateIso;
+    return d.length > 0 && d !== '—';
+  };
+  const indexed = rows.map((row, idx) => {
+    const valid = isCalValid(row.calDue);
+    const loaned = row.source === 'on_site';
+    const tier = valid ? (loaned ? 0 : 1) : loaned ? 2 : 3;
+    return { row, idx, tier };
+  });
+  indexed.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    const dueA = (a.row.calDue || '').trim();
+    const dueB = (b.row.calDue || '').trim();
+    const isoA = /^\d{4}-\d{2}-\d{2}$/.test(dueA);
+    const isoB = /^\d{4}-\d{2}-\d{2}$/.test(dueB);
+    if (isoA && isoB && dueA !== dueB) return dueB.localeCompare(dueA);
+    return a.idx - b.idx;
+  });
+
+  const prefixCounts = new Map<string, number>();
+  const seenCodes = new Set<string>();
+  const out: HoklasWorksheetEquipmentRow[] = [];
+  for (const { row } of indexed) {
+    const normCode = row.code.trim().toUpperCase();
+    if (seenCodes.has(normCode)) continue;
+    const prefix = normCode.replace(/-\d+$/, '');
+    const maxForPrefix = prefix === 'LT-PL' ? 2 : 1;
+    const used = prefixCounts.get(prefix) || 0;
+    if (used >= maxForPrefix) continue;
+    seenCodes.add(normCode);
+    prefixCounts.set(prefix, used + 1);
+    out.push(row);
+    if (out.length >= maxRows) break;
+  }
+  return out;
+}
+
 export function buildHoklasFieldWorksheetData(params: {
   record: FieldCalcRecord;
   job?: JobItem | null;
@@ -142,31 +186,18 @@ export function buildHoklasFieldWorksheetData(params: {
   const stpMethod = rawStpMethod ? localizeTest(rawStpMethod, 'en') : undefined;
   const inUseEq = equipment.filter((e) => e.inUse !== 'N').map((e) => localizeEquipment(e, 'en'));
 
-  const matchingPool = inUseEq.filter((e) => equipmentMatchesStp(e, cleanStp));
-  const onSiteEq = matchingPool.filter((e) => e.currentLoan?.jobNo === record.jobNo);
-  const onSiteCodes = new Set(onSiteEq.map((e) => e.code));
-  const seenFamily = new Set(
-    onSiteEq.map((e) => e.code.replace(/-\d+$/, ''))
-  );
-  const supplementalLabEq: EquipmentItem[] = [];
-  for (const e of matchingPool) {
-    if (onSiteCodes.has(e.code)) continue;
-    const family = e.code.replace(/-\d+$/, '');
-    if (seenFamily.has(family) && onSiteEq.length + supplementalLabEq.length >= 4) continue;
-    seenFamily.add(family);
-    supplementalLabEq.push(e);
-    if (onSiteEq.length + supplementalLabEq.length >= 5) break;
-  }
-  const matchingTagEq = [...onSiteEq, ...supplementalLabEq];
+  const candidateRows: HoklasWorksheetEquipmentRow[] = inUseEq
+    .filter((e) => equipmentMatchesStp(e, cleanStp))
+    .map((e) => ({
+      code: e.code,
+      name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
+      model: e.model || '—',
+      serial: e.serial || '—',
+      calDue: e.certDue || e.due || '—',
+      source: e.currentLoan?.jobNo === record.jobNo ? 'on_site' : 'recommended_lab',
+    }));
 
-  const equipmentList: HoklasWorksheetEquipmentRow[] = matchingTagEq.map((e) => ({
-    code: e.code,
-    name: toEnglishWorksheetText(e.name, 'Calibrated Test Instrument'),
-    model: e.model || '—',
-    serial: e.serial || '—',
-    calDue: e.certDue || e.due || '—',
-    source: e.currentLoan?.jobNo === record.jobNo ? 'on_site' : 'recommended_lab',
-  }));
+  const equipmentList = deduplicateEquipmentRows(candidateRows, getHkTodayIso(), 7);
 
   const defaultSignatory =
     stpMethod?.approvedSignatories?.[0] ||

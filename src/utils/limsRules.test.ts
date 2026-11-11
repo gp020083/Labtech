@@ -1231,12 +1231,71 @@ test('Post-Audit: strict stpCode equipment filtering, blank placeholder hygiene,
 
   // Non-HOKLAS accreditation flags & PDF template names for PLT and VC
   const pltMeta2 = getOfficialTemplateMeta('PLT');
-  const vcMeta2 = getOfficialTemplateMeta('VC');
+  const vcMeta2 = getOfficialTemplateMeta('VC', [
+    {
+      code: 'VC',
+      name: 'Verticality Check',
+      std: 'BD CoP Foundations',
+      stpDocCode: 'STP08-INC-DRAFT',
+      stpRev: '籌備中',
+      acc: false,
+      keyParams: '',
+    },
+  ]);
   assert.equal(pltMeta2.accredited, false);
   assert.equal(vcMeta2.accredited, false);
   assert.equal(vcMeta2.templateFileCode, 'FST08-INC');
   assert.equal(vcMeta2.pdfTemplateName, 'FST08-INC_Worksheet_template.pdf');
   assert.equal(vcMeta2.reportCode, 'INC-RT');
+  assert.equal(vcMeta2.stpDocRef, 'STP08-INC (Draft — In Preparation)');
+
+  // Equipment prefix deduplication & non-expired calDue priority (e.g. SO LT-DE-01..03 vs LT-MT-06 / LT-TM-01, PO LT-PL-01/02)
+  const soSheetDedup = buildHoklasFieldWorksheetData({
+    record: {
+      id: 'SO-260004',
+      jobNo: 'SO-LCK',
+      jobRefNo: 'SO-260004',
+      stpCode: 'SO',
+      title: 'Crosshole Sonic Logging',
+      summary: 'PASS',
+      pass: true,
+      testedAt: '2026-11-11 10:00',
+      operatorName: 'Shih Chak Lung, Ben',
+    },
+    equipment: [
+      { code: 'LT-DE-01', name: 'Depth Encoder 1', model: 'DE', serial: '01', store: 'Office', loc: 'Office', cal: 'External', last: '2025-07-24', due: '2026-07-24', tests: 'SO' },
+      { code: 'LT-DE-02', name: 'Depth Encoder 2', model: 'DE', serial: '02', store: 'Office', loc: 'Office', cal: 'External', last: '2025-07-24', due: '2026-07-24', tests: 'SO' },
+      { code: 'LT-DE-03', name: 'Depth Encoder 3', model: 'DE', serial: '03', store: 'Office', loc: 'Office', cal: 'External', last: '2025-07-24', due: '2026-07-24', tests: 'SO' },
+      { code: 'LT-CA-01', name: 'Cross-hole Ultrasonic Analyzer', model: 'CHA-W', serial: 'CA01', store: 'Office', loc: 'Office', cal: 'External', last: '2026-03-01', due: '2027-03-01', tests: 'SO' },
+      { code: 'LT-MT-06', name: 'Steel Measuring Tape', model: '50m', serial: 'MT06', store: 'Office', loc: 'Office', cal: 'Internal', last: '2026-04-01', due: '2027-04-01', tests: 'KD + SO' },
+      { code: 'LT-TM-01', name: 'Digital Thermometer', model: 'TM', serial: 'TM01', store: 'Office', loc: 'Office', cal: 'External', last: '2026-05-01', due: '2027-05-01', tests: 'FC + BL + SO + PO + KD' },
+    ],
+    tests: [],
+  });
+  const soCodes = soSheetDedup.equipmentList.map((e) => e.code);
+  assert.deepEqual(soCodes.slice(0, 3), ['LT-TM-01', 'LT-MT-06', 'LT-CA-01']);
+  assert.equal(soCodes.filter((c) => c.startsWith('LT-DE-')).length, 1, 'Only 1 Depth Encoder may appear');
+
+  const poSheetPlaten = buildHoklasFieldWorksheetData({
+    record: {
+      id: 'PO-260004',
+      jobNo: 'LT0004',
+      jobRefNo: 'PO-260004',
+      stpCode: 'PO',
+      title: 'Point Load',
+      summary: 'PASS',
+      pass: true,
+      testedAt: '2026-11-11 10:00',
+      operatorName: 'Chu Kar Wai, Peter',
+    },
+    equipment: [
+      { code: 'LT-PL-01', name: 'Upper Conical Platen', model: '60deg', serial: 'PL01', store: 'Office', loc: 'Office', cal: 'Internal', last: '2026-05-01', due: '2027-05-01', tests: 'PO' },
+      { code: 'LT-PL-02', name: 'Lower Conical Platen', model: '60deg', serial: 'PL02', store: 'Office', loc: 'Office', cal: 'Internal', last: '2026-05-01', due: '2027-05-01', tests: 'PO' },
+      { code: 'LT-PO-02', name: 'Point Load Tester', model: 'PLT-100', serial: 'PO02', store: 'Office', loc: 'Office', cal: 'External', last: '2026-06-01', due: '2027-06-01', tests: 'PO' },
+    ],
+    tests: [],
+  });
+  assert.equal(poSheetPlaten.equipmentList.filter((e) => e.code.startsWith('LT-PL-')).length, 2, 'LT-PL upper+lower platen pair allowed');
 
   for (const code of ['KD', 'SO', 'FC', 'BL', 'PO', 'PLT', 'VC']) {
     const meta = getOfficialTemplateMeta(code);
