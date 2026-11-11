@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePrefs } from '../../prefs';
+import { getHkTodayIso } from '../../utils';
 import {
-  getHkTodayIso,
   formatNearest02,
   roundToNearestStep,
   computePointLoadTrimmedMean,

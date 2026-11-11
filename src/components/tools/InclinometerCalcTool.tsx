@@ -130,7 +130,8 @@ export const InclinometerCalcTool: React.FC<{ onViewAllSpecs?: () => void }> = (
 
   const vcPayload: InclinometerStructuredPayload = {
     kind: 'VC',
-    surveyMode,
+    surveyMode: isPeewee ? 'peewee' : 'inclinometer',
+    gaugeLengthM: isPeewee ? undefined : gaugeLengthM,
     limitN: limitDenom,
     maxDepthM,
     maxDriftMm,

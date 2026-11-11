@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { usePermissions } from '../../permissions';
 import { useApp } from '../../store';
 import { usePrefs } from '../../prefs';
@@ -11,6 +11,7 @@ import {
   getOfficialTemplateMeta,
   triggerCompletedExcelDownload,
   generateSequentialJobRefNo,
+  isOfficialJobRefNo,
   toEnglishWorksheetText,
   collectPreviousClientOptions,
 } from '../../utils/completedWorksheetGenerator';
@@ -61,9 +62,20 @@ export const ToolGuideCard: React.FC<{
   const govSpec = HK_GOV_SPECS.find((s) => s.stpCode === stpCode);
   const templateMeta = getOfficialTemplateMeta(stpCode, tests);
   const [selectedJobNo, setSelectedJobNo] = useState<string>(jobs[0]?.no || 'LT0002');
+  const nextSuggestedRef = useMemo(
+    () => generateSequentialJobRefNo(selectedJobNo, stpCode, calcRecords),
+    [selectedJobNo, stpCode, calcRecords]
+  );
   const [jobRefNo, setJobRefNo] = useState<string>(() =>
     generateSequentialJobRefNo(jobs[0]?.no || 'LT0002', stpCode, calcRecords)
   );
+
+  useEffect(() => {
+    const cleanPrefix = `${stpCode.trim().toUpperCase()}-`;
+    if (!jobRefNo.toUpperCase().startsWith(cleanPrefix) || !isOfficialJobRefNo(jobRefNo)) {
+      setJobRefNo(nextSuggestedRef);
+    }
+  }, [stpCode, nextSuggestedRef]);
   const [clientName, setClientName] = useState<string>('');
   const [worksOrderNo, setWorksOrderNo] = useState<string>('');
   const [batchNo, setBatchNo] = useState<string>('');
@@ -379,7 +391,7 @@ export const ToolGuideCard: React.FC<{
             <input
               value={jobRefNo}
               onChange={(e) => setJobRefNo(e.target.value)}
-              placeholder="e.g. LT0001-FC-261108-001"
+              placeholder={`e.g. ${nextSuggestedRef}`}
               className="mt-1 w-full rounded-xl border border-indigo-300 bg-indigo-50/40 px-2.5 py-1.5 font-mono font-extrabold text-indigo-950"
             />
           </div>
@@ -581,7 +593,7 @@ export const ToolGuideCard: React.FC<{
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-slate-800">
                       <span className="rounded bg-indigo-100 px-1.5 py-0.5 font-mono font-extrabold text-indigo-950 mr-1.5">
-                        {r.jobRefNo || `HKL-${r.jobNo}-${r.id}`}
+                        {r.jobRefNo || r.id}
                       </span>
                       <b className="font-mono text-slate-900">{r.jobNo}</b>
                       <span className="text-slate-600">

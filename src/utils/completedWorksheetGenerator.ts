@@ -678,8 +678,9 @@ export function buildCompletedExcelWorkbookXml(params: CompletedExcelGeneratorPa
     );
   });
 
-  const st = params.structured;
+  const st = params.structured || params.record?.structuredData;
   if (st?.kind === 'FC') {
+    const fcMean02 = roundToNearestStep(st.meanSec, 0.2);
     wsRows.push(
       `<Row ss:Height="20">${buildCell('Sample Information & Flow Cone Determinations (FST05-GTT-C939-2-260417)', 'sSecHdr', { mergeAcross: 6 })}</Row>`
     );
@@ -690,7 +691,7 @@ export function buildCompletedExcelWorkbookXml(params: CompletedExcelGeneratorPa
       `<Row ss:Height="18">${buildCell('Test 1 Efflux (s)', 'sTblHdr')}${buildCell('Test 2 Efflux (s)', 'sTblHdr')}${buildCell('Average Time of Efflux (s)', 'sTblHdr')}${buildCell('Different Time of Efflux to Average (s)', 'sTblHdr')}${buildCell('Time to efflux compliance (<=35s)', 'sTblHdr')}${buildCell('Time different compliance (<=1.8s)', 'sTblHdr', { mergeAcross: 1 })}</Row>`
     );
     wsRows.push(
-      `<Row ss:Height="20">${buildCell(st.t1Sec, 'sValNum', { type: 'Number' })}${buildCell(st.t2Sec, 'sValNum', { type: 'Number' })}${buildCell(Number(st.meanSec.toFixed(1)), 'sValBoldNum', { type: 'Number', formula: '=ROUND(AVERAGE(RC[-2]:RC[-1]),1)' })}${buildCell(Number(st.diffSec.toFixed(1)), 'sValBoldNum', { type: 'Number', formula: '=ABS(RC[-3]-RC[-2])' })}${buildCell(st.meanSec <= 35 ? 'Yes' : 'No', 'sValPass')}${buildCell(st.repeatOk ? 'Yes' : 'No', st.repeatOk ? 'sValPass' : 'sValWarn', { mergeAcross: 1 })}</Row>`
+      `<Row ss:Height="20">${buildCell(st.t1Sec, 'sValNum', { type: 'Number' })}${buildCell(st.t2Sec, 'sValNum', { type: 'Number' })}${buildCell(Number(fcMean02.toFixed(1)), 'sValBoldNum', { type: 'Number', formula: '=ROUND(AVERAGE(RC[-2]:RC[-1])*5,0)/5' })}${buildCell(Number(st.diffSec.toFixed(1)), 'sValBoldNum', { type: 'Number', formula: '=ABS(RC[-3]-RC[-2])' })}${buildCell(fcMean02 <= 35 ? 'Yes' : 'No', fcMean02 <= 35 ? 'sValPass' : 'sValWarn')}${buildCell(st.repeatOk ? 'Yes' : 'No', st.repeatOk ? 'sValPass' : 'sValWarn', { mergeAcross: 1 })}</Row>`
     );
   } else if (st?.kind === 'BL') {
     wsRows.push(
@@ -701,7 +702,7 @@ export function buildCompletedExcelWorkbookXml(params: CompletedExcelGeneratorPa
     );
     st.intervals.forEach((r) => {
       wsRows.push(
-        `<Row ss:Height="18">${buildCell(r.timeLabel, 'sValBold')}${buildCell(st.v1, 'sValNum', { type: 'Number' })}${buildCell(r.v2, 'sValNum', { type: 'Number' })}${buildCell(r.vg, 'sValNum', { type: 'Number' })}${buildCell(Number(r.bleedAmt.toFixed(2)), 'sValNum', { type: 'Number', formula: '=MAX(0,RC[-2]-RC[-1])' })}${buildCell(Number(r.bleedPct.toFixed(2)), 'sValBoldNum', { type: 'Number', formula: '=ROUND((RC[-1]/RC[-4])*100,2)' })}${buildCell(Number(r.expPct.toFixed(2)), 'sValNum', { type: 'Number', formula: '=ROUND(((RC[-3]-RC[-5])/RC[-5])*100,2)' })}</Row>`
+        `<Row ss:Height="18">${buildCell(r.timeLabel, 'sValBold')}${buildCell(st.v1, 'sValNum', { type: 'Number' })}${buildCell(r.v2, 'sValNum', { type: 'Number' })}${buildCell(r.vg, 'sValNum', { type: 'Number' })}${buildCell(Number(r.bleedAmt.toFixed(2)), 'sValNum', { type: 'Number', formula: '=MAX(0,RC[-2]-RC[-1])' })}${buildCell(Number(roundToNearestStep(r.bleedPct, 0.2).toFixed(1)), 'sValBoldNum', { type: 'Number', formula: '=ROUND(((RC[-1]/RC[-4])*100)*5,0)/5' })}${buildCell(Number(roundToNearestStep(r.expPct, 0.2).toFixed(1)), 'sValNum', { type: 'Number', formula: '=ROUND((((RC[-3]-RC[-5])/RC[-5])*100)*5,0)/5' })}</Row>`
       );
     });
   } else if (st?.kind === 'PLT') {
@@ -712,8 +713,29 @@ export function buildCompletedExcelWorkbookXml(params: CompletedExcelGeneratorPa
       `<Row ss:Height="18">${buildCell('Cycle / Stage', 'sTblHdr')}${buildCell('Applied Pressure (kPa)', 'sTblHdr')}${buildCell('Applied Load (kN)', 'sTblHdr')}${buildCell('Dial Gauge 1 & 2 (mm)', 'sTblHdr')}${buildCell('Dial Gauge 3 & 4 (mm)', 'sTblHdr')}${buildCell('Average Reading (mm)', 'sTblHdr')}${buildCell('Cumulative Deformation (mm)', 'sTblHdr')}</Row>`
     );
     st.steps.forEach((s) => {
+      const hasDg4 = st.gaugeCount !== 3 && Number.isFinite(s.g4);
+      const dg34Str = hasDg4 ? `${s.g3.toFixed(2)} / ${s.g4.toFixed(2)}` : `${s.g3.toFixed(2)} / —`;
+      const avgReading = hasDg4 ? (s.g1 + s.g2 + s.g3 + s.g4) / 4 : (s.g1 + s.g2 + s.g3) / 3;
       wsRows.push(
-        `<Row ss:Height="18">${buildCell(s.stepName, 'sValBold')}${buildCell(Number(s.pressureKpa.toFixed(1)), 'sValNum', { type: 'Number' })}${buildCell(Number(s.loadKn.toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(`${s.g1.toFixed(2)} / ${s.g2.toFixed(2)}`, 'sValMono')}${buildCell(`${s.g3.toFixed(2)} / ${s.g4.toFixed(2)}`, 'sValMono')}${buildCell(Number(((s.g1 + s.g2 + s.g3 + s.g4) / 4).toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(Number(s.meanMm.toFixed(2)), 'sValBoldNum', { type: 'Number' })}</Row>`
+        `<Row ss:Height="18">${buildCell(s.stepName, 'sValBold')}${buildCell(Number(s.pressureKpa.toFixed(1)), 'sValNum', { type: 'Number' })}${buildCell(Number(s.loadKn.toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(`${s.g1.toFixed(2)} / ${s.g2.toFixed(2)}`, 'sValMono')}${buildCell(dg34Str, 'sValMono')}${buildCell(Number(avgReading.toFixed(2)), 'sValNum', { type: 'Number' })}${buildCell(Number(s.meanMm.toFixed(2)), 'sValBoldNum', { type: 'Number' })}</Row>`
+      );
+    });
+  } else if (st?.kind === 'SO') {
+    wsRows.push(
+      `<Row ss:Height="20">${buildCell('Crosshole Sonic Logging Summary & Tube Profiles (FST03-FDT-D6760 / STP03 Rev. 3)', 'sSecHdr', { mergeAcross: 6 })}</Row>`
+    );
+    wsRows.push(
+      `<Row ss:Height="18">${buildCell('Access Tubes / Concrete Age', 'sLabel')}${buildCell(`${st.tubeCount} Tubes / ${st.concreteAgeDays} days (${st.ageOk ? 'OK >=7d' : 'Hold <7d'})`, 'sValBold', { mergeAcross: 2 })}${buildCell('Tube Water Temp', 'sLabel')}${buildCell(`${st.waterTempC.toFixed(1)} deg C (${st.tempOk ? 'OK 0-30C' : 'Out of 0-30C'})`, st.tempOk ? 'sValPass' : 'sValWarn', { mergeAcross: 1 })}</Row>`
+    );
+    wsRows.push(
+      `<Row ss:Height="18">${buildCell('Plumbed vs Scanned Length', 'sLabel')}${buildCell(`Plumbed ${st.plumbedLenM.toFixed(2)} m / Scanned ${st.scannedLenM.toFixed(2)} m (${st.lengthCheckOk ? 'OK' : 'Check'})`, st.lengthCheckOk ? 'sValPass' : 'sValWarn', { mergeAcross: 2 })}${buildCell('Pulling Time Check', 'sLabel')}${buildCell(`${st.actualPullingSec.toFixed(0)} s vs Min ${st.minPullingSec.toFixed(0)} s (${st.pullingOk ? 'OK <=0.5m/s' : 'Too Fast'})`, st.pullingOk ? 'sValPass' : 'sValWarn', { mergeAcross: 1 })}</Row>`
+    );
+    wsRows.push(
+      `<Row ss:Height="18">${buildCell('Profile Pair', 'sTblHdr')}${buildCell('Tube Spacing (mm)', 'sTblHdr')}${buildCell('Baseline FAT (us)', 'sTblHdr')}${buildCell('Measured FAT (us)', 'sTblHdr')}${buildCell('Wave Speed (m/s)', 'sTblHdr')}${buildCell('FAT Delay (%) / Energy Drop (dB)', 'sTblHdr')}${buildCell('Integrity Status', 'sTblHdr')}</Row>`
+    );
+    st.profiles.forEach((p) => {
+      wsRows.push(
+        `<Row ss:Height="18">${buildCell(p.pair, 'sValBold')}${buildCell(Number(p.distMm.toFixed(0)), 'sValNum', { type: 'Number' })}${buildCell(Number(p.baseFatUs.toFixed(1)), 'sValNum', { type: 'Number' })}${buildCell(Number(p.measFatUs.toFixed(1)), 'sValNum', { type: 'Number' })}${buildCell(Number(p.waveSpeedMs.toFixed(0)), 'sValBoldNum', { type: 'Number' })}${buildCell(`${p.fatDelayPct.toFixed(1)}% / ${p.energyDropDb.toFixed(1)} dB`, 'sValMono')}${buildCell(p.anomaly ? 'ANOMALY' : 'NORMAL', p.anomaly ? 'sValWarn' : 'sValPass')}</Row>`
       );
     });
   } else {

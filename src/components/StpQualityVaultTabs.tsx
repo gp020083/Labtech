@@ -2,11 +2,28 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../store';
 import { usePrefs } from '../prefs';
 import { TestMethodItem } from '../types';
-import { SERVER_QUALITY_DOCS, FQS49_MATRIX, ServerQualityDoc } from '../data/serverDocsCatalog';
+import {
+  SERVER_QUALITY_DOCS,
+  FORMAL_REPORT_PDF_URLS,
+  FQS49_MATRIX,
+  ServerQualityDoc,
+} from '../data/serverDocsCatalog';
+import { resolveDocLink } from '../driveDocs';
 import { getOfficialTemplateMeta } from '../utils/completedWorksheetGenerator';
 import { HoklasReportPreview } from './HoklasReportPreview';
 import { Badge } from './Badge';
-import { Search, Eye, Award, Printer, Users } from 'lucide-react';
+import { Search, Eye, Download, Award, Printer, Users } from 'lucide-react';
+
+function resolvePdfHref(rawUrl?: string): string | undefined {
+  if (!rawUrl) return undefined;
+  const r = resolveDocLink(rawUrl);
+  return r.pdfCompanionUrl || r.downloadUrl || rawUrl;
+}
+
+function pdfDownloadName(url: string, fallback: string): string {
+  const base = url.split('?')[0].split('/').pop() || `${fallback}.pdf`;
+  return base.replace(/\.(xlsx?|docx?)$/i, '.pdf');
+}
 
 export const WorksheetTemplatesTable: React.FC = () => {
   const { tests, jobs, openPreviewDoc } = useApp();
@@ -27,12 +44,12 @@ export const WorksheetTemplatesTable: React.FC = () => {
   }, [tests, q]);
 
   const handleRowPreview = (t: TestMethodItem, meta: ReturnType<typeof getOfficialTemplateMeta>) => {
-    const docUrl = t.worksheetUrl || t.worksheetPdfUrl;
+    const docUrl = resolvePdfHref(t.worksheetPdfUrl || t.worksheetUrl);
     if (docUrl) {
       openPreviewDoc({
         title: `${t.code} — ${meta.worksheetFormCode}`,
         url: docUrl,
-        fileName: meta.templateFileCode,
+        fileName: pdfDownloadName(docUrl, meta.worksheetFormCode),
         subtitle: `${meta.templateTitleZh} · ${meta.testStandard}`,
       });
       return;
@@ -48,50 +65,63 @@ export const WorksheetTemplatesTable: React.FC = () => {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={tx('搜尋工作紙編號 (FST02 / FST03 / FST04 / FST05 / FST06 / PLT)...', 'Search Worksheet code or test name...')}
-            className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
+            placeholder={tx('搜尋工作紙編號 FST02 / FST03 / FST04 / FST05 / FST06 / FST07 / FST08...', 'Search Worksheet code or test name...')}
+            className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
           />
         </div>
         <div className="text-[11px] font-bold text-slate-500">
-          {tx('💡 點擊任何一列即可預覽工作紙 PDF，並於視窗內選擇下載 Excel 或 PDF', '💡 Click any row to preview PDF and choose Excel or PDF download')}
+          {tx('點擊任何一列即可預覽工作紙 PDF 或直接下載 PDF', 'Click any row to preview or download Worksheet PDF')}
         </div>
       </div>
 
       <div className="md:hidden divide-y divide-slate-100 rounded-2xl border border-slate-200/90 bg-white shadow-xs text-xs">
-        {rows.map(({ test, meta }) => (
-          <div
-            key={test.code}
-            onClick={() => handleRowPreview(test, meta)}
-            className="p-3.5 space-y-2 hover:bg-slate-50 active:bg-brand-wash/40 cursor-pointer transition"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-extrabold text-white">{test.code}</span>
-                <span className="font-mono font-extrabold text-brand-deep">{meta.worksheetFormCode}</span>
+        {rows.map(({ test, meta }) => {
+          const pdfHref = resolvePdfHref(test.worksheetPdfUrl || test.worksheetUrl);
+          return (
+            <div
+              key={test.code}
+              onClick={() => handleRowPreview(test, meta)}
+              className="p-3.5 space-y-2 hover:bg-slate-50 active:bg-brand-wash/40 cursor-pointer transition"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-extrabold text-white">{test.code}</span>
+                  <span className="font-mono font-extrabold text-brand-deep">{meta.worksheetFormCode}</span>
+                </div>
+                <Badge tone="ok">PDF</Badge>
               </div>
-              <Badge tone="brand">{test.code === 'PO' ? 'PDF + XLS' : 'PDF + XLSX'}</Badge>
+              <div className="font-extrabold text-slate-900">{lang === 'en' ? meta.templateTitleEn : meta.templateTitleZh}</div>
+              <div className="font-mono text-[11px] text-slate-500">{test.worksheetCode} · {meta.testStandard}</div>
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => handleRowPreview(test, meta)}
+                  className="min-h-[40px] inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer"
+                >
+                  <Eye className="h-3.5 w-3.5" /> {tx('預覽 PDF', 'Preview PDF')}
+                </button>
+                {pdfHref && (
+                  <a
+                    href={pdfHref}
+                    download={pdfDownloadName(pdfHref, meta.worksheetFormCode)}
+                    className="min-h-[40px] inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-extrabold text-slate-700"
+                  >
+                    <Download className="h-3.5 w-3.5" /> {tx('下載 PDF', 'Download PDF')}
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewStpCode(test.code)}
+                  className="min-h-[40px] inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 cursor-pointer"
+                >
+                  <Printer className="h-3.5 w-3.5" /> {tx('A4 填寫預覽', 'Interactive A4')}
+                </button>
+              </div>
             </div>
-            <div className="font-extrabold text-slate-900">{lang === 'en' ? meta.templateTitleEn : meta.templateTitleZh}</div>
-            <div className="font-mono text-[11px] text-slate-500">{meta.templateFileCode} · {meta.testStandard}</div>
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleRowPreview(test, meta); }}
-                className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer"
-              >
-                <Eye className="h-3.5 w-3.5" /> {tx('預覽 / 選擇下載 (Excel · PDF)', 'Preview / Download')}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setPreviewStpCode(test.code); }}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 cursor-pointer"
-              >
-                <Printer className="h-3.5 w-3.5" /> {tx('A4 填寫預覽', 'Interactive A4')}
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
       <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200/85 bg-white shadow-xs">
         <table className="w-full min-w-[900px] text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
@@ -99,57 +129,69 @@ export const WorksheetTemplatesTable: React.FC = () => {
               <th className="w-20 px-4 py-3">Code</th>
               <th className="w-56 px-3 py-3">{tx('工作紙編號', 'Worksheet Form Code')}</th>
               <th className="px-3 py-3">{tx('工作紙範本名稱及標準', 'Worksheet Title & Standard')}</th>
-              <th className="w-28 px-3 py-3">{tx('格式', 'Format')}</th>
+              <th className="w-24 px-3 py-3">{tx('格式', 'Format')}</th>
               <th className="w-28 px-3 py-3">{tx('認可狀態', 'Status')}</th>
               <th className="px-4 py-3 text-right">{tx('檢視及下載', 'Actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map(({ test, meta }) => (
-              <tr
-                key={test.code}
-                onClick={() => handleRowPreview(test, meta)}
-                className="hover:bg-brand-wash/40 transition cursor-pointer"
-              >
-                <td className="px-4 py-3.5">
-                  <span className="inline-block rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white">
-                    {test.code}
-                  </span>
-                </td>
-                <td className="px-3 py-3.5">
-                  <div className="font-mono font-extrabold text-brand-deep">{meta.worksheetFormCode}</div>
-                  <div className="font-mono text-[11px] text-slate-500">{meta.templateFileCode}</div>
-                </td>
-                <td className="px-3 py-3.5">
-                  <div className="font-extrabold text-slate-900">{meta.templateTitleEn}</div>
-                  <div className="text-[11px] text-slate-500">{meta.templateTitleZh} · {meta.testStandard}</div>
-                </td>
-                <td className="px-3 py-3.5 whitespace-nowrap">
-                  <Badge tone="brand">{test.code === 'PO' ? 'PDF + XLS' : 'PDF + XLSX'}</Badge>
-                </td>
-                <td className="px-3 py-3.5 whitespace-nowrap">
-                  <Badge tone={meta.accredited ? 'ok' : 'warn'}>{meta.accredited ? 'HOKLAS' : 'Draft'}</Badge>
-                </td>
-                <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                  <div className="inline-flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleRowPreview(test, meta); }}
-                      className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
-                    >
-                      <Eye className="h-3.5 w-3.5" /> {tx('預覽 / 選擇下載', 'Preview / Download')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setPreviewStpCode(test.code); }}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <Printer className="h-3.5 w-3.5" /> {tx('A4 填寫預覽', 'Interactive A4')}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {rows.map(({ test, meta }) => {
+              const pdfHref = resolvePdfHref(test.worksheetPdfUrl || test.worksheetUrl);
+              return (
+                <tr
+                  key={test.code}
+                  onClick={() => handleRowPreview(test, meta)}
+                  className="hover:bg-brand-wash/40 transition cursor-pointer"
+                >
+                  <td className="px-4 py-3.5">
+                    <span className="inline-block rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white">
+                      {test.code}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3.5">
+                    <div className="font-mono font-extrabold text-brand-deep">{meta.worksheetFormCode}</div>
+                    <div className="font-mono text-[11px] text-slate-500">{test.worksheetCode}</div>
+                  </td>
+                  <td className="px-3 py-3.5">
+                    <div className="font-extrabold text-slate-900">{meta.templateTitleEn}</div>
+                    <div className="text-[11px] text-slate-500">{meta.templateTitleZh} · {meta.testStandard}</div>
+                  </td>
+                  <td className="px-3 py-3.5 whitespace-nowrap">
+                    <Badge tone="ok">PDF</Badge>
+                  </td>
+                  <td className="px-3 py-3.5 whitespace-nowrap">
+                    <Badge tone={meta.accredited ? 'ok' : 'warn'}>{meta.accredited ? 'HOKLAS 298' : tx('籌備認證', 'Pending')}</Badge>
+                  </td>
+                  <td className="px-4 py-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    <div className="inline-flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleRowPreview(test, meta)}
+                        className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5" /> {tx('預覽 PDF', 'Preview PDF')}
+                      </button>
+                      {pdfHref && (
+                        <a
+                          href={pdfHref}
+                          download={pdfDownloadName(pdfHref, meta.worksheetFormCode)}
+                          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-50"
+                        >
+                          <Download className="h-3.5 w-3.5" /> PDF
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewStpCode(test.code)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      >
+                        <Printer className="h-3.5 w-3.5" /> {tx('A4 填寫預覽', 'Interactive A4')}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -174,6 +216,7 @@ export const WorksheetTemplatesTable: React.FC = () => {
     </div>
   );
 };
+
 export const FormalReportTemplatesTable: React.FC = () => {
   const { tests, jobs, openPreviewDoc } = useApp();
   const { tx } = usePrefs();
@@ -183,7 +226,11 @@ export const FormalReportTemplatesTable: React.FC = () => {
   const rows = useMemo(() => {
     const kw = q.trim().toLowerCase();
     return tests
-      .map((t) => ({ test: t, meta: getOfficialTemplateMeta(t.code, tests) }))
+      .map((t) => ({
+        test: t,
+        meta: getOfficialTemplateMeta(t.code, tests),
+        reportPdfUrl: resolvePdfHref(FORMAL_REPORT_PDF_URLS[t.code]),
+      }))
       .filter(({ test, meta }) => {
         if (!kw) return true;
         return `${test.code} ${test.name} ${test.std} ${meta.formalReportFormCode} ${meta.formalReportTitleEn} ${meta.formalReportTitleZh}`
@@ -192,12 +239,16 @@ export const FormalReportTemplatesTable: React.FC = () => {
       });
   }, [tests, q]);
 
-  const handleRowClick = (t: TestMethodItem, meta: ReturnType<typeof getOfficialTemplateMeta>) => {
-    if (meta.formalReportFileUrl) {
+  const handleRowClick = (
+    t: TestMethodItem,
+    meta: ReturnType<typeof getOfficialTemplateMeta>,
+    reportPdfUrl?: string
+  ) => {
+    if (reportPdfUrl) {
       openPreviewDoc({
         title: `${t.code} — ${meta.formalReportFormCode}`,
-        url: meta.formalReportFileUrl,
-        fileName: `${meta.formalReportFormCode}_Report_template.xlsx`,
+        url: reportPdfUrl,
+        fileName: pdfDownloadName(reportPdfUrl, `${meta.formalReportFormCode}_Report_template`),
         subtitle: `${meta.formalReportTitleZh} · ${meta.testStandard}`,
       });
       return;
@@ -213,20 +264,20 @@ export const FormalReportTemplatesTable: React.FC = () => {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={tx('搜尋正式報告範本編號 (FDT-TM3-RT / FDT-PLT-RT / GTT-C939-RT / GTT-C940-RT / RKT-D5731-RT)...', 'Search Formal Report template code or title...')}
-            className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
+            placeholder={tx('搜尋正式報告範本編號 FDT-TM3-RT / FDT-D6760-RT / GTT-C939-RT / GTT-C940-RT / RKT-D5731-RT / FDT-PLT-RT / INC-RT...', 'Search Formal Report template code or title...')}
+            className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
           />
         </div>
         <div className="text-[11px] font-bold text-slate-500">
-          {tx('💡 點擊任何一列即可預覽正式報告範本，並於視窗內選擇下載 Excel 或 PDF', '💡 Click any row to preview report template and choose Excel or PDF download')}
+          {tx('點擊任何一列即可預覽正式報告範本 PDF 或直接下載 PDF', 'Click any row to preview or download Formal Report PDF')}
         </div>
       </div>
 
       <div className="md:hidden divide-y divide-slate-100 rounded-2xl border border-slate-200/90 bg-white shadow-xs text-xs">
-        {rows.map(({ test, meta }) => (
+        {rows.map(({ test, meta, reportPdfUrl }) => (
           <div
             key={test.code}
-            onClick={() => handleRowClick(test, meta)}
+            onClick={() => handleRowClick(test, meta, reportPdfUrl)}
             className="p-3.5 space-y-2 hover:bg-slate-50 active:bg-amber-50/40 cursor-pointer transition"
           >
             <div className="flex items-center justify-between gap-2">
@@ -234,31 +285,39 @@ export const FormalReportTemplatesTable: React.FC = () => {
                 <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-[11px] font-extrabold text-white">{test.code}</span>
                 <span className="font-mono font-extrabold text-amber-800">{meta.formalReportFormCode}</span>
               </div>
-              <Badge tone="brand">PDF + XLSX</Badge>
+              <Badge tone="ok">PDF</Badge>
             </div>
             <div className="font-extrabold text-slate-900">{meta.formalReportTitleEn}</div>
             <div className="text-[11px] text-slate-500">{meta.formalReportTitleZh}</div>
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); handleRowClick(test, meta); }}
-                className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer"
+                onClick={() => handleRowClick(test, meta, reportPdfUrl)}
+                className="min-h-[40px] inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer"
               >
-                <Eye className="h-3.5 w-3.5" /> {tx('預覽 / 選擇下載 (Excel · PDF)', 'Preview / Download')}
+                <Eye className="h-3.5 w-3.5" /> {tx('預覽 PDF', 'Preview PDF')}
               </button>
-              {meta.formalReportFileUrl && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setPreviewStpCode(test.code); }}
-                  className="inline-flex items-center gap-1 rounded-xl border border-amber-400 bg-amber-50 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer"
+              {reportPdfUrl && (
+                <a
+                  href={reportPdfUrl}
+                  download={pdfDownloadName(reportPdfUrl, `${meta.formalReportFormCode}_Report_template`)}
+                  className="min-h-[40px] inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-extrabold text-slate-700"
                 >
-                  <Award className="h-3.5 w-3.5" /> {tx('A4 報告預覽', 'A4 Report')}
-                </button>
+                  <Download className="h-3.5 w-3.5" /> {tx('下載 PDF', 'Download PDF')}
+                </a>
               )}
+              <button
+                type="button"
+                onClick={() => setPreviewStpCode(test.code)}
+                className="min-h-[40px] inline-flex items-center gap-1 rounded-xl border border-amber-400 bg-amber-50 px-2.5 py-1.5 font-bold text-amber-900 cursor-pointer"
+              >
+                <Award className="h-3.5 w-3.5" /> {tx('A4 報告排版', 'A4 Report')}
+              </button>
             </div>
           </div>
         ))}
       </div>
+
       <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200/85 bg-white shadow-xs">
         <table className="w-full min-w-[900px] text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
@@ -266,16 +325,16 @@ export const FormalReportTemplatesTable: React.FC = () => {
               <th className="w-20 px-4 py-3">Code</th>
               <th className="w-48 px-3 py-3">{tx('報告表格編號及 STP', 'Report Code & STP')}</th>
               <th className="px-3 py-3">{tx('正式報告範本名稱及標準', 'Formal Report Title & Standard')}</th>
-              <th className="w-28 px-3 py-3">{tx('格式', 'Format')}</th>
+              <th className="w-24 px-3 py-3">{tx('格式', 'Format')}</th>
               <th className="w-28 px-3 py-3">{tx('認可類別', 'Accreditation')}</th>
               <th className="px-4 py-3 text-right">{tx('檢視及下載', 'Actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map(({ test, meta }) => (
+            {rows.map(({ test, meta, reportPdfUrl }) => (
               <tr
                 key={test.code}
-                onClick={() => handleRowClick(test, meta)}
+                onClick={() => handleRowClick(test, meta, reportPdfUrl)}
                 className="hover:bg-amber-50/40 transition cursor-pointer"
               >
                 <td className="px-4 py-3.5">
@@ -285,36 +344,43 @@ export const FormalReportTemplatesTable: React.FC = () => {
                 </td>
                 <td className="px-3 py-3.5">
                   <div className="font-mono font-extrabold text-amber-800">{meta.formalReportFormCode}</div>
-                  <div className="font-mono text-[11px] text-slate-500">{meta.stpDocRef}</div>
+                  <div className="font-mono text-[11px] text-slate-500">{test.stpDocCode} {test.stpRev}</div>
                 </td>
                 <td className="px-3 py-3.5">
                   <div className="font-extrabold text-slate-900">{meta.formalReportTitleEn}</div>
                   <div className="text-[11px] text-slate-500">{meta.formalReportTitleZh} · {meta.testStandard}</div>
                 </td>
                 <td className="px-3 py-3.5 whitespace-nowrap">
-                  <Badge tone="brand">PDF + XLSX</Badge>
+                  <Badge tone="ok">PDF</Badge>
                 </td>
                 <td className="px-3 py-3.5 whitespace-nowrap">
                   <Badge tone={meta.accredited ? 'ok' : 'warn'}>{meta.accredited ? 'HOKLAS 298' : 'Non-HOKLAS'}</Badge>
                 </td>
-                <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                <td className="px-4 py-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex items-center justify-end gap-1.5">
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleRowClick(test, meta); }}
+                      onClick={() => handleRowClick(test, meta, reportPdfUrl)}
                       className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
                     >
-                      <Eye className="h-3.5 w-3.5" /> {tx('預覽 / 選擇下載', 'Preview / Download')}
+                      <Eye className="h-3.5 w-3.5" /> {tx('預覽 PDF', 'Preview PDF')}
                     </button>
-                    {meta.formalReportFileUrl && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setPreviewStpCode(test.code); }}
-                        className="inline-flex items-center gap-1 rounded-xl border border-amber-500 bg-amber-50 px-2.5 py-1.5 font-extrabold text-amber-950 hover:bg-amber-100 cursor-pointer"
+                    {reportPdfUrl && (
+                      <a
+                        href={reportPdfUrl}
+                        download={pdfDownloadName(reportPdfUrl, `${meta.formalReportFormCode}_Report_template`)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-50"
                       >
-                        <Award className="h-3.5 w-3.5 text-amber-700" /> {tx('A4 報告預覽', 'A4 Report')}
-                      </button>
+                        <Download className="h-3.5 w-3.5" /> PDF
+                      </a>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewStpCode(test.code)}
+                      className="inline-flex items-center gap-1 rounded-xl border border-amber-500 bg-amber-50 px-2.5 py-1.5 font-extrabold text-amber-950 hover:bg-amber-100 cursor-pointer"
+                    >
+                      <Award className="h-3.5 w-3.5 text-amber-700" /> {tx('A4 報告排版', 'A4 Report')}
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -343,6 +409,7 @@ export const FormalReportTemplatesTable: React.FC = () => {
     </div>
   );
 };
+
 export const QualityDocsVaultTable: React.FC<{
   mode?: 'order_forms' | 'daily_records' | 'quality_forms';
 }> = ({ mode = 'order_forms' }) => {
@@ -350,6 +417,13 @@ export const QualityDocsVaultTable: React.FC<{
   const { lang, tx } = usePrefs();
   const [cat, setCat] = useState<'cal_qc' | 'mu' | 'hoklas_org' | 'fqs49' | 'all_quality'>('cal_qc');
   const [q, setQ] = useState('');
+
+  const counts = useMemo(() => {
+    const calQc = SERVER_QUALITY_DOCS.filter((d) => d.category === 'cal_qc').length;
+    const mu = SERVER_QUALITY_DOCS.filter((d) => d.category === 'mu').length;
+    const hoklasOrg = SERVER_QUALITY_DOCS.filter((d) => d.category === 'hoklas_org').length;
+    return { calQc, mu, hoklasOrg, all: calQc + mu + hoklasOrg };
+  }, []);
 
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase();
@@ -366,19 +440,20 @@ export const QualityDocsVaultTable: React.FC<{
   }, [mode, cat, q]);
 
   const qualityCats: [typeof cat, string][] = [
-    ['cal_qc', tx('1. 儀器校準、月檢及借還表格 (6)', '1. Cal, Monthly & Loan Forms (6)')],
-    ['mu', tx('2. MU 測量不確定度評估表 (4)', '2. MU Uncertainty Sheets (4)')],
-    ['hoklas_org', tx('3. HOKLAS 298、架構及工程實績 (7)', '3. HOKLAS 298, Org & Job Refs (7)')],
-    ['fqs49', tx(`4. FQS49 授權簽署人矩陣 (${FQS49_MATRIX.length})`, `4. FQS49 Signatories (${FQS49_MATRIX.length})`)],
-    ['all_quality', tx('全部體系表格 (17)', 'All Quality Docs (17)')],
+    ['cal_qc', tx(`1. 儀器校準、月檢及借還表格 · ${counts.calQc}`, `1. Cal, Monthly & Loan Forms · ${counts.calQc}`)],
+    ['mu', tx(`2. MU 測量不確定度及結構驗算 · ${counts.mu}`, `2. MU & Setup Checks · ${counts.mu}`)],
+    ['hoklas_org', tx(`3. HOKLAS 298、架構及工程履歷 · ${counts.hoklasOrg}`, `3. HOKLAS 298, Org & Job Refs · ${counts.hoklasOrg}`)],
+    ['fqs49', tx(`4. FQS49 授權簽署人矩陣 · ${FQS49_MATRIX.length}`, `4. FQS49 Signatories · ${FQS49_MATRIX.length}`)],
+    ['all_quality', tx(`全部體系 PDF · ${counts.all}`, `All Quality PDFs · ${counts.all}`)],
   ];
 
   const handlePreviewRow = (d: ServerQualityDoc) => {
+    const pdfHref = resolvePdfHref(d.localPath || d.url) || d.url;
     openPreviewDoc({
       title: `${d.code} — ${lang === 'en' ? d.titleEn : d.titleZh}`,
-      url: d.url,
-      fileName: `${d.code}.${d.format.toLowerCase()}`,
-      subtitle: `Rev: ${d.revDate} · ${d.format}`,
+      url: pdfHref,
+      fileName: pdfDownloadName(pdfHref, d.code),
+      subtitle: `Rev: ${d.revDate} · PDF`,
     });
   };
 
@@ -392,12 +467,12 @@ export const QualityDocsVaultTable: React.FC<{
             onChange={(e) => setQ(e.target.value)}
             placeholder={
               mode === 'order_forms'
-                ? tx('搜尋 FQS08 測試委託單編號或測試項目 (KD / SO / FC+BL / PO)...', 'Search FQS08 Test Order Form...')
+                ? tx('搜尋 FQS08 測試委託單編號或測試項目 KD / SO / FC+BL / PO / PLT / VC...', 'Search FQS08 Test Order Form...')
                 : mode === 'daily_records'
                 ? tx('搜尋 FQS09 現場每日測試紀錄表編號或測試項目...', 'Search FQS09 Daily Site Record...')
-                : tx('搜尋校準時間表 (FQS38)、月檢 (FCC01)、借還表 (FQS50)、MU 或 HOKLAS 證書...', 'Search Cal, Monthly Check, MU or HOKLAS docs...')
+                : tx('搜尋校準時間表 FQS38、月檢 FCC01、借還表 FQS50、MU 或 HOKLAS 證書...', 'Search Cal, Monthly Check, MU or HOKLAS PDFs...')
             }
-            className="w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
+            className="min-h-[44px] w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm outline-none focus:border-brand shadow-xs"
           />
         </div>
         {mode === 'quality_forms' ? (
@@ -418,8 +493,8 @@ export const QualityDocsVaultTable: React.FC<{
         ) : (
           <div className="text-[11px] font-bold text-slate-500">
             {mode === 'order_forms'
-              ? tx('💡 點擊任何一列即可預覽委託單 PDF，並於視窗內選擇下載 Excel/Word 或 PDF', '💡 Click any row to preview PDF and choose Excel/Word or PDF download')
-              : tx('💡 點擊任何一列即可預覽每日紀錄表 PDF，並於視窗內選擇下載 Word 或 PDF', '💡 Click any row to preview PDF and choose Word or PDF download')}
+              ? tx('點擊任何一列即可預覽及下載 FQS08 委託單 PDF', 'Click any row to preview or download FQS08 Order Form PDF')
+              : tx('點擊任何一列即可預覽及下載 FQS09 現場每日紀錄 PDF', 'Click any row to preview or download FQS09 Daily Record PDF')}
           </div>
         )}
       </div>
@@ -429,31 +504,50 @@ export const QualityDocsVaultTable: React.FC<{
       ) : (
         <>
           <div className="md:hidden divide-y divide-slate-100 rounded-2xl border border-slate-200/90 bg-white shadow-xs text-xs">
-            {filtered.map((d) => (
-              <div
-                key={d.id}
-                onClick={() => handlePreviewRow(d)}
-                className="p-3.5 space-y-2 hover:bg-slate-50 active:bg-brand-wash/40 cursor-pointer transition"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono font-extrabold text-brand-deep">{d.code}</span>
-                    {d.testCode && <span className="rounded bg-brand-wash px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep">{d.testCode}</span>}
+            {filtered.map((d) => {
+              const pdfHref = resolvePdfHref(d.localPath || d.url) || d.url;
+              return (
+                <div
+                  key={d.id}
+                  onClick={() => handlePreviewRow(d)}
+                  className="p-3.5 space-y-2 hover:bg-slate-50 active:bg-brand-wash/40 cursor-pointer transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-extrabold text-brand-deep">{d.code}</span>
+                      {d.testCode && (
+                        <span className="rounded bg-brand-wash px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-brand-deep">
+                          {d.testCode}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-[11px] text-slate-500">{d.revDate}</span>
+                      <Badge tone="ok">PDF</Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-[11px] text-slate-500">{d.revDate}</span>
-                    <Badge tone={d.format === 'PDF' ? 'ok' : 'brand'}>{d.format}</Badge>
+                  <div className="font-extrabold text-slate-900 leading-snug">{lang === 'en' ? d.titleEn : d.titleZh}</div>
+                  <div className="flex items-center gap-2 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewRow(d)}
+                      className="min-h-[40px] inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> {tx('預覽 PDF', 'Preview PDF')}
+                    </button>
+                    <a
+                      href={pdfHref}
+                      download={pdfDownloadName(pdfHref, d.code)}
+                      className="min-h-[40px] inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-extrabold text-slate-700"
+                    >
+                      <Download className="h-3.5 w-3.5" /> {tx('下載 PDF', 'Download PDF')}
+                    </a>
                   </div>
                 </div>
-                <div className="font-extrabold text-slate-900 leading-snug">{lang === 'en' ? d.titleEn : d.titleZh}</div>
-                <div className="flex items-center gap-2 pt-0.5">
-                  <button type="button" onClick={(e) => { e.stopPropagation(); handlePreviewRow(d); }} className="inline-flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 font-extrabold text-white cursor-pointer">
-                    <Eye className="h-3.5 w-3.5" /> {tx('預覽 / 選擇下載', 'Preview / Download')}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
           <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200/85 bg-white shadow-xs">
             <table className="w-full min-w-[820px] text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50/90 font-extrabold text-slate-600">
@@ -464,37 +558,59 @@ export const QualityDocsVaultTable: React.FC<{
                       ? tx('測試委託單範本名稱', 'FQS08 Test Order Form Title')
                       : mode === 'daily_records'
                       ? tx('現場每日測試紀錄表名稱', 'FQS09 Daily Site Record Title')
-                      : tx('品質體系／校準／MU 文件名稱', 'Quality / Calibration / MU Document Title')}
+                      : tx('品質體系、校準及 MU 文件名稱', 'Quality, Calibration & MU Document Title')}
                   </th>
                   <th className="w-24 px-3 py-3">{tx('關聯項目', 'Test')}</th>
                   <th className="w-28 px-3 py-3">{tx('修訂日期', 'Rev Date')}</th>
-                  <th className="w-28 px-3 py-3">{tx('格式', 'Format')}</th>
+                  <th className="w-24 px-3 py-3">{tx('格式', 'Format')}</th>
                   <th className="px-4 py-3 text-right">{tx('檢視及下載', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((d) => (
-                  <tr
-                    key={d.id}
-                    onClick={() => handlePreviewRow(d)}
-                    className="hover:bg-brand-wash/40 transition cursor-pointer"
-                  >
-                    <td className="px-4 py-3 font-mono font-extrabold text-brand-deep whitespace-nowrap">{d.code}</td>
-                    <td className="px-3 py-3 font-bold text-slate-900">{lang === 'en' ? d.titleEn : d.titleZh}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{d.testCode ? <span className="rounded bg-brand-wash px-2 py-0.5 font-mono text-[11px] font-extrabold text-brand-deep whitespace-nowrap">{d.testCode}</span> : <span className="text-slate-400">—</span>}</td>
-                    <td className="px-3 py-3 font-mono text-slate-600 whitespace-nowrap">{d.revDate}</td>
-                    <td className="px-3 py-3 whitespace-nowrap"><Badge tone={d.format === 'PDF' ? 'ok' : 'brand'}>{d.format}</Badge></td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => handlePreviewRow(d)}
-                        className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-brand px-3.5 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
-                      >
-                        <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽 / 選擇下載', 'Preview / Download')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((d) => {
+                  const pdfHref = resolvePdfHref(d.localPath || d.url) || d.url;
+                  return (
+                    <tr
+                      key={d.id}
+                      onClick={() => handlePreviewRow(d)}
+                      className="hover:bg-brand-wash/40 transition cursor-pointer"
+                    >
+                      <td className="px-4 py-3 font-mono font-extrabold text-brand-deep whitespace-nowrap">{d.code}</td>
+                      <td className="px-3 py-3 font-bold text-slate-900">{lang === 'en' ? d.titleEn : d.titleZh}</td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        {d.testCode ? (
+                          <span className="rounded bg-brand-wash px-2 py-0.5 font-mono text-[11px] font-extrabold text-brand-deep whitespace-nowrap">
+                            {d.testCode}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-slate-600 whitespace-nowrap">{d.revDate}</td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <Badge tone="ok">PDF</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handlePreviewRow(d)}
+                            className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-brand px-3.5 font-extrabold text-white hover:bg-brand-deep cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5 shrink-0" /> {tx('預覽 PDF', 'Preview PDF')}
+                          </button>
+                          <a
+                            href={pdfHref}
+                            download={pdfDownloadName(pdfHref, d.code)}
+                            className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 font-bold text-slate-700 hover:bg-slate-50"
+                          >
+                            <Download className="h-3.5 w-3.5 shrink-0" /> PDF
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -514,15 +630,40 @@ export const PersonnelMatrixTable: React.FC = () => {
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-emerald-700 shrink-0" />
           <div>
-            <div className="font-extrabold text-emerald-900">{tx('FQS49 授權簽署人 及合資格操作員矩陣', 'FQS49 Approved Signatories & Qualified Operators Matrix')}</div>
-            <div className="mt-0.5 text-emerald-800">{tx('資料同步自品質文件 FQS49 (2026-03-23) 及 HOKLAS 298 認可範圍證書 (Issue 2026-07-24)。', 'Synced from FQS49 (23 Mar 2026) and HOKLAS 298 Scope of Accreditation (Issue 24 Jul 2026).')}</div>
+            <div className="font-extrabold text-emerald-900">
+              {tx('FQS49 授權簽署人及合資格操作員矩陣', 'FQS49 Approved Signatories & Qualified Operators Matrix')}
+            </div>
+            <div className="mt-0.5 text-emerald-800">
+              {tx(
+                '資料同步自品質文件 FQS49 2026-03-23 及 HOKLAS 298 認可範圍證書 Issue 2026-07-24。',
+                'Synced from FQS49 dated 23 Mar 2026 and HOKLAS 298 Scope of Accreditation dated 24 Jul 2026.'
+              )}
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => openPreviewDoc({ title: tx('HOKLAS 298 認可範圍證書', 'HOKLAS 298 Scope of Accreditation'), url: '/server-docs/forms/HOKLAS298_Scope_of_Accreditation_260727.pdf' })} className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 font-extrabold text-white hover:bg-emerald-800 cursor-pointer">
+          <button
+            type="button"
+            onClick={() =>
+              openPreviewDoc({
+                title: tx('HOKLAS 298 認可範圍證書', 'HOKLAS 298 Scope of Accreditation'),
+                url: '/server-docs/forms/HOKLAS298_Scope_of_Accreditation_260727.pdf',
+              })
+            }
+            className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 font-extrabold text-white hover:bg-emerald-800 cursor-pointer"
+          >
             <Eye className="h-3.5 w-3.5" /> {tx('預覽 HOKLAS 298 證書', 'Preview HOKLAS 298')}
           </button>
-          <button type="button" onClick={() => openPreviewDoc({ title: tx('FQS49 合資格操作員及授權簽署人名單', 'FQS49 List of Qualified Operators & Approved Signatories'), url: '/server-docs/forms/FQS49_List_of_Qualified_Operator_260323.pdf' })} className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-white px-3 py-2 font-bold text-emerald-900 hover:bg-emerald-50 cursor-pointer">
+          <button
+            type="button"
+            onClick={() =>
+              openPreviewDoc({
+                title: tx('FQS49 合資格操作員及授權簽署人名單', 'FQS49 List of Qualified Operators & Approved Signatories'),
+                url: '/server-docs/forms/FQS49_List_of_Qualified_Operator_260323.pdf',
+              })
+            }
+            className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-white px-3 py-2 font-bold text-emerald-900 hover:bg-emerald-50 cursor-pointer"
+          >
             <Eye className="h-3.5 w-3.5" /> {tx('預覽 FQS49 名單', 'Preview FQS49')}
           </button>
         </div>
@@ -547,11 +688,26 @@ export const PersonnelMatrixTable: React.FC = () => {
                 onClick={() => setStpPreviewCode(r.code)}
                 className="hover:bg-slate-50/80 transition cursor-pointer"
               >
-                <td className="px-4 py-3.5"><span className="inline-block rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white">{r.code}</span></td>
-                <td className="px-3 py-3.5"><div className="font-extrabold text-slate-900">{r.testName}</div><div className="text-[11px] text-slate-500">{r.standard}</div></td>
-                <td className="px-3 py-3.5"><Badge tone={r.hoklasStatus === 'Accredited' ? 'ok' : 'warn'}>{r.hoklasStatus}</Badge></td>
+                <td className="px-4 py-3.5">
+                  <span className="inline-block rounded-lg bg-slate-900 px-2.5 py-1 font-mono text-xs font-extrabold text-white">
+                    {r.code}
+                  </span>
+                </td>
+                <td className="px-3 py-3.5">
+                  <div className="font-extrabold text-slate-900">{r.testName}</div>
+                  <div className="text-[11px] text-slate-500">{r.standard}</div>
+                </td>
+                <td className="px-3 py-3.5">
+                  <Badge tone={r.hoklasStatus === 'Accredited' ? 'ok' : 'warn'}>{r.hoklasStatus}</Badge>
+                </td>
                 <td className="px-3 py-3.5 font-semibold text-emerald-900">{r.signatories.join(sep)}</td>
-                <td className="px-3 py-3.5 text-slate-800">{r.qualifiedOperators.length ? r.qualifiedOperators.join(sep) : <span className="text-slate-400">{tx('籌備評核中', 'Assessment in prep')}</span>}</td>
+                <td className="px-3 py-3.5 text-slate-800">
+                  {r.qualifiedOperators.length ? (
+                    r.qualifiedOperators.join(sep)
+                  ) : (
+                    <span className="text-slate-400">{tx('籌備評核中', 'Assessment in prep')}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3.5 text-slate-500">{r.trainees.length ? r.trainees.join(sep) : '—'}</td>
               </tr>
             ))}

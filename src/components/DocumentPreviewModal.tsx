@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { usePrefs } from '../prefs';
 import { resolveDocLink, dataUrlToBlobUrl } from '../driveDocs';
 import { PdfCanvasViewer } from './PdfCanvasViewer';
-import { X, ExternalLink, Download, FileText, FileSpreadsheet, Cloud } from 'lucide-react';
+import { X, ExternalLink, Download, FileText, Cloud } from 'lucide-react';
 
 export interface PreviewDocRequest {
   title: string;
@@ -54,17 +54,14 @@ export const DocumentPreviewModal: React.FC<{
 
   const driveEmbedFallback = resolved.driveId ? `https://drive.google.com/file/d/${resolved.driveId}/preview` : undefined;
   const driveOpenFallback = resolved.driveId ? `https://drive.google.com/file/d/${resolved.driveId}/view` : undefined;
-  const pdfSrc = resolved.kind === 'pdf' ? resolved.embedUrl || safeUrl : '';
+  const pdfSrc = resolved.kind === 'pdf' ? resolved.previewUrl || resolved.embedUrl || safeUrl : '';
 
   const openHref = pdfFetchFailed && driveOpenFallback ? driveOpenFallback : resolved.openTabUrl || safeUrl;
   const pdfDlHref = resolved.pdfCompanionUrl || (resolved.kind === 'pdf' ? pdfSrc : undefined);
-  const officeDlHref = resolved.officeCompanionUrl;
-  const officeExt = resolved.officeExt;
-  const isExcel = officeExt === 'XLSX' || officeExt === 'XLS';
-  const officeLabel = isExcel
-    ? tx(`下載 Excel (.${officeExt?.toLowerCase()})`, `Download Excel (.${officeExt?.toLowerCase()})`)
-    : tx(`下載 Word (.${(officeExt || 'doc').toLowerCase()})`, `Download Word (.${(officeExt || 'doc').toLowerCase()})`);
   const embedSrc = resolved.embedUrl || safeUrl;
+  const pdfDownloadName =
+    (doc.fileName || doc.title).replace(/\.(xlsx?|docx?)$/i, '') +
+    (/\.(pdf)$/i.test(doc.fileName || doc.title) ? '' : '.pdf');
 
   return (
     <div
@@ -81,7 +78,7 @@ export const DocumentPreviewModal: React.FC<{
                 {doc.subtitle && <div className="truncate text-[11px] text-slate-500">{doc.subtitle}</div>}
               </div>
             </div>
-            <button type="button" onClick={onClose} className="shrink-0 rounded-xl bg-slate-200/70 p-2 text-slate-700 hover:bg-slate-300 cursor-pointer" title="Close">
+            <button type="button" onClick={onClose} className="shrink-0 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-xl bg-slate-200/70 p-2 text-slate-700 hover:bg-slate-300 cursor-pointer" title="Close">
               <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
@@ -92,33 +89,34 @@ export const DocumentPreviewModal: React.FC<{
                 <Cloud className="h-3 w-3" /> Drive
               </span>
             )}
-            {officeDlHref && (
-              <span className="inline-flex items-center rounded-lg bg-brand-wash px-2 py-1 text-[10px] font-extrabold text-brand-deep shrink-0">
-                {tx(`選擇下載格式：PDF 或 ${officeExt}`, `Choose Download: PDF or ${officeExt}`)}
-              </span>
-            )}
-            {officeDlHref && (
-              <a href={officeDlHref} download className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-emerald-700 shadow-xs">
-                <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" /> {officeLabel}
-              </a>
-            )}
             {pdfDlHref && (
               <a
                 href={pdfDlHref}
-                download={(doc.fileName || doc.title).replace(/\.(xlsx?|docx?)$/i, '') + (/\.(pdf)$/i.test(doc.fileName || doc.title) ? '' : '.pdf')}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep shadow-xs"
+                download={pdfDownloadName}
+                className="flex-1 sm:flex-none min-h-[44px] sm:min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-xs font-extrabold text-white hover:bg-brand-deep shadow-xs"
               >
-                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載 PDF (.pdf)', 'Download PDF (.pdf)')}
+                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載 PDF', 'Download PDF')}
               </a>
             )}
             {!pdfDlHref && resolved.downloadUrl && (
-              <a href={resolved.downloadUrl} download={doc.fileName || true} target={resolved.kind === 'drive' ? '_blank' : undefined} rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-extrabold text-white hover:bg-brand-deep">
-                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載檔案 (.pdf)', 'Download PDF')}
+              <a
+                href={resolved.downloadUrl}
+                download={doc.fileName || true}
+                target={resolved.kind === 'drive' ? '_blank' : undefined}
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none min-h-[44px] sm:min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-xs font-extrabold text-white hover:bg-brand-deep shadow-xs"
+              >
+                <Download className="h-3.5 w-3.5 shrink-0" /> {tx('下載 PDF', 'Download PDF')}
               </a>
             )}
             {openHref && (
-              <a href={openHref} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-100">
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {tx('全螢幕開啟 PDF', 'Open PDF in New Tab')}
+              <a
+                href={openHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none min-h-[44px] sm:min-h-[38px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-100"
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-brand" /> {tx('新分頁開啟 PDF', 'Open PDF in New Tab')}
               </a>
             )}
           </div>
@@ -144,21 +142,16 @@ export const DocumentPreviewModal: React.FC<{
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-xs text-slate-600">
               <FileText className="h-12 w-12 text-brand" />
               <div className="text-sm font-extrabold text-slate-900">
-                {tx('此檔案格式未能直接預覽，請下載後開啟', 'This file type cannot be previewed. Please download it.')}
+                {tx('此檔案未能直接預覽，請下載後開啟', 'This file cannot be previewed directly. Please download it.')}
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {openHref && (
-                  <a href={openHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 font-extrabold text-white">
-                    <ExternalLink className="h-4 w-4" /> {tx('全螢幕開啟檔案', 'Open Full Screen')}
-                  </a>
-                )}
-                {officeDlHref && (
-                  <a href={officeDlHref} download className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 font-extrabold text-white">
-                    <FileSpreadsheet className="h-4 w-4" /> {officeLabel}
+                  <a href={openHref} target="_blank" rel="noopener noreferrer" className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 font-extrabold text-white">
+                    <ExternalLink className="h-4 w-4" /> {tx('新分頁開啟 PDF', 'Open PDF in New Tab')}
                   </a>
                 )}
                 {pdfDlHref && (
-                  <a href={pdfDlHref} download className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-extrabold text-slate-800">
+                  <a href={pdfDlHref} download={pdfDownloadName} className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-extrabold text-slate-800">
                     <Download className="h-4 w-4" /> {tx('下載 PDF', 'Download PDF')}
                   </a>
                 )}

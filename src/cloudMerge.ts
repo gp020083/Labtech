@@ -9,6 +9,7 @@ import {
   SharedDocAttachment,
   DriveVaultFile,
 } from './types';
+import { isOfficialJobRefNo, normalizeCalcRecordsJobRef } from './utils/completedWorksheetGenerator';
 
 export interface AppPersistedState {
   jobs: JobItem[];
@@ -193,10 +194,24 @@ export function mergeUnsyncedLocalIntoRemote(
   }
   const tests = Array.from(testMap.values());
 
-  // 6. Merge FieldCalcRecords by ID
-  const calcMerge = mergeById<FieldCalcRecord>(remote.calcRecords, local.calcRecords);
-  if (calcMerge.added) hasLocalAdditions = true;
-  const calcRecords = calcMerge.list.sort((a, b) => b.testedAt.localeCompare(a.testedAt));
+  // 6. Merge FieldCalcRecords by ID & normalize legacy project-prefixed jobRefNo values
+  const calcMap = new Map<string, FieldCalcRecord>();
+  for (const rC of remote.calcRecords || []) calcMap.set(rC.id, rC);
+  for (const lC of local.calcRecords || []) {
+    const rC = calcMap.get(lC.id);
+    if (!rC) {
+      calcMap.set(lC.id, lC);
+      hasLocalAdditions = true;
+    } else if (!isOfficialJobRefNo(rC.jobRefNo) && isOfficialJobRefNo(lC.jobRefNo)) {
+      calcMap.set(lC.id, { ...rC, jobRefNo: lC.jobRefNo });
+      hasLocalAdditions = true;
+    }
+  }
+  const sortedCalcs = Array.from(calcMap.values()).sort((a, b) => (b.testedAt || '').localeCompare(a.testedAt || ''));
+  const calcRecords = normalizeCalcRecordsJobRef(sortedCalcs);
+  if (calcRecords.some((r, idx) => r.jobRefNo !== sortedCalcs[idx]?.jobRefNo)) {
+    hasLocalAdditions = true;
+  }
 
   // 7. Merge DriveVaultFiles by ID
   const driveFilesMerge = mergeById<DriveVaultFile>(remote.driveFiles, local.driveFiles);
